@@ -140,7 +140,6 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
                     { label: 'My Demo Orders', to: '/my-orders' },
                     { label: 'Saved Addresses', to: '/addresses' },
                     { label: 'Track Order', to: '/track-order' },
-                    { label: 'Admin Panel (/admin)', to: '/admin' },
                   ].map((item) => (
                     <Link
                       key={item.to}

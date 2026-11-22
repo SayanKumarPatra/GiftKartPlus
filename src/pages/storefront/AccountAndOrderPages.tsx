@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Clock, Package, Search, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useOrders } from '../../hooks/useStoreData';
@@ -18,6 +18,12 @@ export function CustomerAccountPage() {
     signOutCustomer,
   } = useAuth();
   const { pushToast } = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const navState = location.state as { from?: string; reason?: string } | null;
+  const redirectTarget = navState?.from;
+  const isWishlistRedirect = navState?.reason === 'wishlist';
 
   const [fullName, setFullName] = useState('Ananya Chatterjee');
   const [email, setEmail] = useState('demo@giftkart.in');
@@ -27,9 +33,13 @@ export function CustomerAccountPage() {
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     await signInCustomerDemo({ fullName, email, phone, defaultCity });
+    if (redirectTarget && redirectTarget !== '/account') {
+      navigate(redirectTarget, { replace: true });
+      return;
+    }
     pushToast({
-      title: 'Demo Customer Signed In',
-      description: 'Saved locally in browser storage (demo only).',
+      title: 'Signed In Successfully',
+      description: 'Your account session is now active.',
       variant: 'success',
     });
   }
@@ -38,7 +48,7 @@ export function CustomerAccountPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="gk-promo-gradient rounded-3xl border border-[#EBD8FF] p-6 sm:p-8">
         <p className="text-xs font-bold text-[#FF4D8D]">
-          Replaceable Auth Interface · Demo Mode Only
+          Customer Sign In · Account Access
         </p>
         <h1 className="mt-1 text-3xl font-extrabold text-[#3B0764]">
           Customer Account
@@ -107,6 +117,11 @@ export function CustomerAccountPage() {
         </div>
       ) : (
         <div className="gk-card rounded-3xl p-6">
+          {isWishlistRedirect && (
+            <div className="mb-4 rounded-xl border border-[#EBD8FF] bg-[#F8F2FF] px-4 py-3 text-xs font-semibold text-[#5A11AD]">
+              Please sign in to save and manage products in your Wishlist.
+            </div>
+          )}
           <form onSubmit={(e) => void handleSignIn(e)} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>

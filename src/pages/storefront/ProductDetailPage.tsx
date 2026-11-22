@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Check,
   Gift,
@@ -19,6 +19,7 @@ import {
   useStoreSettings,
 } from '../../hooks/useStoreData';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ProductImage } from '../../components/ui/ProductImage';
 import { ProductCard } from '../../components/storefront/ProductCard';
@@ -28,6 +29,9 @@ import { formatInr } from '../../utils/format';
 
 export function ProductDetailPage() {
   const { slug } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { customerAccount } = useAuth();
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
   const { data: giftWrapConfig } = useGiftWrapConfig();
@@ -437,15 +441,19 @@ export function ProductDetailPage() {
             <button
               type="button"
               onClick={() => {
-                const added = toggleWishlist(product.id);
-                pushToast({
-                  title: added ? 'Saved to Wishlist' : 'Removed from Wishlist',
-                  description: product.name,
-                  variant: 'info',
-                });
+                if (!customerAccount) {
+                  navigate('/account', {
+                    state: {
+                      from: `${location.pathname}${location.search}`,
+                      reason: 'wishlist',
+                    },
+                  });
+                  return;
+                }
+                toggleWishlist(product.id);
               }}
               aria-label="Toggle wishlist"
-              className={`flex h-12 w-12 items-center justify-center rounded-full border transition-colors ${
+              className={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border transition-colors ${
                 saved
                   ? 'border-[#FF4D8D] bg-[#FFF0F6] text-[#FF4D8D]'
                   : 'border-[#EBD8FF] bg-white text-[#6A11CB] hover:bg-[#F8F2FF]'

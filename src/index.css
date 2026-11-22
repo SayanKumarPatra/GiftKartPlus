@@ -15,9 +15,9 @@
   --color-ink-body: #3E2A56;
   --color-ink-muted: #6E5B85;
 
-  --font-display: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
-  --font-editorial: "Fraunces", Georgia, serif;
-  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-editorial: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   /* 900px desktop breakpoint so mobile browsers in "Desktop site" mode (980px) render full Desktop UI */
@@ -27,10 +27,12 @@
 @layer base {
   html {
     font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     color: #2B0B4E;
     background-color: #FFFFFF;
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {

@@ -239,7 +239,7 @@ export function ForYouSection() {
       <div className="mb-3.5 sm:mb-5">
         <h2
           id="for-you-heading"
-          className="font-editorial text-xl font-bold tracking-tight text-[#1E1035] sm:text-[26px]"
+          className="text-xl font-bold tracking-tight text-[#1E1035] sm:text-2xl"
         >
           For You
         </h2>

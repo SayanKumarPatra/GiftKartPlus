@@ -9,6 +9,7 @@ import { ProductImage } from '../../components/ui/ProductImage';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface ShopPageProps {
   bestSellersOnly?: boolean;
@@ -433,23 +434,16 @@ export function CategoryDetailPage() {
       {products.length === 0 ? (
         <EmptyState
           title={`No products listed in this ${category.name} selection yet`}
-          description="You can add new products directly to this category or subcategory from the Admin Panel (/admin/products)."
+          description="New gifts in this collection are coming soon. Explore all available gifts across GiftKart."
           icon={<Package className="h-5 w-5" />}
           action={
-            <div className="flex flex-wrap justify-center gap-2.5">
-              <Link to="/shop">
-                <Button size="sm">Browse All Gifts</Button>
-              </Link>
-              <Link to="/admin/products">
-                <Button variant="glass" size="sm">
-                  Add Product in Admin
-                </Button>
-              </Link>
-            </div>
+            <Link to="/shop">
+              <Button size="sm">Browse All Gifts</Button>
+            </Link>
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
           {products.map((product) => (
             <ProductCard
               key={product.id}
@@ -465,21 +459,42 @@ export function CategoryDetailPage() {
 
 export function WishlistPage() {
   const { wishlistIds } = useCart();
+  const { customerAccount } = useAuth();
   const { data: products } = useProducts();
   const { data: categories } = useCategories();
   const catMap = new Map(categories.map((c) => [c.id, c.name]));
+
+  if (!customerAccount) {
+    return (
+      <div className="mx-auto max-w-2xl py-6">
+        <EmptyState
+          title="Sign in to view your Wishlist"
+          description="Please log in to your GiftKart account to save and access your favourite gifts across visits."
+          icon={<Heart className="h-5 w-5 text-[#FF4D8D]" />}
+          action={
+            <Link
+              to="/account"
+              state={{ from: '/wishlist', reason: 'wishlist' }}
+            >
+              <Button size="sm">Sign In to Continue</Button>
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
 
   const savedProducts = products.filter((p) => wishlistIds.includes(p.id));
 
   return (
     <div className="space-y-6">
       <div className="gk-promo-gradient rounded-3xl border border-[#EBD8FF] p-6 sm:p-8">
-        <h1 className="flex items-center gap-2.5 text-3xl font-extrabold text-[#3B0764]">
-          <Heart className="h-7 w-7 fill-[#FF4D8D] text-[#FF4D8D]" />
+        <h1 className="flex items-center gap-2.5 text-2xl font-bold text-[#3B0764] sm:text-3xl">
+          <Heart className="h-6 w-6 fill-[#FF4D8D] text-[#FF4D8D] sm:h-7 sm:w-7" />
           <span>Your Wishlist</span>
         </h1>
         <p className="mt-1.5 text-sm text-[#4B2C70]">
-          Saved personalized gifts stored locally in your browser.
+          Saved gifts for {customerAccount.fullName} ({customerAccount.email}).
         </p>
       </div>
 
@@ -495,7 +510,7 @@ export function WishlistPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
           {savedProducts.map((product) => (
             <ProductCard
               key={product.id}

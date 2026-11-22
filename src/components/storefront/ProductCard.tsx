@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import type { Product } from '../../types';
 import { ProductImage } from '../ui/ProductImage';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { formatInr } from '../../utils/format';
 
@@ -13,7 +14,10 @@ interface ProductCardProps {
 
 export function ProductCard({ product, categoryLabel }: ProductCardProps) {
   const { addToCart, toggleWishlist, isWishlisted, openCartDrawer } = useCart();
+  const { customerAccount } = useAuth();
   const { pushToast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const saved = isWishlisted(product.id);
 
   function handleAddToCart() {
@@ -32,6 +36,19 @@ export function ProductCard({ product, categoryLabel }: ProductCardProps) {
     openCartDrawer();
   }
 
+  function handleWishlistClick() {
+    if (!customerAccount) {
+      navigate('/account', {
+        state: {
+          from: `${location.pathname}${location.search}`,
+          reason: 'wishlist',
+        },
+      });
+      return;
+    }
+    toggleWishlist(product.id);
+  }
+
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-[#ECE4F5] bg-white shadow-[0_1px_4px_rgba(43,11,78,0.04)] transition-shadow duration-200 hover:shadow-[0_12px_26px_-12px_rgba(106,17,203,0.18)]">
       {/* Flush Square Product Image + Top-Right Circular Wishlist Toggle */}
@@ -47,14 +64,7 @@ export function ProductCard({ product, categoryLabel }: ProductCardProps) {
 
         <button
           type="button"
-          onClick={() => {
-            const added = toggleWishlist(product.id);
-            pushToast({
-              title: added ? 'Saved to Wishlist' : 'Removed from Wishlist',
-              description: product.name,
-              variant: 'info',
-            });
-          }}
+          onClick={handleWishlistClick}
           aria-label={
             saved ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`
           }
@@ -68,7 +78,7 @@ export function ProductCard({ product, categoryLabel }: ProductCardProps) {
         </button>
       </div>
 
-      {/* Clean Editorial Card Body */}
+      {/* Clean Modern Card Body */}
       <div className="flex flex-1 flex-col p-2.5 sm:p-3.5">
         {/* Price (Left) + Crisp Compact NEW Tag (Right) */}
         <div className="flex items-center justify-between gap-2">
@@ -80,10 +90,10 @@ export function ProductCard({ product, categoryLabel }: ProductCardProps) {
           </span>
         </div>
 
-        {/* Editorial Serif Product Title */}
+        {/* Clean Sans-Serif Product Title */}
         <Link
           to={`/product/${product.slug}`}
-          className="mt-1 line-clamp-2 font-editorial text-[12.5px] font-semibold leading-[1.35] text-[#1E1035] transition-colors hover:text-[#6A11CB] sm:text-[14px]"
+          className="mt-1 line-clamp-2 text-[12.5px] font-semibold leading-[1.35] text-[#1E1035] transition-colors hover:text-[#6A11CB] sm:text-[14px]"
         >
           {product.name}
         </Link>

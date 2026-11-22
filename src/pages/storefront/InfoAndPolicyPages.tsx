@@ -155,15 +155,15 @@ export function ContactUsPage() {
 const FAQ_ITEMS = [
   {
     q: 'Where does GiftKart currently deliver?',
-    a: 'For our initial launch, GiftKart delivers exclusively in Jalchak, West Bengal (India). Additional zones can be enabled from the Admin Panel as operations expand.',
+    a: 'For our initial launch, GiftKart delivers exclusively in Jalchak, West Bengal (India). Additional delivery zones will be added as operations expand.',
   },
   {
     q: 'How does Gift Wrapping work?',
-    a: 'You can enable Gift Wrapping on the Product or Cart page, choose from Admin-configured wrapping styles with transparent INR charges, and add a recipient name and personal gift message card.',
+    a: 'You can enable Gift Wrapping on the Product or Cart page, choose from curated wrapping styles with transparent INR charges, and add a recipient name and personal gift message card.',
   },
   {
     q: 'Are online payments or Cash on Delivery active right now?',
-    a: 'No. This release runs in Demo Order Placement mode only so you can preview the full shopping, customization, and Admin workflow locally. Cashfree is prepared as an unconnected integration interface.',
+    a: 'No. This release runs in Demo Order Placement mode only so you can preview the full shopping and customization workflow locally. Cashfree is prepared as an unconnected integration interface.',
   },
   {
     q: 'Can I preview my custom photo on photo mugs or LED frames?',
@@ -256,7 +256,7 @@ const POLICY_CONTENT: Record<
       },
       {
         heading: 'Personalized & Custom-Printed Gifts',
-        body: 'Custom mugs, printed T-shirts, and engraved LED photo frames can be cancelled within 2 hours of order confirmation before printing or engraving begins. In Demo Mode, status updates can be tested directly inside the Admin Panel.',
+        body: 'Custom mugs, printed T-shirts, and engraved LED photo frames can be cancelled within 2 hours of order confirmation before printing or engraving begins.',
       },
     ],
   },

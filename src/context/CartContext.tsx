@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { CartItem, GiftWrapSelection, GiftWrapStyle, Product } from '../types';
 import { STORAGE_KEYS, readStorage, writeStorage } from '../storage/localStorageEngine';
+import { useAuth } from './AuthContext';
 
 const DEFAULT_GIFT_WRAP: GiftWrapSelection = {
   enabled: false,
@@ -44,13 +45,20 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
+function getAccountWishlistKey(email?: string | null): string | null {
+  const normalized = email?.trim().toLowerCase();
+  if (!normalized) return null;
+  return `${STORAGE_KEYS.WISHLIST_IDS}:${normalized}`;
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { customerAccount } = useAuth();
+  const wishlistStorageKey = getAccountWishlistKey(customerAccount?.email);
+
   const [items, setItems] = useState<CartItem[]>(() =>
     readStorage<CartItem[]>(STORAGE_KEYS.CART_ITEMS, [])
   );
-  const [wishlistIds, setWishlistIds] = useState<string[]>(() =>
-    readStorage<string[]>(STORAGE_KEYS.WISHLIST_IDS, [])
-  );
+  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [giftWrap, setGiftWrap] = useState<GiftWrapSelection>(() =>
     readStorage<GiftWrapSelection>(STORAGE_KEYS.CART_GIFT_WRAP, DEFAULT_GIFT_WRAP)
   );
@@ -60,9 +68,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     writeStorage(STORAGE_KEYS.CART_ITEMS, items);
   }, [items]);
 
+  // Hydrate wishlist strictly for the currently authenticated customer account
   useEffect(() => {
-    writeStorage(STORAGE_KEYS.WISHLIST_IDS, wishlistIds);
-  }, [wishlistIds]);
+    if (!wishlistStorageKey) {
+      setWishlistIds([]);
+      return;
+    }
+    const storedForUser = readStorage<string[]>(wishlistStorageKey, []);
+    setWishlistIds(storedForUser);
+  }, [wishlistStorageKey]);
 
   useEffect(() => {
     writeStorage(STORAGE_KEYS.CART_GIFT_WRAP, giftWrap);
@@ -124,22 +138,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setGiftWrap(DEFAULT_GIFT_WRAP);
   }, []);
 
-  const toggleWishlist = useCallback((productId: string) => {
-    let added = false;
-    setWishlistIds((prev) => {
-      if (prev.includes(productId)) {
-        added = false;
-        return prev.filter((id) => id !== productId);
+  const toggleWishlist = useCallback(
+    (productId: string) => {
+      if (!wishlistStorageKey) {
+        return false;
       }
-      added = true;
-      return [...prev, productId];
-    });
-    return added;
-  }, []);
+      let added = false;
+      setWishlistIds((prev) => {
+        const next = prev.includes(productId)
+          ? ((added = false), prev.filter((id) => id !== productId))
+          : ((added = true), [...prev, productId]);
+        writeStorage(wishlistStorageKey, next);
+        return next;
+      });
+      return added;
+    },
+    [wishlistStorageKey]
+  );
 
   const isWishlisted = useCallback(
-    (productId: string) => wishlistIds.includes(productId),
-    [wishlistIds]
+    (productId: string) => Boolean(wishlistStorageKey) && wishlistIds.includes(productId),
+    [wishlistIds, wishlistStorageKey]
   );
 
   const setGiftWrapEnabled = useCallback((enabled: boolean, defaultStyle?: GiftWrapStyle) => {
