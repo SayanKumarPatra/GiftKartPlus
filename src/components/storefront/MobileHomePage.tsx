@@ -186,13 +186,41 @@ export function MobileHomePage() {
 
   return (
     <div className="min-h-screen w-full overflow-x-clip bg-gradient-to-b from-[#FFFFFF] via-[#FAF4FF] to-[#FFFFFF] pb-6">
-      {/* SECTION 2: PROMOTIONAL SLIDER BANNER (Admin-Controlled Live Slides) */}
+      {/* SECTION 2: COMPACT RECTANGULAR SEARCH BAR (Above Sliding Banner) */}
+      <section aria-label="Search gifts" className="px-3 pt-2.5 pb-2.5">
+        <form
+          onSubmit={handleSearchSubmit}
+          role="search"
+          className="flex h-[40px] w-full items-center gap-2.5 rounded-lg bg-white px-3.5 shadow-[0_4px_14px_-8px_rgba(106,17,203,0.18)] ring-1 ring-[#E5D0FF] transition-shadow focus-within:ring-2 focus-within:ring-[#6A11CB]/45"
+        >
+          <button
+            type="submit"
+            aria-label="Submit search"
+            className="flex shrink-0 items-center justify-center text-[#6A11CB]"
+          >
+            <Search className="h-[17px] w-[17px] stroke-[2.2]" />
+          </button>
+          <label htmlFor="mobile-home-search" className="sr-only">
+            Search for Gifts, Products &amp; More
+          </label>
+          <input
+            id="mobile-home-search"
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search for Gifts, Products & More..."
+            className="w-full bg-transparent text-[13px] font-medium text-[#1E1035] placeholder:text-[#7E7094] focus:outline-none"
+          />
+        </form>
+      </section>
+
+      {/* SECTION 3: FULL-WIDTH EDGE-TO-EDGE FLATTER SLIDING BANNER (Admin-Controlled Live Slides) */}
       {slideCount > 0 && (
-        <section aria-label="Promotional offers" className="px-3 pt-2.5">
+        <section aria-label="Promotional offers" className="w-full">
           <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="relative h-[164px] w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#6A11CB] via-[#8E24D6] to-[#FF4D8D] shadow-[0_10px_28px_-10px_rgba(106,17,203,0.34)] min-[390px]:h-[176px] sm:h-[224px]"
+            className="relative h-[126px] w-full overflow-hidden rounded-none bg-gradient-to-r from-[#6A11CB] via-[#8E24D6] to-[#FF4D8D] min-[390px]:h-[136px] sm:h-[176px]"
           >
             <div
               className="flex h-full w-full transition-transform duration-500 ease-out will-change-transform"
@@ -218,7 +246,7 @@ export function MobileHomePage() {
             </div>
 
             {slideCount > 1 && (
-              <div className="absolute bottom-2.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-[#2B0B4E]/35 px-2.5 py-1 backdrop-blur-xs">
+              <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-[#2B0B4E]/35 px-2.5 py-1 backdrop-blur-xs">
                 {slides.map((slide, idx) => (
                   <button
                     key={slide.id}
@@ -237,34 +265,6 @@ export function MobileHomePage() {
           </div>
         </section>
       )}
-
-      {/* SECTION 3: PILL SEARCH BAR (Search Icon Only — Zero Mic/Camera/Voice) */}
-      <section aria-label="Search gifts" className="px-3 pt-3">
-        <form
-          onSubmit={handleSearchSubmit}
-          role="search"
-          className="flex h-[46px] w-full items-center gap-2.5 rounded-full bg-white px-4 shadow-[0_8px_24px_-10px_rgba(106,17,203,0.22)] ring-1 ring-[#EBD8FF]/85 transition-shadow focus-within:ring-2 focus-within:ring-[#6A11CB]/45"
-        >
-          <button
-            type="submit"
-            aria-label="Submit search"
-            className="flex shrink-0 items-center justify-center text-[#6A11CB]"
-          >
-            <Search className="h-[18px] w-[18px] stroke-[2.2]" />
-          </button>
-          <label htmlFor="mobile-home-search" className="sr-only">
-            Search for Gifts, Products &amp; More
-          </label>
-          <input
-            id="mobile-home-search"
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search for Gifts, Products & More..."
-            className="w-full bg-transparent text-[13px] font-medium text-[#1E1035] placeholder:text-[#7E7094] focus:outline-none"
-          />
-        </form>
-      </section>
 
       {/* SECTION 4: QUICK CATEGORY NAVIGATION (5 Shortcuts — No Service Benefits Strip Below) */}
       <section aria-label="Quick categories" className="mt-3.5 px-3">

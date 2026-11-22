@@ -166,69 +166,45 @@
   display: none;
 }
 
-/* Mobile-Only Apple iOS Liquid Glass Bottom Navigation (< 900px) */
+/* Mobile-Only Frosted Liquid Glass Bottom Navigation (< 900px) */
 @media (max-width: 899.98px) {
   .gk-liquid-glass-nav {
-    position: relative;
     overflow: hidden;
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.92) 0%,
-      rgba(246, 238, 255, 0.9) 100%
+      rgba(255, 255, 255, 0.96) 0%,
+      rgba(250, 245, 255, 0.96) 100%
     );
-    border: 1px solid rgba(255, 255, 255, 0.85);
+    border-top: 1px solid rgba(235, 216, 255, 0.92);
     box-shadow:
-      0 14px 34px -10px rgba(43, 11, 78, 0.2),
-      0 4px 14px -4px rgba(106, 17, 203, 0.12),
-      inset 0 1.5px 1px rgba(255, 255, 255, 0.95),
-      inset 0 -1px 1.5px rgba(235, 216, 255, 0.6),
-      inset 1px 0 1px rgba(255, 255, 255, 0.5),
-      inset -1px 0 1px rgba(255, 255, 255, 0.5);
+      0 -8px 26px -8px rgba(43, 11, 78, 0.11),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
   }
 
   @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .gk-liquid-glass-nav {
       background: linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0.66) 0%,
-        rgba(247, 239, 255, 0.54) 55%,
-        rgba(255, 255, 255, 0.62) 100%
+        rgba(255, 255, 255, 0.89) 0%,
+        rgba(250, 245, 255, 0.87) 100%
       );
-      backdrop-filter: blur(26px) saturate(190%) brightness(1.04);
-      -webkit-backdrop-filter: blur(26px) saturate(190%) brightness(1.04);
+      backdrop-filter: blur(22px) saturate(145%);
+      -webkit-backdrop-filter: blur(22px) saturate(145%);
     }
-  }
-
-  .gk-liquid-glass-nav::before {
-    content: "";
-    position: absolute;
-    inset: 0 8px auto 8px;
-    height: 46%;
-    border-radius: 9999px;
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.58) 0%,
-      rgba(255, 255, 255, 0.14) 60%,
-      rgba(255, 255, 255, 0) 100%
-    );
-    pointer-events: none;
   }
 
   .gk-liquid-glass-capsule {
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.78) 0%,
-      rgba(235, 216, 255, 0.64) 50%,
-      rgba(235, 216, 255, 0.46) 100%
+      rgba(246, 236, 255, 0.92) 0%,
+      rgba(235, 216, 255, 0.78) 100%
     );
-    border: 1px solid rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(219, 189, 255, 0.72);
     box-shadow:
-      0 6px 16px -6px rgba(106, 17, 203, 0.24),
-      0 1px 3px rgba(106, 17, 203, 0.08),
-      inset 0 1.5px 1px rgba(255, 255, 255, 0.96),
-      inset 0 -1px 2px rgba(106, 17, 203, 0.11);
+      0 3px 10px -4px rgba(106, 17, 203, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
     transition:
-      transform 340ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
       opacity 180ms ease;
     will-change: transform, opacity;
   }

@@ -87,62 +87,59 @@ export function MobileBottomNav() {
 
   return (
     <>
-      {/* Subtle bottom clearance strictly for mobile viewports so floating glass bar never overlaps footer content */}
       <div
         aria-hidden="true"
-        className="h-[calc(26px+env(safe-area-inset-bottom,0px))] bg-[#FFF0F7] lg:hidden"
+        className="h-[env(safe-area-inset-bottom,0px)] bg-[#FFF0F7] lg:hidden"
       />
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] sm:px-4 lg:hidden">
-        <nav
-          aria-label="Mobile bottom navigation"
-          className="gk-liquid-glass-nav pointer-events-auto mx-auto max-w-[420px] rounded-full p-[5px]"
-        >
-          <div className="relative grid grid-cols-5 items-center">
-            {/* Sliding iOS Liquid Glass Active Capsule */}
-            <div
-              aria-hidden="true"
-              className={`gk-liquid-glass-capsule pointer-events-none absolute inset-y-0 left-0 w-1/5 rounded-full ${
-                hasActiveTab ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{
-                transform: `translate3d(${capsuleIndex * 100}%, 0, 0)`,
-              }}
-            />
+      <nav
+        aria-label="Mobile bottom navigation"
+        className="gk-liquid-glass-nav fixed inset-x-0 bottom-0 z-40 w-full rounded-none px-1.5 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] lg:hidden"
+      >
+        <div className="relative grid grid-cols-5 items-center">
+          {/* Sliding Lavender Glass Active Capsule */}
+          <div
+            aria-hidden="true"
+            className={`gk-liquid-glass-capsule pointer-events-none absolute inset-y-0 left-0 w-1/5 rounded-2xl ${
+              hasActiveTab ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{
+              transform: `translate3d(${capsuleIndex * 100}%, 0, 0)`,
+            }}
+          />
 
-            {MOBILE_NAV_ITEMS.map(({ id, label, to, Icon }, idx) => {
-              const isActive = idx === activeIndex;
+          {MOBILE_NAV_ITEMS.map(({ id, label, to, Icon }, idx) => {
+            const isActive = idx === activeIndex;
 
-              return (
-                <Link
-                  key={id}
-                  to={to}
-                  aria-current={isActive ? 'page' : undefined}
-                  className="relative z-10 flex min-h-[50px] flex-col items-center justify-center gap-[3px] rounded-full px-1 py-1.5 text-center transition-transform duration-150 ease-out active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6A11CB]/50 focus-visible:ring-inset"
+            return (
+              <Link
+                key={id}
+                to={to}
+                aria-current={isActive ? 'page' : undefined}
+                className="relative z-10 flex min-h-[50px] flex-col items-center justify-center gap-[3px] rounded-2xl px-1 py-1.5 text-center transition-transform duration-150 ease-out active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6A11CB]/50 focus-visible:ring-inset"
+              >
+                <Icon
+                  aria-hidden="true"
+                  className={`h-[19px] w-[19px] transition-colors duration-200 ${
+                    isActive
+                      ? 'stroke-[2.15] text-[#6A11CB]'
+                      : 'stroke-[1.8] text-[#2B0B4E]'
+                  }`}
+                />
+                <span
+                  className={`whitespace-nowrap text-[10.5px] leading-none tracking-[-0.01em] transition-colors duration-200 ${
+                    isActive
+                      ? 'font-semibold text-[#6A11CB]'
+                      : 'font-medium text-[#2B0B4E]'
+                  }`}
                 >
-                  <Icon
-                    aria-hidden="true"
-                    className={`h-[19px] w-[19px] transition-colors duration-200 ${
-                      isActive
-                        ? 'stroke-[2.1] text-[#6A11CB]'
-                        : 'stroke-[1.75] text-[#2B0B4E]/85'
-                    }`}
-                  />
-                  <span
-                    className={`whitespace-nowrap text-[10.5px] leading-none tracking-[-0.01em] transition-colors duration-200 ${
-                      isActive
-                        ? 'font-semibold text-[#6A11CB]'
-                        : 'font-medium text-[#2B0B4E]/85'
-                    }`}
-                  >
-                    {label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-      </div>
+                  {label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </>
   );
 }
