@@ -4,7 +4,6 @@ import {
   ChevronRight,
   Heart,
   Menu,
-  Search,
   ShoppingCart,
   X,
 } from 'lucide-react';
@@ -14,10 +13,10 @@ import { useCart } from '../../context/CartContext';
 import { OFFICIAL_OCCASIONS } from '../../config/appConfig';
 
 interface MobileHeaderProps {
-  onOpenSearch: () => void;
+  onOpenSearch?: () => void;
 }
 
-export function MobileHeader({ onOpenSearch }: MobileHeaderProps) {
+export function MobileHeader(_props: MobileHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandedCatId, setExpandedCatId] = useState<string | null>('cat-coffee-mug');
   const { data: categories } = useCategories();
@@ -30,39 +29,36 @@ export function MobileHeader({ onOpenSearch }: MobileHeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-[52px] items-center justify-between border-b border-[#EBD8FF]/90 bg-white/95 px-2.5 backdrop-blur-xl lg:hidden">
-        <div className="flex min-w-0 items-center gap-1">
+      <header className="sticky top-0 z-40 grid h-[56px] grid-cols-[76px_1fr_76px] items-center border-b border-[#EFE3FF]/80 bg-white/96 px-2 backdrop-blur-md lg:hidden">
+        {/* Left: Hamburger Menu */}
+        <div className="flex items-center justify-start">
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#2B0B4E] hover:bg-[#F8F2FF]"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-[#2B0B4E] transition-colors active:bg-[#F6EEFF]"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-[22px] w-[22px] stroke-[2]" />
           </button>
-          <Link to="/" aria-label="GiftKart Home" className="min-w-0">
+        </div>
+
+        {/* Center: Visually Centered Official GiftKart Logo */}
+        <div className="flex items-center justify-center overflow-hidden">
+          <Link to="/" aria-label="GiftKart Home" className="inline-flex items-center justify-center">
             <BrandLogo size="sm" />
           </Link>
         </div>
 
-        <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            aria-label="Search gifts"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-[#2B0B4E] hover:bg-[#F8F2FF]"
-          >
-            <Search className="h-5 w-5" />
-          </button>
-
+        {/* Right: Wishlist & Shopping Cart */}
+        <div className="flex items-center justify-end gap-0.5">
           <Link
             to="/wishlist"
             aria-label={`Wishlist (${wishlistIds.length})`}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full text-[#2B0B4E] hover:bg-[#FFF0F6]"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#2B0B4E] transition-colors active:bg-[#FFF0F6]"
           >
-            <Heart className="h-5 w-5 text-[#FF4D8D]" />
+            <Heart className="h-[20px] w-[20px] stroke-[1.9]" />
             {wishlistIds.length > 0 && (
-              <span className="absolute right-0.5 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF4D8D] px-1 font-mono text-[9px] font-bold tabular-nums text-white">
+              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF4D8D] px-1 text-[9px] font-bold tabular-nums text-white">
                 {wishlistIds.length}
               </span>
             )}
@@ -72,10 +68,10 @@ export function MobileHeader({ onOpenSearch }: MobileHeaderProps) {
             type="button"
             onClick={openCartDrawer}
             aria-label={`Cart (${itemCount})`}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full text-[#6A11CB] hover:bg-[#F8F2FF]"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#2B0B4E] transition-colors active:bg-[#F6EEFF]"
           >
-            <ShoppingCart className="h-5 w-5" />
-            <span className="absolute right-0.5 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF4D8D] px-1 font-mono text-[9px] font-bold tabular-nums text-white">
+            <ShoppingCart className="h-[20px] w-[20px] stroke-[1.9]" />
+            <span className="absolute right-0 top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF4D8D] px-1 text-[9px] font-bold tabular-nums text-white">
               {itemCount}
             </span>
           </button>

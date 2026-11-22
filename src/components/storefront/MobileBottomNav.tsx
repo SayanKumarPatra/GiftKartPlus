@@ -1,67 +1,44 @@
 import { NavLink } from 'react-router-dom';
-import { Grid2X2, Home, Sparkles, Store, User } from 'lucide-react';
+import { Gift, Heart, Home, LayoutGrid, User } from 'lucide-react';
 
 export function MobileBottomNav() {
-  const tabClass = ({ isActive }: { isActive: boolean }) =>
-    `flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors ${
-      isActive ? 'text-[#6A11CB]' : 'text-[#6E5B85]'
-    }`;
+  const navItems = [
+    { label: 'Home', to: '/', end: true, Icon: Home },
+    { label: 'Categories', to: '/categories', end: false, Icon: LayoutGrid },
+    { label: 'Customize', to: '/customize', end: false, Icon: Gift },
+    { label: 'Wishlist', to: '/wishlist', end: false, Icon: Heart },
+    { label: 'Account', to: '/account', end: false, Icon: User },
+  ];
 
   return (
     <nav
       aria-label="Mobile bottom navigation"
-      className="fixed bottom-0 left-0 right-0 z-40 flex h-[64px] items-center justify-around border-t border-[#EBD8FF] bg-white/96 px-1 shadow-[0_-4px_20px_rgba(106,17,203,0.08)] backdrop-blur-xl lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border-t border-[#EFE3FF] bg-white/96 px-1.5 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-[0_-6px_24px_-6px_rgba(106,17,203,0.12)] backdrop-blur-xl lg:hidden"
     >
-      <NavLink to="/" end className={tabClass}>
-        {({ isActive }) => (
-          <>
-            <Home className={`h-5 w-5 ${isActive ? 'text-[#FF4D8D]' : ''}`} />
-            <span>Home</span>
-          </>
-        )}
-      </NavLink>
-
-      <NavLink to="/shop" className={tabClass}>
-        {({ isActive }) => (
-          <>
-            <Store className={`h-5 w-5 ${isActive ? 'text-[#FF4D8D]' : ''}`} />
-            <span>Shop</span>
-          </>
-        )}
-      </NavLink>
-
-      <NavLink to="/customize" className={tabClass}>
-        {({ isActive }) => (
-          <>
-            <span
-              className={`flex h-7 w-7 items-center justify-center rounded-full ${
-                isActive ? 'bg-[#FF4D8D] text-white' : 'bg-[#FFF0F6] text-[#FF4D8D]'
-              }`}
-            >
-              <Sparkles className="h-4 w-4" />
-            </span>
-            <span>Customize</span>
-          </>
-        )}
-      </NavLink>
-
-      <NavLink to="/categories" className={tabClass}>
-        {({ isActive }) => (
-          <>
-            <Grid2X2 className={`h-5 w-5 ${isActive ? 'text-[#FF4D8D]' : ''}`} />
-            <span>Categories</span>
-          </>
-        )}
-      </NavLink>
-
-      <NavLink to="/account" className={tabClass}>
-        {({ isActive }) => (
-          <>
-            <User className={`h-5 w-5 ${isActive ? 'text-[#FF4D8D]' : ''}`} />
-            <span>Account</span>
-          </>
-        )}
-      </NavLink>
+      <div className="grid grid-cols-5 items-center gap-1">
+        {navItems.map(({ label, to, end, Icon }) => (
+          <NavLink key={to} to={to} end={end} className="block">
+            {({ isActive }) => (
+              <span
+                className={`flex min-h-[50px] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 text-[10.5px] transition-colors ${
+                  isActive
+                    ? 'bg-[#F3E5FF] font-bold text-[#6A11CB]'
+                    : 'font-medium text-[#2B0B4E]'
+                }`}
+              >
+                <Icon
+                  className={`h-[19px] w-[19px] ${
+                    isActive
+                      ? 'stroke-[2.2] text-[#6A11CB]'
+                      : 'stroke-[1.8] text-[#2B0B4E]'
+                  }`}
+                />
+                <span className="truncate leading-tight">{label}</span>
+              </span>
+            )}
+          </NavLink>
+        ))}
+      </div>
     </nav>
   );
 }

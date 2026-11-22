@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Headphones, MapPin, PackageSearch, Sparkles } from 'lucide-react';
+import { Headphones, PackageSearch, Sparkles } from 'lucide-react';
 import { useStoreSettings } from '../../hooks/useStoreData';
 
 export function AnnouncementBar() {
@@ -13,8 +13,6 @@ export function AnnouncementBar() {
   const desktopText =
     announcement?.desktopText ??
     'Delivery in Jalchak • Customization Available • Demo Orders Only (No COD)';
-  const mobileText =
-    announcement?.mobileText ?? 'Serving Jalchak | Demo Orders Only';
   const showSupport = announcement?.showSupportLink ?? true;
   const showTrack = announcement?.showTrackOrderLink ?? true;
 
@@ -22,10 +20,10 @@ export function AnnouncementBar() {
     <div
       role="region"
       aria-label="Store announcements"
-      className="w-full rounded-none bg-gradient-to-r from-[#6A11CB] via-[#8A2BE2] to-[#FF4D8D] text-white"
+      className="hidden w-full rounded-none bg-gradient-to-r from-[#6A11CB] via-[#8A2BE2] to-[#FF4D8D] text-white lg:block"
     >
-      {/* Desktop Announcement Bar */}
-      <div className="mx-auto hidden h-8 max-w-7xl items-center justify-between gap-4 px-6 text-xs font-semibold lg:flex">
+      {/* Desktop Announcement Bar (Unchanged) */}
+      <div className="mx-auto flex h-8 max-w-7xl items-center justify-between gap-4 px-6 text-xs font-semibold">
         <div className="flex items-center gap-2 truncate">
           <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#FFE1EF]" />
           <span className="truncate">{desktopText}</span>
@@ -51,12 +49,6 @@ export function AnnouncementBar() {
             </Link>
           )}
         </div>
-      </div>
-
-      {/* Mobile Full-Width Edge-to-Edge Announcement Strip */}
-      <div className="flex h-7 w-full items-center justify-center gap-1.5 px-3 text-center text-[11px] font-semibold lg:hidden">
-        <MapPin className="h-3 w-3 shrink-0 text-[#FFE1EF]" />
-        <span className="truncate">{mobileText}</span>
       </div>
     </div>
   );
