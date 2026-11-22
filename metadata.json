@@ -1,0 +1,6 @@
+{
+  "name": "GiftKart",
+  "description": "Har Gift Mein Ek Kahani. Personalized and curated gifting storefront for Durgapur & Kolkata with an integrated single Admin Panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
