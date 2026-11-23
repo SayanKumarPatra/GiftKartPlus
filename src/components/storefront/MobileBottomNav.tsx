@@ -97,16 +97,18 @@ export function MobileBottomNav() {
         className="gk-liquid-glass-nav fixed inset-x-0 bottom-0 z-40 w-full rounded-none px-1.5 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] lg:hidden"
       >
         <div className="relative grid grid-cols-5 items-center">
-          {/* Sliding Lavender Glass Active Capsule */}
+          {/* Inner Sliding Translucent Lavender Active Capsule */}
           <div
             aria-hidden="true"
-            className={`gk-liquid-glass-capsule pointer-events-none absolute inset-y-0 left-0 w-1/5 rounded-2xl ${
+            className={`gk-mobile-nav-capsule-track pointer-events-none absolute inset-y-[1px] left-0 w-1/5 px-1 ${
               hasActiveTab ? 'opacity-100' : 'opacity-0'
             }`}
             style={{
               transform: `translate3d(${capsuleIndex * 100}%, 0, 0)`,
             }}
-          />
+          >
+            <div className="gk-liquid-glass-capsule h-full w-full rounded-[18px]" />
+          </div>
 
           {MOBILE_NAV_ITEMS.map(({ id, label, to, Icon }, idx) => {
             const isActive = idx === activeIndex;
@@ -116,21 +118,22 @@ export function MobileBottomNav() {
                 key={id}
                 to={to}
                 aria-current={isActive ? 'page' : undefined}
-                className="relative z-10 flex min-h-[50px] flex-col items-center justify-center gap-[3px] rounded-2xl px-1 py-1.5 text-center transition-transform duration-150 ease-out active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-inset"
+                className="gk-mobile-nav-item relative z-10 flex min-h-[52px] flex-col items-center justify-center gap-[4px] rounded-[18px] px-1 py-1.5 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EBD8FF]/80 focus-visible:ring-inset"
               >
                 <Icon
                   aria-hidden="true"
-                  className={`h-[19px] w-[19px] transition-colors duration-200 ${
+                  fill={isActive ? 'rgba(106, 17, 203, 0.16)' : 'none'}
+                  className={`gk-mobile-nav-icon h-[20px] w-[20px] shrink-0 ${
                     isActive
-                      ? 'stroke-[2.2] text-white'
-                      : 'stroke-[1.8] text-white/80'
+                      ? 'gk-mobile-nav-icon--active stroke-[2.15]'
+                      : 'stroke-[1.75]'
                   }`}
                 />
                 <span
-                  className={`whitespace-nowrap text-[10.5px] leading-none tracking-[-0.01em] transition-colors duration-200 ${
+                  className={`gk-mobile-nav-label whitespace-nowrap text-[10.5px] leading-[1.15] tracking-[-0.01em] ${
                     isActive
-                      ? 'font-semibold text-white'
-                      : 'font-medium text-white/80'
+                      ? 'gk-mobile-nav-label--active font-semibold'
+                      : 'font-medium'
                   }`}
                 >
                   {label}

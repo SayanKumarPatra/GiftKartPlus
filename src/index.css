@@ -192,17 +192,50 @@
   .gk-liquid-glass-capsule {
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.26) 0%,
-      rgba(235, 216, 255, 0.16) 100%
+      rgba(248, 240, 255, 0.94) 0%,
+      rgba(235, 216, 255, 0.88) 100%
     );
-    border: 1px solid rgba(255, 255, 255, 0.34);
+    border: 1px solid rgba(255, 255, 255, 0.72);
     box-shadow:
-      0 4px 12px -4px rgba(20, 4, 42, 0.32),
-      inset 0 1px 0 rgba(255, 255, 255, 0.38);
+      0 4px 12px -4px rgba(24, 5, 48, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  }
+
+  .gk-mobile-nav-capsule-track {
     transition:
-      transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
       opacity 180ms ease;
     will-change: transform, opacity;
+  }
+
+  .gk-mobile-nav-item {
+    transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .gk-mobile-nav-item:active {
+    transform: scale(0.94);
+  }
+
+  .gk-mobile-nav-icon {
+    color: rgba(243, 232, 255, 0.88);
+    transition:
+      color 200ms ease,
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .gk-mobile-nav-icon--active {
+    color: #6A11CB;
+    transform: translateY(-0.5px) scale(1.04);
+  }
+
+  .gk-mobile-nav-label {
+    color: rgba(243, 232, 255, 0.88);
+    transition: color 200ms ease;
+  }
+
+  .gk-mobile-nav-label--active {
+    color: #6A11CB;
   }
 }
 
