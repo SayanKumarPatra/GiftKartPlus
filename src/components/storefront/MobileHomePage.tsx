@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowRight, Heart, Search } from 'lucide-react';
+import { OCCASION_ICONS, STUDIO_MEDIA } from '../../config/appConfig';
 import {
-  ArrowRight,
-  Gift,
-  Headphones,
-  Heart,
-  LayoutGrid,
-  Search,
-  Sparkles,
-  Smile,
-} from 'lucide-react';
-import { useProducts, useStoreSettings } from '../../hooks/useStoreData';
+  useCategories,
+  useProducts,
+  useStoreSettings,
+} from '../../hooks/useStoreData';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { ProductImage } from '../ui/ProductImage';
@@ -21,50 +17,22 @@ import occasionAnniversaryImg from '../../assets/images/mobile_occasion_annivers
 import occasionRomanticImg from '../../assets/images/mobile_occasion_romantic_1795372827257.jpg';
 import occasionFestiveImg from '../../assets/images/mobile_occasion_festive_1795372827888.jpg';
 
-const MOBILE_QUICK_CATEGORIES = [
-  {
-    id: 'mq-all-gifts',
-    label: 'All Gifts',
-    to: '/shop',
-    Icon: Gift,
-    iconBg: 'bg-gradient-to-br from-[#6A11CB] to-[#9B27D8] text-white',
-    cardBg: 'from-[#F8F0FF] to-[#EFE1FF]',
-  },
-  {
-    id: 'mq-personalized',
-    label: 'Personalized',
-    to: '/customize',
-    Icon: Sparkles,
-    iconBg: 'bg-gradient-to-br from-[#FF4D8D] to-[#E62E73] text-white',
-    cardBg: 'from-[#FFF1F7] to-[#FFE2EE]',
-  },
-  {
-    id: 'mq-toys-games',
-    label: 'Toys & Games',
-    to: '/category/handmade-gift',
-    Icon: Smile,
-    iconBg: 'bg-gradient-to-br from-[#8B2CE2] to-[#FF4D8D] text-white',
-    cardBg: 'from-[#FAF1FF] to-[#F3E3FF]',
-  },
-  {
-    id: 'mq-accessories',
-    label: 'Accessories',
-    to: '/category/personalized-accessories',
-    Icon: Headphones,
-    iconBg: 'bg-gradient-to-br from-[#6A11CB] to-[#7D2AE8] text-white',
-    cardBg: 'from-[#F6EEFF] to-[#ECE0FF]',
-  },
-  {
-    id: 'mq-more',
-    label: 'More',
-    to: '/categories',
-    Icon: LayoutGrid,
-    iconBg: 'bg-white text-[#6A11CB] ring-1 ring-[#6A11CB]/25',
-    cardBg: 'from-[#F9F3FF] to-[#F1E4FF]',
-  },
-] as const;
+interface QuickCategoryItem {
+  id: string;
+  label: string;
+  to: string;
+  imageUrl: string;
+}
 
-const MOBILE_OCCASION_CARDS = [
+interface MobileOccasionItem {
+  id: string;
+  label: string;
+  to: string;
+  imageUrl: string;
+  isCutout?: boolean;
+}
+
+const MOBILE_OCCASION_ITEMS: MobileOccasionItem[] = [
   {
     id: 'mocc-birthday',
     label: 'Birthday',
@@ -79,7 +47,7 @@ const MOBILE_OCCASION_CARDS = [
   },
   {
     id: 'mocc-romantic',
-    label: 'Love & Romantic',
+    label: 'Love & Couple',
     to: '/shop?occasion=Couple',
     imageUrl: occasionRomanticImg,
   },
@@ -89,10 +57,39 @@ const MOBILE_OCCASION_CARDS = [
     to: '/shop?occasion=Festival',
     imageUrl: occasionFestiveImg,
   },
-] as const;
+  {
+    id: 'mocc-friendship',
+    label: 'Friendship',
+    to: '/shop?occasion=Friendship',
+    imageUrl: OCCASION_ICONS.friendship,
+    isCutout: true,
+  },
+  {
+    id: 'mocc-corporate',
+    label: 'Corporate',
+    to: '/shop?occasion=Corporate',
+    imageUrl: OCCASION_ICONS.corporate,
+    isCutout: true,
+  },
+  {
+    id: 'mocc-return',
+    label: 'Return Gifts',
+    to: '/shop?occasion=Return%20Gifts',
+    imageUrl: OCCASION_ICONS.returnGifts,
+    isCutout: true,
+  },
+  {
+    id: 'mocc-special',
+    label: 'Special Day',
+    to: '/shop?occasion=Special%20Occasion',
+    imageUrl: OCCASION_ICONS.specialOccasion,
+    isCutout: true,
+  },
+];
 
 export function MobileHomePage() {
   const { data: settings } = useStoreSettings();
+  const { data: categories } = useCategories();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { toggleWishlist, isWishlisted } = useCart();
   const { customerAccount } = useAuth();
@@ -124,6 +121,34 @@ export function MobileHomePage() {
     return () => window.clearInterval(timer);
   }, [slideCount, resetTick]);
 
+  const quickCategoryItems = useMemo<QuickCategoryItem[]>(() => {
+    const baseItems: QuickCategoryItem[] = [
+      {
+        id: 'mq-all-gifts',
+        label: 'All Gifts',
+        to: '/shop',
+        imageUrl: STUDIO_MEDIA.specialOccasionGifts,
+      },
+      {
+        id: 'mq-personalized',
+        label: 'Personalized',
+        to: '/customize',
+        imageUrl: STUDIO_MEDIA.heroPersonalized,
+      },
+    ];
+
+    const dynamicItems: QuickCategoryItem[] = [...categories]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((cat) => ({
+        id: cat.id,
+        label: cat.name,
+        to: `/category/${cat.slug}`,
+        imageUrl: cat.imageUrl || STUDIO_MEDIA.giftBox,
+      }));
+
+    return [...baseItems, ...dynamicItems];
+  }, [categories]);
+
   const featuredProducts = useMemo(() => {
     const featured = products.filter((p) => p.isFeatured || p.isBestSeller);
     const remaining = products.filter((p) => !p.isFeatured && !p.isBestSeller);
@@ -143,7 +168,13 @@ export function MobileHomePage() {
   }
 
   function handleTouchEnd(e: React.TouchEvent) {
-    if (touchStartX.current === null || touchStartY.current === null || slideCount <= 1) return;
+    if (
+      touchStartX.current === null ||
+      touchStartY.current === null ||
+      slideCount <= 1
+    ) {
+      return;
+    }
     const touch = e.changedTouches[0];
     if (!touch) return;
     const deltaX = touch.clientX - touchStartX.current;
@@ -185,9 +216,9 @@ export function MobileHomePage() {
   }
 
   return (
-    <div className="min-h-screen w-full overflow-x-clip bg-gradient-to-b from-[#FFFFFF] via-[#FAF4FF] to-[#FFFFFF] pb-6">
+    <div className="min-h-screen w-full overflow-x-clip bg-gradient-to-b from-[#FFFFFF] via-[#FAF4FF] to-[#FFFFFF] pb-4">
       {/* SECTION 2: COMPACT RECTANGULAR SEARCH BAR (Above Sliding Banner) */}
-      <section aria-label="Search gifts" className="px-3 pt-2.5 pb-2.5">
+      <section aria-label="Search gifts" className="px-2.5 pt-2 pb-2">
         <form
           onSubmit={handleSearchSubmit}
           role="search"
@@ -220,7 +251,7 @@ export function MobileHomePage() {
           <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="relative h-[126px] w-full overflow-hidden rounded-none bg-gradient-to-r from-[#6A11CB] via-[#8E24D6] to-[#FF4D8D] min-[390px]:h-[136px] sm:h-[176px]"
+            className="relative h-[124px] w-full overflow-hidden rounded-none bg-gradient-to-r from-[#6A11CB] via-[#8E24D6] to-[#FF4D8D] min-[390px]:h-[134px] sm:h-[174px]"
           >
             <div
               className="flex h-full w-full transition-transform duration-500 ease-out will-change-transform"
@@ -266,106 +297,113 @@ export function MobileHomePage() {
         </section>
       )}
 
-      {/* SECTION 4: QUICK CATEGORY NAVIGATION (5 Shortcuts — No Service Benefits Strip Below) */}
-      <section aria-label="Quick categories" className="mt-3.5 px-3">
-        <div className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto rounded-2xl bg-white/85 p-2.5 shadow-[0_6px_22px_-12px_rgba(106,17,203,0.16)] ring-1 ring-[#EBD8FF]/70 sm:grid sm:grid-cols-5 sm:overflow-visible">
-          {MOBILE_QUICK_CATEGORIES.map(({ id, label, to, Icon, iconBg, cardBg }) => (
+      {/* SECTION 4: COMPACT HORIZONTAL IMAGE CATEGORY STRIP (All Options Scrollable — No Wrapper Card, No "More") */}
+      <section aria-label="All gift categories" className="mt-2 w-full">
+        <div className="no-scrollbar flex snap-x snap-mandatory gap-1.5 overflow-x-auto px-2 py-0.5">
+          {quickCategoryItems.map((item) => (
             <Link
-              key={id}
-              to={to}
-              className={`group flex min-w-[66px] flex-1 shrink-0 snap-start flex-col items-center justify-center rounded-xl bg-gradient-to-b px-1.5 py-2.5 text-center ring-1 ring-[#EBD8FF]/55 transition-transform duration-150 active:scale-95 ${cardBg}`}
+              key={item.id}
+              to={item.to}
+              className="group flex w-[66px] shrink-0 snap-start flex-col items-center text-center transition-transform duration-150 active:scale-95"
             >
-              <span
-                className={`flex h-10 w-10 items-center justify-center rounded-xl shadow-xs ${iconBg}`}
-              >
-                <Icon className="h-5 w-5 stroke-[2]" />
-              </span>
-              <span className="mt-1.5 line-clamp-1 text-[10.5px] font-semibold leading-tight text-[#1E1035]">
-                {label}
+              <div className="h-[44px] w-full overflow-hidden rounded-lg bg-[#F5ECFF]">
+                <img
+                  src={item.imageUrl}
+                  alt={item.label}
+                  loading="eager"
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <span className="mt-1 line-clamp-1 w-full text-[10px] font-semibold leading-tight text-[#1E1035]">
+                {item.label}
               </span>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* SECTION 5: SHOP BY OCCASION (4 Studio Photography Cards) */}
-      <section aria-labelledby="mobile-occasion-heading" className="mt-5 px-3">
-        <div className="flex items-center justify-between gap-2">
+      {/* SECTION 5: SHOP BY OCCASION (Compact Flatter Horizontal Scroll Strip — All 8 Occasions) */}
+      <section aria-labelledby="mobile-occasion-heading" className="mt-2.5 w-full">
+        <div className="flex items-center justify-between gap-2 px-2.5">
           <h2
             id="mobile-occasion-heading"
-            className="flex items-center gap-2 text-[16px] font-bold tracking-tight text-[#1E1035]"
+            className="flex items-center gap-1.5 text-[14.5px] font-bold tracking-tight text-[#1E1035]"
           >
             <span
               aria-hidden="true"
-              className="h-4 w-[3.5px] rounded-full bg-[#FF4D8D]"
+              className="h-3.5 w-[3px] rounded-full bg-[#FF4D8D]"
             />
             <span>Shop by Occasion</span>
           </h2>
           <Link
             to="/shop"
-            className="inline-flex items-center gap-1 text-xs font-bold text-[#FF4D8D] active:opacity-75"
+            className="inline-flex items-center gap-0.5 text-[11.5px] font-bold text-[#FF4D8D] active:opacity-75"
           >
             <span>View All</span>
-            <ArrowRight className="h-3.5 w-3.5" />
+            <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
 
-        <div className="no-scrollbar mt-2.5 flex snap-x snap-mandatory gap-2 overflow-x-auto pb-0.5 min-[390px]:grid min-[390px]:grid-cols-4 min-[390px]:overflow-visible">
-          {MOBILE_OCCASION_CARDS.map((card) => (
+        <div className="no-scrollbar mt-1.5 flex snap-x snap-mandatory gap-1.5 overflow-x-auto px-2 py-0.5">
+          {MOBILE_OCCASION_ITEMS.map((item) => (
             <Link
-              key={card.id}
-              to={card.to}
-              className="group flex w-[88px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl bg-[#F6ECFF]/90 shadow-[0_6px_16px_-8px_rgba(106,17,203,0.18)] ring-1 ring-[#EBD8FF]/70 transition-transform duration-150 active:scale-[0.97] min-[390px]:w-auto"
+              key={item.id}
+              to={item.to}
+              className="group flex w-[76px] shrink-0 snap-start flex-col items-center text-center transition-transform duration-150 active:scale-95"
             >
-              <div className="aspect-square w-full overflow-hidden bg-[#FFF0F6]">
+              <div className="h-[46px] w-full overflow-hidden rounded-lg bg-gradient-to-br from-[#F8EEFF] to-[#FFEBF4]">
                 <img
-                  src={card.imageUrl}
-                  alt={card.label}
+                  src={item.imageUrl}
+                  alt={item.label}
                   loading="eager"
-                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                  className={
+                    item.isCutout
+                      ? 'h-full w-full object-contain p-1'
+                      : 'h-full w-full object-cover'
+                  }
                 />
               </div>
-              <div className="flex min-h-[34px] flex-1 items-center justify-center px-1 py-1.5 text-center">
-                <span className="line-clamp-2 text-[11px] font-semibold leading-[1.2] text-[#1E1035]">
-                  {card.label}
-                </span>
-              </div>
+              <span className="mt-1 line-clamp-1 w-full text-[10px] font-semibold leading-tight text-[#1E1035]">
+                {item.label}
+              </span>
             </Link>
           ))}
         </div>
       </section>
 
       {/* SECTION 6: FEATURED COLLECTION (Real Store Products) */}
-      <section aria-labelledby="mobile-featured-heading" className="mt-5 px-3">
+      <section aria-labelledby="mobile-featured-heading" className="mt-3 px-2.5">
         <div className="flex items-center justify-between gap-2">
           <h2
             id="mobile-featured-heading"
-            className="flex items-center gap-2 text-[16px] font-bold tracking-tight text-[#1E1035]"
+            className="flex items-center gap-1.5 text-[14.5px] font-bold tracking-tight text-[#1E1035]"
           >
             <span
               aria-hidden="true"
-              className="h-4 w-[3.5px] rounded-full bg-[#FF4D8D]"
+              className="h-3.5 w-[3px] rounded-full bg-[#FF4D8D]"
             />
             <span>Featured Collection</span>
           </h2>
           <Link
             to="/shop"
-            className="inline-flex items-center gap-1 text-xs font-bold text-[#FF4D8D] active:opacity-75"
+            className="inline-flex items-center gap-0.5 text-[11.5px] font-bold text-[#FF4D8D] active:opacity-75"
           >
             <span>View All</span>
-            <ArrowRight className="h-3.5 w-3.5" />
+            <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
 
         {productsLoading ? (
-          <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+          <div className="mt-2 grid grid-cols-2 gap-2">
             {Array.from({ length: 6 }).map((_, idx) => (
               <div
                 key={idx}
-                className="overflow-hidden rounded-2xl bg-white ring-1 ring-[#EBD8FF]/70"
+                className="overflow-hidden rounded-xl bg-white ring-1 ring-[#EBD8FF]/70"
               >
                 <div className="aspect-square animate-pulse bg-[#F4EBFF]" />
-                <div className="space-y-1.5 p-2.5">
+                <div className="space-y-1.5 p-2">
                   <div className="h-3.5 w-4/5 animate-pulse rounded bg-[#F4EBFF]" />
                   <div className="h-3.5 w-1/2 animate-pulse rounded bg-[#F4EBFF]" />
                 </div>
@@ -373,7 +411,7 @@ export function MobileHomePage() {
             ))}
           </div>
         ) : (
-          <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+          <div className="mt-2 grid grid-cols-2 gap-2">
             {featuredProducts.map((product) => {
               const saved = isWishlisted(product.id);
               const hasDiscount =
@@ -383,7 +421,7 @@ export function MobileHomePage() {
               return (
                 <article
                   key={product.id}
-                  className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_18px_-10px_rgba(106,17,203,0.18)] ring-1 ring-[#EBD8FF]/75"
+                  className="group flex flex-col overflow-hidden rounded-xl bg-white shadow-[0_6px_18px_-10px_rgba(106,17,203,0.16)] ring-1 ring-[#EBD8FF]/75"
                 >
                   <div className="relative overflow-hidden bg-[#FAF6FF]">
                     <Link to={`/product/${product.slug}`} className="block">
@@ -416,13 +454,13 @@ export function MobileHomePage() {
 
                   <Link
                     to={`/product/${product.slug}`}
-                    className="flex flex-1 flex-col justify-between p-2.5"
+                    className="flex flex-1 flex-col justify-between p-2"
                   >
-                    <h3 className="line-clamp-2 text-[12px] font-semibold leading-[1.35] text-[#1E1035]">
+                    <h3 className="line-clamp-2 text-[12px] font-semibold leading-[1.32] text-[#1E1035]">
                       {product.name}
                     </h3>
 
-                    <div className="mt-1.5 flex items-baseline gap-1.5">
+                    <div className="mt-1 flex items-baseline gap-1.5">
                       <span className="text-[13.5px] font-bold tabular-nums text-[#6A11CB]">
                         {formatInr(product.priceInr)}
                       </span>
