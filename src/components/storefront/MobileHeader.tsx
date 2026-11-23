@@ -27,16 +27,24 @@ export function MobileHeader(_props: MobileHeaderProps) {
     setMenuOpen(false);
   }, [location.pathname, location.search]);
 
+  const isHome = location.pathname === '/';
+
   return (
     <>
-      <header className="sticky top-0 z-40 grid h-[56px] grid-cols-[76px_1fr_76px] items-center border-b border-[#EFE3FF]/80 bg-white/96 px-2 backdrop-blur-md lg:hidden">
+      <header
+        className={`sticky top-0 z-40 grid h-[56px] grid-cols-[76px_1fr_76px] items-center px-2 backdrop-blur-md lg:hidden ${
+          isHome
+            ? 'border-b border-transparent bg-[#FDE4EC]/95'
+            : 'border-b border-[#EFE3FF]/80 bg-white/96'
+        }`}
+      >
         {/* Left: Hamburger Menu */}
         <div className="flex items-center justify-start">
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-[#2B0B4E] transition-colors active:bg-[#F6EEFF]"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-[#4B148C] transition-colors active:bg-[#EBD8FF]/50"
           >
             <Menu className="h-[22px] w-[22px] stroke-[2]" />
           </button>
@@ -54,7 +62,7 @@ export function MobileHeader(_props: MobileHeaderProps) {
           <Link
             to="/wishlist"
             aria-label={`Wishlist (${wishlistIds.length})`}
-            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#2B0B4E] transition-colors active:bg-[#FFF0F6]"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#4B148C] transition-colors active:bg-[#EBD8FF]/50"
           >
             <Heart className="h-[20px] w-[20px] stroke-[1.9]" />
             {wishlistIds.length > 0 && (
@@ -68,12 +76,14 @@ export function MobileHeader(_props: MobileHeaderProps) {
             type="button"
             onClick={openCartDrawer}
             aria-label={`Cart (${itemCount})`}
-            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#2B0B4E] transition-colors active:bg-[#F6EEFF]"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#4B148C] transition-colors active:bg-[#EBD8FF]/50"
           >
             <ShoppingCart className="h-[20px] w-[20px] stroke-[1.9]" />
-            <span className="absolute right-0 top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF4D8D] px-1 text-[9px] font-bold tabular-nums text-white">
-              {itemCount}
-            </span>
+            {itemCount > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF4D8D] px-1 text-[9px] font-bold tabular-nums text-white">
+                {itemCount}
+              </span>
+            )}
           </button>
         </div>
       </header>
