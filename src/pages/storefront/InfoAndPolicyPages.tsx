@@ -4,6 +4,7 @@ import { BRAND_ASSETS } from '../../config/appConfig';
 import { useStoreSettings } from '../../hooks/useStoreData';
 import { useToast } from '../../context/ToastContext';
 import { validateEmail, validateRequired } from '../../utils/validation';
+import { MobileHelpSupportPage } from '../../components/storefront/MobileHelpSupportPage';
 
 export function AboutUsPage() {
   const { data: settings } = useStoreSettings();
@@ -87,8 +88,15 @@ export function ContactUsPage() {
   }
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-12">
-      <div className="gk-promo-gradient space-y-5 rounded-3xl border border-[#EBD8FF] p-6 sm:p-8 lg:col-span-5">
+    <>
+      {/* Normal Mobile (< 900px): Premium Help & Support WhatsApp Page */}
+      <div className="-mx-3.5 -my-4 sm:-mx-6 sm:-my-5 lg:hidden">
+        <MobileHelpSupportPage />
+      </div>
+
+      {/* Desktop & Mobile Desktop-Site (>= 900px): Existing Desktop Contact Page Unchanged */}
+      <div className="mx-auto hidden max-w-5xl gap-6 lg:grid lg:grid-cols-12">
+        <div className="gk-promo-gradient space-y-5 rounded-3xl border border-[#EBD8FF] p-6 sm:p-8 lg:col-span-5">
         <h1 className="text-3xl font-extrabold text-[#3B0764]">Contact GiftKart</h1>
         <p className="text-sm text-[#4B2C70]">
           Questions about custom photo printing, bulk corporate gifts, or Jalchak delivery? Reach out below.
@@ -149,6 +157,7 @@ export function ContactUsPage() {
         </form>
       </div>
     </div>
+    </>
   );
 }
 

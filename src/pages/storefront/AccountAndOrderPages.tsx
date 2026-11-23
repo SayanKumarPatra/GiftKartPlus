@@ -9,6 +9,8 @@ import type { DemoOrder } from '../../types';
 import { formatDateTime, formatInr } from '../../utils/format';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
+import { MobileOrdersPage } from '../../components/storefront/MobileOrdersPage';
+import { MobileAccountAuthPages } from '../../components/storefront/MobileAccountAuthPages';
 
 export function CustomerAccountPage() {
   const {
@@ -45,8 +47,15 @@ export function CustomerAccountPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="gk-promo-gradient rounded-3xl border border-[#EBD8FF] p-6 sm:p-8">
+    <>
+      {/* Normal Mobile (< 900px): Premium 4-Screen Auth & My Account Experience */}
+      <div className="-mx-3.5 -my-4 sm:-mx-6 sm:-my-5 lg:hidden">
+        <MobileAccountAuthPages />
+      </div>
+
+      {/* Desktop & Mobile Desktop-Site (>= 900px): Existing Desktop Account Page Unchanged */}
+      <div className="mx-auto hidden max-w-3xl space-y-6 lg:block">
+        <div className="gk-promo-gradient rounded-3xl border border-[#EBD8FF] p-6 sm:p-8">
         <p className="text-xs font-bold text-[#FF4D8D]">
           Customer Sign In · Account Access
         </p>
@@ -175,7 +184,8 @@ export function CustomerAccountPage() {
           </form>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -194,13 +204,20 @@ export function MyOrdersPage() {
   const displayList = visibleOrders.length > 0 ? visibleOrders : orders;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-extrabold text-[#3B0764]">My Demo Orders</h1>
-        <p className="mt-1 text-sm text-[#594A6B]">
-          All locally stored demo orders preserve immutable product, price, customization, and gift wrapping snapshots.
-        </p>
+    <>
+      {/* Normal Mobile (< 900px): Premium Mobile Orders Page UI */}
+      <div className="-mx-3.5 -my-4 sm:-mx-6 sm:-my-5 lg:hidden">
+        <MobileOrdersPage />
       </div>
+
+      {/* Desktop & Mobile Desktop-Site (>= 900px): Existing Desktop Orders Page Unchanged */}
+      <div className="hidden space-y-6 lg:block">
+        <div>
+          <h1 className="text-3xl font-extrabold text-[#3B0764]">My Demo Orders</h1>
+          <p className="mt-1 text-sm text-[#594A6B]">
+            All locally stored demo orders preserve immutable product, price, customization, and gift wrapping snapshots.
+          </p>
+        </div>
 
       {displayList.length === 0 ? (
         <EmptyState
@@ -268,7 +285,8 @@ export function MyOrdersPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
