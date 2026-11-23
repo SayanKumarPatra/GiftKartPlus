@@ -5,6 +5,7 @@ import { useCategories, useProducts } from '../../hooks/useStoreData';
 import { OFFICIAL_OCCASIONS } from '../../config/appConfig';
 import type { OccasionTag, ProductFilterParams } from '../../types';
 import { ProductCard } from '../../components/storefront/ProductCard';
+import { MobileCategoriesPage } from '../../components/storefront/MobileCategoriesPage';
 import { ProductImage } from '../../components/ui/ProductImage';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
@@ -270,8 +271,15 @@ export function AllCategoriesPage() {
   const { data: categories } = useCategories();
 
   return (
-    <div className="space-y-8">
-      <div className="gk-promo-gradient rounded-3xl border border-[#EBD8FF] p-6 sm:p-8">
+    <>
+      {/* Normal Mobile (< 900px): Flipkart-inspired Left Sidebar + Right Category Grid */}
+      <div className="-mx-3.5 -my-4 sm:-mx-6 sm:-my-5 lg:hidden">
+        <MobileCategoriesPage />
+      </div>
+
+      {/* Desktop & Mobile Desktop-Site (>= 900px): Existing Desktop Categories Page Unchanged */}
+      <div className="hidden space-y-8 lg:block">
+        <div className="gk-promo-gradient rounded-3xl border border-[#EBD8FF] p-6 sm:p-8">
         <p className="text-xs font-bold text-[#FF4D8D]">Official Catalog Taxonomy</p>
         <h1 className="mt-1.5 text-3xl font-extrabold text-[#3B0764] sm:text-4xl">
           All {categories.length} Gift Categories
@@ -344,6 +352,7 @@ export function AllCategoriesPage() {
         ))}
       </div>
     </div>
+    </>
   );
 }
 
