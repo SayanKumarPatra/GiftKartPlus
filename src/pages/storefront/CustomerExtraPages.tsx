@@ -668,9 +668,9 @@ export function CustomizationGuidePage() {
             </p>
           </div>
         </div>
-        <Link to="/shop">
+        <Link to="/categories">
           <Button variant="primary" size="sm">
-            Explore All 15 Categories
+            Explore Gift Categories
           </Button>
         </Link>
       </div>
