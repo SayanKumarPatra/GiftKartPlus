@@ -129,11 +129,11 @@ export function MobileHomePage() {
     return [...PRIMARY_MOBILE_CATEGORIES, ...storeCategories];
   }, [categories]);
 
-  // Real active products from the store database (2 rows × 4 cards = 8 items)
+  // Real active products from the store database stacked cleanly in 2-column rows
   const trendingProducts = useMemo(() => {
     const prioritized = products.filter((p) => p.isBestSeller || p.isFeatured);
     const others = products.filter((p) => !p.isBestSeller && !p.isFeatured);
-    return [...prioritized, ...others].slice(0, 8);
+    return [...prioritized, ...others];
   }, [products]);
 
   function jumpToSlide(idx: number) {
@@ -198,8 +198,8 @@ export function MobileHomePage() {
 
   return (
     <div className="min-h-screen w-full overflow-x-clip bg-gradient-to-b from-[#FDE4EC] via-[#F9ECFF] to-[#F5ECFF] pb-4">
-      {/* UPPER WARM PINK ZONE: Search Bar + Full-Width Flatter Edge-to-Edge Hero Slider */}
-      <div className="bg-[#FDE4EC]">
+      {/* UPPER WARM PINK ZONE: Search Bar + Flatter Hero Slider with Subtle Margin & Light Radius */}
+      <div className="bg-[#FDE4EC] pb-2">
         {/* STEP 02 – PILL SEARCH BAR (Search Icon Only) */}
         <section aria-label="Search gifts" className="px-2.5 pt-1 pb-2">
           <form
@@ -228,12 +228,12 @@ export function MobileHomePage() {
           </form>
         </section>
 
-        {/* STEP 03 – EDGE-TO-EDGE FLATTER HERO PROMOTIONAL SLIDER */}
-        <section aria-label="Promotional offers" className="w-full">
+        {/* STEP 03 – FLATTER HERO SLIDER WITH SUBTLE SIDE GAP & LIGHT BORDER RADIUS */}
+        <section aria-label="Promotional offers" className="px-2.5">
           <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="relative h-[126px] w-full overflow-hidden rounded-none bg-[#5B0EB7] min-[390px]:h-[134px] min-[420px]:h-[142px]"
+            className="relative h-[128px] w-full overflow-hidden rounded-xl bg-[#5B0EB7] shadow-[0_8px_20px_-10px_rgba(106,17,203,0.35)] min-[390px]:h-[136px] min-[420px]:h-[144px]"
           >
             <div
               className="flex h-full w-full transition-transform duration-500 ease-out will-change-transform"
@@ -325,18 +325,18 @@ export function MobileHomePage() {
         </section>
       </div>
 
-      {/* LOWER SOFT LAVENDER ZONE: Cardless 2-Row Medium Categories + Trending Gifts */}
-      <div className="bg-gradient-to-b from-[#F9EEFF] via-[#F6EBFF] to-[#FBF7FF] pt-2">
-        {/* STEP 04 – CARDLESS 2-ROW MEDIUM CATEGORY GRID (Smooth Horizontal Scroll, Tight Gaps) */}
+      {/* LOWER SOFT LAVENDER ZONE: Cardless 2-Row Categories (4 Visible per Row) + 2-Column Trending Gifts */}
+      <div className="bg-gradient-to-b from-[#F9EEFF] via-[#F6EBFF] to-[#FBF7FF] pt-2.5">
+        {/* STEP 04 – CARDLESS 2-ROW CATEGORY GRID (4 Per Row Visible, Slightly Larger Natural Size, Swipe for More) */}
         <section aria-label="Gift categories" className="w-full">
-          <div className="no-scrollbar grid grid-flow-col grid-rows-2 auto-cols-[68px] gap-x-1.5 gap-y-2 overflow-x-auto px-2 py-0.5 min-[410px]:auto-cols-[72px]">
+          <div className="no-scrollbar grid grid-flow-col grid-rows-2 auto-cols-[calc((100%-24px)/4)] gap-x-2 gap-y-2.5 overflow-x-auto px-2.5 py-0.5">
             {allMobileCategories.map((cat) => (
               <Link
                 key={cat.id}
                 to={cat.to}
                 className="group flex flex-col items-center text-center transition-transform duration-150 active:scale-95"
               >
-                <div className="h-[46px] w-[46px] overflow-hidden rounded-xl bg-[#F3E8FF] min-[410px]:h-[48px] min-[410px]:w-[48px]">
+                <div className="h-[56px] w-[56px] overflow-hidden rounded-xl bg-[#F3E8FF] min-[400px]:h-[60px] min-[400px]:w-[60px]">
                   <img
                     src={cat.imageUrl}
                     alt={cat.label}
@@ -345,7 +345,7 @@ export function MobileHomePage() {
                     className="h-full w-full object-cover"
                   />
                 </div>
-                <span className="mt-1 w-full truncate text-[10px] font-semibold leading-tight text-[#2B0B4E]">
+                <span className="mt-1.5 w-full truncate text-[10.5px] font-semibold leading-tight text-[#2B0B4E] min-[400px]:text-[11px]">
                   {cat.label}
                 </span>
               </Link>
@@ -356,7 +356,7 @@ export function MobileHomePage() {
         {/* STEP 05 – TRENDING GIFTS SECTION HEADER */}
         <section
           aria-labelledby="mobile-trending-heading"
-          className="mt-2.5 px-2.5"
+          className="mt-3 px-2.5"
         >
           <div className="flex items-center justify-between gap-2 px-0.5">
             <h2
@@ -379,24 +379,24 @@ export function MobileHomePage() {
             </Link>
           </div>
 
-          {/* STEP 06 – TRENDING GIFTS PRODUCT GRID (4-Column × 2-Row Figma Layout at >=390px, 2-Column on narrow <390px) */}
+          {/* STEP 06 – TRENDING GIFTS PRODUCT GRID (Clean 2-Column Mobile Grid) */}
           {productsLoading ? (
-            <div className="mt-2 grid grid-cols-2 gap-1.5 min-[390px]:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, idx) => (
+            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+              {Array.from({ length: 6 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="overflow-hidden rounded-[14px] border border-[#EBD8FF]/80 bg-white p-1.5"
+                  className="overflow-hidden rounded-[16px] border border-[#EBD8FF]/80 bg-white p-2"
                 >
-                  <div className="aspect-square animate-pulse rounded-[10px] bg-[#F4EBFF]" />
+                  <div className="aspect-square animate-pulse rounded-[12px] bg-[#F4EBFF]" />
                   <div className="mt-2 space-y-1.5">
-                    <div className="h-3 w-4/5 animate-pulse rounded bg-[#F4EBFF]" />
-                    <div className="h-3 w-2/3 animate-pulse rounded bg-[#F4EBFF]" />
+                    <div className="h-3.5 w-4/5 animate-pulse rounded bg-[#F4EBFF]" />
+                    <div className="h-3.5 w-2/3 animate-pulse rounded bg-[#F4EBFF]" />
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="mt-2 grid grid-cols-2 gap-1.5 min-[390px]:grid-cols-4">
+            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
               {trendingProducts.map((product) => {
                 const saved = isWishlisted(product.id);
                 const compareAt = product.compareAtPriceInr ?? 0;
@@ -408,9 +408,9 @@ export function MobileHomePage() {
                 return (
                   <article
                     key={product.id}
-                    className="group flex flex-col overflow-hidden rounded-[14px] border border-[#EBD8FF]/90 bg-white p-1.5 shadow-[0_6px_16px_-8px_rgba(106,17,203,0.16)]"
+                    className="group flex flex-col overflow-hidden rounded-[16px] border border-[#EBD8FF]/90 bg-white p-2 shadow-[0_6px_16px_-8px_rgba(106,17,203,0.16)]"
                   >
-                    <div className="relative overflow-hidden rounded-[10px] bg-[#FAF6FF]">
+                    <div className="relative overflow-hidden rounded-[12px] bg-[#FAF6FF]">
                       <Link to={`/product/${product.slug}`} className="block">
                         <ProductImage
                           src={product.images[0]}
@@ -427,13 +427,13 @@ export function MobileHomePage() {
                             ? `Remove ${product.name} from wishlist`
                             : `Save ${product.name} to wishlist`
                         }
-                        className="absolute right-1 top-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-white/95 shadow-xs ring-1 ring-[#EBD8FF]/80 transition-transform active:scale-90 min-[390px]:h-5 min-[390px]:w-5"
+                        className="absolute right-1.5 top-1.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-white/95 shadow-xs ring-1 ring-[#EBD8FF]/80 transition-transform active:scale-90"
                       >
                         <Heart
-                          className={`h-3 w-3 min-[390px]:h-2.5 min-[390px]:w-2.5 ${
+                          className={`h-3.5 w-3.5 ${
                             saved
                               ? 'fill-[#FF4D8D] text-[#FF4D8D]'
-                              : 'stroke-[2.2] text-[#4B148C]'
+                              : 'stroke-[2.1] text-[#4B148C]'
                           }`}
                         />
                       </button>
@@ -441,26 +441,26 @@ export function MobileHomePage() {
 
                     <Link
                       to={`/product/${product.slug}`}
-                      className="flex flex-1 flex-col justify-between pt-1.5"
+                      className="flex flex-1 flex-col justify-between pt-2"
                     >
-                      <h3 className="line-clamp-2 min-h-[24px] text-[10.5px] font-bold leading-[1.22] text-[#2B0B4E] min-[390px]:text-[9.5px] min-[420px]:text-[10px]">
+                      <h3 className="line-clamp-2 min-h-[32px] text-[12px] font-bold leading-[1.3] text-[#2B0B4E]">
                         {product.name}
                       </h3>
 
-                      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-1 gap-y-0.5">
-                        <div className="flex items-baseline gap-0.5">
-                          <span className="text-[11px] font-extrabold tabular-nums text-[#6A11CB] min-[390px]:text-[10px] min-[420px]:text-[10.5px]">
+                      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-[13.5px] font-extrabold tabular-nums text-[#6A11CB]">
                             {formatInr(product.priceInr)}
                           </span>
                           {hasDiscount && (
-                            <span className="text-[8px] font-medium tabular-nums text-[#8B7AA0] line-through min-[390px]:text-[7.5px]">
+                            <span className="text-[10.5px] font-medium tabular-nums text-[#8B7AA0] line-through">
                               {formatInr(compareAt)}
                             </span>
                           )}
                         </div>
 
                         {discountPercent > 0 && (
-                          <span className="rounded-full bg-[#FF1F7A] px-1.5 py-[2px] text-[7px] font-bold leading-none whitespace-nowrap text-white min-[390px]:px-1 min-[390px]:text-[6.5px]">
+                          <span className="rounded-full bg-[#FF1F7A] px-2 py-[2.5px] text-[9px] font-bold leading-none whitespace-nowrap text-white">
                             {discountPercent}% OFF
                           </span>
                         )}
