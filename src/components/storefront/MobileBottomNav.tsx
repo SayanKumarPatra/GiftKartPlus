@@ -94,10 +94,10 @@ export function MobileBottomNav() {
 
       <nav
         aria-label="Mobile bottom navigation"
-        className="gk-liquid-glass-nav fixed inset-x-0 bottom-0 z-40 w-full rounded-none px-1.5 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] lg:hidden"
+        className="gk-liquid-glass-nav fixed inset-x-0 bottom-0 z-40 w-full rounded-t-[24px] px-1.5 pt-1.5 pb-[max(0.4rem,env(safe-area-inset-bottom))] lg:hidden"
       >
         <div className="relative grid grid-cols-5 items-center">
-          {/* Inner Sliding Translucent Lavender Active Capsule */}
+          {/* Inner Sliding Soft Lavender Active Capsule */}
           <div
             aria-hidden="true"
             className={`gk-mobile-nav-capsule-track pointer-events-none absolute inset-y-[1px] left-0 w-1/5 px-1 ${
@@ -107,7 +107,7 @@ export function MobileBottomNav() {
               transform: `translate3d(${capsuleIndex * 100}%, 0, 0)`,
             }}
           >
-            <div className="gk-liquid-glass-capsule h-full w-full rounded-[18px]" />
+            <div className="gk-liquid-glass-capsule h-full w-full rounded-[20px]" />
           </div>
 
           {MOBILE_NAV_ITEMS.map(({ id, label, to, Icon }, idx) => {
@@ -118,22 +118,22 @@ export function MobileBottomNav() {
                 key={id}
                 to={to}
                 aria-current={isActive ? 'page' : undefined}
-                className="gk-mobile-nav-item relative z-10 flex min-h-[52px] flex-col items-center justify-center gap-[4px] rounded-[18px] px-1 py-1.5 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EBD8FF]/80 focus-visible:ring-inset"
+                className="gk-mobile-nav-item relative z-10 flex min-h-[52px] flex-col items-center justify-center gap-[3px] rounded-[20px] px-1 py-1.5 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6A11CB]/45 focus-visible:ring-inset"
               >
                 <Icon
                   aria-hidden="true"
-                  fill={isActive ? 'rgba(106, 17, 203, 0.16)' : 'none'}
-                  className={`gk-mobile-nav-icon h-[20px] w-[20px] shrink-0 ${
+                  fill={isActive && id === 'home' ? '#6A11CB' : isActive ? 'rgba(106, 17, 203, 0.16)' : 'none'}
+                  className={`gk-mobile-nav-icon h-[21px] w-[21px] shrink-0 ${
                     isActive
-                      ? 'gk-mobile-nav-icon--active stroke-[2.15]'
-                      : 'stroke-[1.75]'
+                      ? 'gk-mobile-nav-icon--active stroke-[2.2]'
+                      : 'stroke-[1.85]'
                   }`}
                 />
                 <span
                   className={`gk-mobile-nav-label whitespace-nowrap text-[10.5px] leading-[1.15] tracking-[-0.01em] ${
                     isActive
-                      ? 'gk-mobile-nav-label--active font-semibold'
-                      : 'font-medium'
+                      ? 'gk-mobile-nav-label--active font-bold'
+                      : 'font-semibold'
                   }`}
                 >
                   {label}

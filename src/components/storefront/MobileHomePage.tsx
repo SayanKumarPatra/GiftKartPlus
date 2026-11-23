@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Flame, Heart, Search } from 'lucide-react';
-import { useProducts, useStoreSettings } from '../../hooks/useStoreData';
+import { STUDIO_MEDIA } from '../../config/appConfig';
+import {
+  useCategories,
+  useProducts,
+  useStoreSettings,
+} from '../../hooks/useStoreData';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { ProductImage } from '../ui/ProductImage';
@@ -13,7 +18,14 @@ import figmaCatPersonalizedImg from '../../assets/images/figma_cat_personalized_
 import figmaCatToysGamesImg from '../../assets/images/figma_cat_toys_games_1795420524272.jpg';
 import figmaCatAccessoriesImg from '../../assets/images/figma_cat_accessories_1795420524231.jpg';
 
-const FIGMA_CATEGORY_SHORTCUTS = [
+interface MobileCategoryItem {
+  id: string;
+  label: string;
+  to: string;
+  imageUrl: string;
+}
+
+const PRIMARY_MOBILE_CATEGORIES: MobileCategoryItem[] = [
   {
     id: 'fg-cat-all-gifts',
     label: 'All Gifts',
@@ -38,7 +50,16 @@ const FIGMA_CATEGORY_SHORTCUTS = [
     to: '/category/personalized-accessories',
     imageUrl: figmaCatAccessoriesImg,
   },
-] as const;
+];
+
+const SHORT_CATEGORY_LABELS: Record<string, string> = {
+  'led-lighting-gifts': 'LED Lamps',
+  'home-decor-gifts': 'Home Decor',
+  'customized-stationery': 'Stationery',
+  'couple-friendship-gifts': 'Couple Gifts',
+  'customized-photo-gifts': 'Photo Gifts',
+  'special-occasion-gifts': 'Occasions',
+};
 
 type MobileHeroEntry =
   | { kind: 'figma-primary'; id: string }
@@ -52,6 +73,7 @@ type MobileHeroEntry =
 
 export function MobileHomePage() {
   const { data: settings } = useStoreSettings();
+  const { data: categories } = useCategories();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { toggleWishlist, isWishlisted } = useCart();
   const { customerAccount } = useAuth();
@@ -90,6 +112,22 @@ export function MobileHomePage() {
     }, 4500);
     return () => window.clearInterval(timer);
   }, [slideCount, resetTick]);
+
+  // Combine 4 primary shortcuts + remaining real store categories into a compact 2-row scrollable list
+  const allMobileCategories = useMemo<MobileCategoryItem[]>(() => {
+    const excludedSlugs = new Set(['handmade-gift', 'personalized-accessories']);
+    const storeCategories: MobileCategoryItem[] = [...categories]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .filter((c) => !excludedSlugs.has(c.slug))
+      .map((c) => ({
+        id: c.id,
+        label: SHORT_CATEGORY_LABELS[c.slug] ?? c.name,
+        to: `/category/${c.slug}`,
+        imageUrl: c.imageUrl || STUDIO_MEDIA.giftBox,
+      }));
+
+    return [...PRIMARY_MOBILE_CATEGORIES, ...storeCategories];
+  }, [categories]);
 
   // Real active products from the store database (2 rows × 4 cards = 8 items)
   const trendingProducts = useMemo(() => {
@@ -159,22 +197,22 @@ export function MobileHomePage() {
   }
 
   return (
-    <div className="min-h-screen w-full overflow-x-clip bg-gradient-to-b from-[#FDE4EC] via-[#F9ECFF] to-[#F5ECFF] pb-6">
-      {/* UPPER WARM PINK ZONE: Search Bar + Hero Promotional Slider */}
-      <div className="bg-gradient-to-b from-[#FDE4EC] via-[#FDE6EE] to-[#FCE4EE] pb-3.5">
+    <div className="min-h-screen w-full overflow-x-clip bg-gradient-to-b from-[#FDE4EC] via-[#F9ECFF] to-[#F5ECFF] pb-4">
+      {/* UPPER WARM PINK ZONE: Search Bar + Full-Width Flatter Edge-to-Edge Hero Slider */}
+      <div className="bg-[#FDE4EC]">
         {/* STEP 02 – PILL SEARCH BAR (Search Icon Only) */}
-        <section aria-label="Search gifts" className="px-3.5 pt-1 pb-3">
+        <section aria-label="Search gifts" className="px-2.5 pt-1 pb-2">
           <form
             onSubmit={handleSearchSubmit}
             role="search"
-            className="flex h-[44px] w-full items-center gap-2.5 rounded-full bg-white px-4 shadow-[0_6px_18px_-8px_rgba(106,17,203,0.18)] ring-1 ring-[#EBD8FF]/90 transition-shadow focus-within:ring-2 focus-within:ring-[#6A11CB]/45"
+            className="flex h-[40px] w-full items-center gap-2 rounded-full bg-white px-3.5 shadow-[0_4px_14px_-8px_rgba(106,17,203,0.18)] ring-1 ring-[#EBD8FF]/90 transition-shadow focus-within:ring-2 focus-within:ring-[#6A11CB]/45"
           >
             <button
               type="submit"
               aria-label="Submit search"
               className="flex shrink-0 items-center justify-center text-[#6A11CB]"
             >
-              <Search className="h-[18px] w-[18px] stroke-[2.2]" />
+              <Search className="h-[17px] w-[17px] stroke-[2.2]" />
             </button>
             <label htmlFor="mobile-home-search" className="sr-only">
               Search for Gifts, Products &amp; More
@@ -190,12 +228,12 @@ export function MobileHomePage() {
           </form>
         </section>
 
-        {/* STEP 03 – HERO PROMOTIONAL SLIDER */}
-        <section aria-label="Promotional offers" className="px-3">
+        {/* STEP 03 – EDGE-TO-EDGE FLATTER HERO PROMOTIONAL SLIDER */}
+        <section aria-label="Promotional offers" className="w-full">
           <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="relative h-[168px] w-full overflow-hidden rounded-[22px] bg-[#5B0EB7] shadow-[0_14px_28px_-12px_rgba(106,17,203,0.45)] min-[390px]:h-[176px] min-[420px]:h-[184px]"
+            className="relative h-[126px] w-full overflow-hidden rounded-none bg-[#5B0EB7] min-[390px]:h-[134px] min-[420px]:h-[142px]"
           >
             <div
               className="flex h-full w-full transition-transform duration-500 ease-out will-change-transform"
@@ -212,7 +250,7 @@ export function MobileHomePage() {
                     {/* Right-side Figma Gift Box Artwork with Soft Glowing Ring */}
                     <div
                       aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 right-0 w-[56%]"
+                      className="pointer-events-none absolute inset-y-0 right-0 w-[52%]"
                     >
                       <img
                         src={figmaHeroGiftBoxesImg}
@@ -222,26 +260,26 @@ export function MobileHomePage() {
                         draggable={false}
                         className="h-full w-full select-none object-cover object-center"
                       />
-                      <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#5D0DB7] via-[#5D0DB7]/65 to-transparent" />
+                      <div className="absolute inset-y-0 left-0 w-14 bg-gradient-to-r from-[#5D0DB7] via-[#5D0DB7]/65 to-transparent" />
                     </div>
 
                     {/* Left-side Exact Figma Promotional Copy & CTA */}
-                    <div className="relative z-10 flex max-w-[58%] flex-col items-start pl-4 pr-1 pb-2">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-white/95 min-[410px]:text-[11px]">
+                    <div className="relative z-10 flex max-w-[60%] flex-col items-start pl-3.5 pr-1 pb-2">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.06em] text-white/95 min-[410px]:text-[10px]">
                         MAKE EVERY OCCASION
                       </p>
-                      <h1 className="mt-0.5 text-[27px] font-black italic leading-[0.98] tracking-tight text-white drop-shadow-[0_2px_8px_rgba(43,11,78,0.35)] min-[410px]:text-[31px]">
+                      <h1 className="mt-0.5 text-[22px] font-black italic leading-[0.98] tracking-tight text-white drop-shadow-[0_2px_8px_rgba(43,11,78,0.35)] min-[410px]:text-[25px]">
                         SPECIAL
                       </h1>
-                      <p className="mt-1.5 text-[10.5px] font-medium leading-[1.3] text-[#F5EAFF] min-[410px]:text-[11.5px]">
+                      <p className="mt-1 text-[9.5px] font-medium leading-[1.25] text-[#F5EAFF] min-[410px]:text-[10.5px]">
                         Unique &amp; Personalized Gifts for Your Loved Ones
                       </p>
                       <Link
                         to="/shop"
-                        className="mt-2.5 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FF1F7A] to-[#FF4D8D] px-3.5 py-1.5 text-[11px] font-bold text-white shadow-[0_6px_14px_-4px_rgba(255,31,122,0.65)] transition-transform active:scale-95"
+                        className="mt-2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FF1F7A] to-[#FF4D8D] px-3 py-1 text-[10px] font-bold text-white shadow-[0_6px_14px_-4px_rgba(255,31,122,0.65)] transition-transform active:scale-95"
                       >
                         <span>Shop Now</span>
-                        <ArrowRight className="h-3 w-3 stroke-[2.6]" />
+                        <ArrowRight className="h-2.5 w-2.5 stroke-[2.6]" />
                       </Link>
                     </div>
                   </div>
@@ -267,7 +305,7 @@ export function MobileHomePage() {
 
             {/* Bottom Slider Pagination Indicators */}
             {slideCount > 1 && (
-              <div className="absolute bottom-2.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5">
+              <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5">
                 {heroEntries.map((entry, idx) => (
                   <button
                     key={entry.id}
@@ -287,36 +325,27 @@ export function MobileHomePage() {
         </section>
       </div>
 
-      {/* MIDDLE + LOWER SOFT LAVENDER ZONE WITH SUBTLE CURVED TRANSITION */}
-      <div className="relative bg-gradient-to-b from-[#F8EEFF] via-[#F6EBFF] to-[#FBF7FF]">
-        {/* Curved Soft Pink-to-Lavender Arch Behind Category Row */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-11 bg-[#FCE4EE]"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-[-8%] top-5 h-12 rounded-t-[100%] bg-[#F8EEFF]"
-        />
-
-        {/* STEP 04 – EXACTLY FOUR GIFT CATEGORY SHORTCUTS */}
-        <section aria-label="Gift categories" className="relative z-10 px-3 pt-1">
-          <div className="grid grid-cols-4 gap-2">
-            {FIGMA_CATEGORY_SHORTCUTS.map((cat) => (
+      {/* LOWER SOFT LAVENDER ZONE: Cardless 2-Row Medium Categories + Trending Gifts */}
+      <div className="bg-gradient-to-b from-[#F9EEFF] via-[#F6EBFF] to-[#FBF7FF] pt-2">
+        {/* STEP 04 – CARDLESS 2-ROW MEDIUM CATEGORY GRID (Smooth Horizontal Scroll, Tight Gaps) */}
+        <section aria-label="Gift categories" className="w-full">
+          <div className="no-scrollbar grid grid-flow-col grid-rows-2 auto-cols-[68px] gap-x-1.5 gap-y-2 overflow-x-auto px-2 py-0.5 min-[410px]:auto-cols-[72px]">
+            {allMobileCategories.map((cat) => (
               <Link
                 key={cat.id}
                 to={cat.to}
-                className="group flex flex-col items-center justify-between rounded-[18px] border border-white/95 bg-gradient-to-b from-[#FFFFFF] via-[#FBF7FF] to-[#F3E7FF] px-1.5 pt-2 pb-2 text-center shadow-[0_6px_16px_-6px_rgba(106,17,203,0.2)] transition-transform duration-150 active:scale-95"
+                className="group flex flex-col items-center text-center transition-transform duration-150 active:scale-95"
               >
-                <div className="flex h-[46px] w-[46px] items-center justify-center overflow-hidden rounded-xl bg-[#F5EEFF] min-[410px]:h-[50px] min-[410px]:w-[50px]">
+                <div className="h-[46px] w-[46px] overflow-hidden rounded-xl bg-[#F3E8FF] min-[410px]:h-[48px] min-[410px]:w-[48px]">
                   <img
                     src={cat.imageUrl}
                     alt={cat.label}
                     loading="eager"
+                    referrerPolicy="no-referrer"
                     className="h-full w-full object-cover"
                   />
                 </div>
-                <span className="mt-1.5 w-full truncate text-[9.5px] font-bold leading-tight text-[#2B0B4E] min-[390px]:text-[10.5px]">
+                <span className="mt-1 w-full truncate text-[10px] font-semibold leading-tight text-[#2B0B4E]">
                   {cat.label}
                 </span>
               </Link>
@@ -327,23 +356,23 @@ export function MobileHomePage() {
         {/* STEP 05 – TRENDING GIFTS SECTION HEADER */}
         <section
           aria-labelledby="mobile-trending-heading"
-          className="relative z-10 mt-4 px-2.5"
+          className="mt-2.5 px-2.5"
         >
           <div className="flex items-center justify-between gap-2 px-0.5">
             <h2
               id="mobile-trending-heading"
-              className="flex items-center gap-1.5 text-[16.5px] font-extrabold tracking-tight text-[#2B0B4E]"
+              className="flex items-center gap-1.5 text-[16px] font-extrabold tracking-tight text-[#2B0B4E]"
             >
               <Flame
                 aria-hidden="true"
-                className="h-[19px] w-[19px] shrink-0 fill-[#FF4D8D] text-[#E61E6E]"
+                className="h-[18px] w-[18px] shrink-0 fill-[#FF4D8D] text-[#E61E6E]"
               />
               <span>Trending Gifts</span>
             </h2>
 
             <Link
               to="/shop"
-              className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-[#2B0B4E] shadow-[0_3px_10px_-3px_rgba(106,17,203,0.18)] ring-1 ring-[#EBD8FF]/90 transition-transform active:scale-95"
+              className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-[#2B0B4E] shadow-[0_3px_10px_-3px_rgba(106,17,203,0.18)] ring-1 ring-[#EBD8FF]/90 transition-transform active:scale-95"
             >
               <span>View All</span>
               <ArrowRight className="h-3 w-3 text-[#6A11CB]" />
@@ -352,7 +381,7 @@ export function MobileHomePage() {
 
           {/* STEP 06 – TRENDING GIFTS PRODUCT GRID (4-Column × 2-Row Figma Layout at >=390px, 2-Column on narrow <390px) */}
           {productsLoading ? (
-            <div className="mt-2.5 grid grid-cols-2 gap-2 min-[390px]:grid-cols-4 min-[390px]:gap-1.5">
+            <div className="mt-2 grid grid-cols-2 gap-1.5 min-[390px]:grid-cols-4">
               {Array.from({ length: 8 }).map((_, idx) => (
                 <div
                   key={idx}
@@ -367,7 +396,7 @@ export function MobileHomePage() {
               ))}
             </div>
           ) : (
-            <div className="mt-2.5 grid grid-cols-2 gap-2 min-[390px]:grid-cols-4 min-[390px]:gap-1.5">
+            <div className="mt-2 grid grid-cols-2 gap-1.5 min-[390px]:grid-cols-4">
               {trendingProducts.map((product) => {
                 const saved = isWishlisted(product.id);
                 const compareAt = product.compareAtPriceInr ?? 0;
