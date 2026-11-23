@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Candy,
   Coffee,
@@ -173,11 +173,25 @@ export function MobileCategoriesPage() {
   const { pushToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  const catParam = searchParams.get('cat') as SidebarCategoryKey | null;
+  const isValidCatParam = ORDERED_SIDEBAR_CATEGORIES.some(
+    (c) => c.id === catParam
+  );
 
   const [activeCategoryId, setActiveCategoryId] =
-    useState<SidebarCategoryKey>('all-gifts');
+    useState<SidebarCategoryKey>(
+      isValidCatParam && catParam ? catParam : 'all-gifts'
+    );
   const [searchQuery, setSearchQuery] = useState('');
   const rightPanelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (isValidCatParam && catParam) {
+      setActiveCategoryId(catParam);
+    }
+  }, [catParam, isValidCatParam]);
 
   // Deduplicated active available products across the entire catalog
   const allAvailableProducts = useMemo(() => {

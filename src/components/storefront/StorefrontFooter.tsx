@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   ChevronDown,
   Facebook,
@@ -47,7 +47,9 @@ const ABOUT_LINKS = [
 
 export function StorefrontFooter() {
   const { data: settings } = useStoreSettings();
+  const { pathname } = useLocation();
   const [openMobileGroup, setOpenMobileGroup] = useState<string | null>(null);
+  const isHome = pathname === '/';
 
   const activeZones =
     settings?.deliveryZones.filter((z) => z.isActive).map((z) => z.name) ?? [
@@ -80,7 +82,18 @@ export function StorefrontFooter() {
   };
 
   return (
-    <footer className="gk-footer-gradient relative overflow-hidden border-t border-[#EBD8FF] pb-[64px] lg:pb-0">
+    <>
+      {!isHome && (
+        <div
+          aria-hidden="true"
+          className="h-[68px] bg-[#F6EEFF] lg:hidden"
+        />
+      )}
+      <footer
+        className={`gk-footer-gradient relative overflow-hidden border-t border-[#EBD8FF] ${
+          isHome ? 'pb-[64px] lg:pb-0' : 'hidden lg:block'
+        }`}
+      >
       {/* COMPACT DESKTOP 5-COLUMN FOOTER */}
       <div className="mx-auto hidden max-w-7xl px-6 py-6 lg:block">
         <div className="grid grid-cols-12 items-start gap-6">
@@ -170,7 +183,9 @@ export function StorefrontFooter() {
         </div>
       </div>
 
-      {/* COMPACT TWO-COLUMN MOBILE FOOTER (Normal Mobile < 900px Only) */}
+      {/* COMPACT TWO-COLUMN MOBILE FOOTER (Normal Mobile < 900px — Home Page Only) */}
+      {isHome && (
+      <>
       <div className="bg-gradient-to-br from-[#F5E8FF] via-[#F2E3FF] to-[#EFE0FF] px-2.5 py-3 lg:hidden">
         <div className="grid grid-cols-[minmax(0,41%)_1px_minmax(0,59%)] items-center gap-2">
           {/* Left Column: Official GiftKart Logo (with Tagline) + 3 Social Icons Only */}
@@ -322,13 +337,15 @@ export function StorefrontFooter() {
         </div>
       </div>
 
-      {/* Compact Single-Line Purple Copyright Bar — Mobile Only (< 900px) */}
+      {/* Compact Single-Line Purple Copyright Bar — Mobile Only (< 900px, Home Page Only) */}
       <div className="bg-[#6A11CB] px-2 py-2 text-center text-[9.5px] font-medium text-white min-[390px]:text-[10.5px] min-[410px]:text-[11px] lg:hidden">
         <p className="whitespace-nowrap">
           © 2026 GiftKart. All Rights Reserved.{' '}
           <span className="mx-1 text-white/55">|</span> Made in India 🇮🇳
         </p>
       </div>
+      </>
+      )}
 
       {/* Compact Solid Royal Purple Bottom Bar — Desktop Only (>= 900px, Unchanged) */}
       <div className="hidden bg-[#6A11CB] px-4 py-2 text-center text-[11px] font-medium text-white lg:block">
@@ -340,6 +357,7 @@ export function StorefrontFooter() {
           <span className="text-white/85">Local Demo Mode · No Live Payments</span>
         </div>
       </div>
-    </footer>
+      </footer>
+    </>
   );
 }

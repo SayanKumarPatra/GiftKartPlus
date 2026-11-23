@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Flame, Heart, Search } from 'lucide-react';
-import { STUDIO_MEDIA } from '../../config/appConfig';
 import {
-  useCategories,
   useProducts,
   useStoreSettings,
 } from '../../hooks/useStoreData';
@@ -13,10 +11,17 @@ import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
 
 import figmaHeroGiftBoxesImg from '../../assets/images/figma_hero_gift_boxes_1795420552395.jpg';
-import figmaCatAllGiftsImg from '../../assets/images/figma_cat_all_gifts_1795420531719.jpg';
-import figmaCatPersonalizedImg from '../../assets/images/figma_cat_personalized_1795420523721.jpg';
-import figmaCatToysGamesImg from '../../assets/images/figma_cat_toys_games_1795420524272.jpg';
-import figmaCatAccessoriesImg from '../../assets/images/figma_cat_accessories_1795420524231.jpg';
+import allGiftsImg from '../../assets/images/figma_cat_all_gifts_1795420531719.jpg';
+import coffeeMugImg from '../../assets/images/product_magic_mug_1795285112764.jpg';
+import tshirtPrintImg from '../../assets/images/product_tshirt_print_1795285052582.jpg';
+import photoFrameImg from '../../assets/images/product_photo_frame_1795285052399.jpg';
+import moonLampImg from '../../assets/images/mobile_sub_moon_lamp_1795431667937.jpg';
+import heartCushionImg from '../../assets/images/mobile_sub_heart_cushion_1795431665593.jpg';
+import giftBoxHamperImg from '../../assets/images/mobile_sub_surprise_box_1795431696834.jpg';
+import giftBagImg from '../../assets/images/category_gift_bag_1795289466578.jpg';
+import homeDecorImg from '../../assets/images/category_home_decor_1795289476486.jpg';
+import kitchenGiftsImg from '../../assets/images/mobile_cat_kitchen_gifts_1795431665296.jpg';
+import uniqueChocolatesImg from '../../assets/images/mobile_cat_unique_chocolates_1795442024270.jpg';
 
 interface MobileCategoryItem {
   id: string;
@@ -25,41 +30,74 @@ interface MobileCategoryItem {
   imageUrl: string;
 }
 
-const PRIMARY_MOBILE_CATEGORIES: MobileCategoryItem[] = [
+const HOME_MOBILE_CATEGORIES: MobileCategoryItem[] = [
   {
-    id: 'fg-cat-all-gifts',
+    id: 'all-gifts',
     label: 'All Gifts',
-    to: '/shop',
-    imageUrl: figmaCatAllGiftsImg,
+    to: '/categories?cat=all-gifts',
+    imageUrl: allGiftsImg,
   },
   {
-    id: 'fg-cat-personalized',
-    label: 'Personalized',
-    to: '/customize',
-    imageUrl: figmaCatPersonalizedImg,
+    id: 'coffee-mugs',
+    label: 'Coffee Mugs',
+    to: '/categories?cat=coffee-mugs',
+    imageUrl: coffeeMugImg,
   },
   {
-    id: 'fg-cat-toys-games',
-    label: 'Toys & Games',
-    to: '/category/handmade-gift',
-    imageUrl: figmaCatToysGamesImg,
+    id: 'tshirt-prints',
+    label: 'T-Shirt Prints',
+    to: '/categories?cat=tshirt-prints',
+    imageUrl: tshirtPrintImg,
   },
   {
-    id: 'fg-cat-accessories',
-    label: 'Accessories',
-    to: '/category/personalized-accessories',
-    imageUrl: figmaCatAccessoriesImg,
+    id: 'photo-frames',
+    label: 'Photo Frames',
+    to: '/categories?cat=photo-frames',
+    imageUrl: photoFrameImg,
+  },
+  {
+    id: 'led-lighting-gifts',
+    label: 'LED Lighting Gifts',
+    to: '/categories?cat=led-lighting-gifts',
+    imageUrl: moonLampImg,
+  },
+  {
+    id: 'cushions',
+    label: 'Cushions',
+    to: '/categories?cat=cushions',
+    imageUrl: heartCushionImg,
+  },
+  {
+    id: 'gift-boxes-hampers',
+    label: 'Gift Boxes & Hampers',
+    to: '/categories?cat=gift-boxes-hampers',
+    imageUrl: giftBoxHamperImg,
+  },
+  {
+    id: 'gift-bags',
+    label: 'Gift Bags',
+    to: '/categories?cat=gift-bags',
+    imageUrl: giftBagImg,
+  },
+  {
+    id: 'home-decor-gifts',
+    label: 'Home Decor Gifts',
+    to: '/categories?cat=home-decor-gifts',
+    imageUrl: homeDecorImg,
+  },
+  {
+    id: 'kitchen-gifts',
+    label: 'Kitchen Gifts',
+    to: '/categories?cat=kitchen-gifts',
+    imageUrl: kitchenGiftsImg,
+  },
+  {
+    id: 'unique-chocolates',
+    label: 'Unique Chocolates',
+    to: '/categories?cat=unique-chocolates',
+    imageUrl: uniqueChocolatesImg,
   },
 ];
-
-const SHORT_CATEGORY_LABELS: Record<string, string> = {
-  'led-lighting-gifts': 'LED Lamps',
-  'home-decor-gifts': 'Home Decor',
-  'customized-stationery': 'Stationery',
-  'couple-friendship-gifts': 'Couple Gifts',
-  'customized-photo-gifts': 'Photo Gifts',
-  'special-occasion-gifts': 'Occasions',
-};
 
 type MobileHeroEntry =
   | { kind: 'figma-primary'; id: string }
@@ -73,7 +111,6 @@ type MobileHeroEntry =
 
 export function MobileHomePage() {
   const { data: settings } = useStoreSettings();
-  const { data: categories } = useCategories();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { toggleWishlist, isWishlisted } = useCart();
   const { customerAccount } = useAuth();
@@ -113,21 +150,7 @@ export function MobileHomePage() {
     return () => window.clearInterval(timer);
   }, [slideCount, resetTick]);
 
-  // Combine 4 primary shortcuts + remaining real store categories into a compact 2-row scrollable list
-  const allMobileCategories = useMemo<MobileCategoryItem[]>(() => {
-    const excludedSlugs = new Set(['handmade-gift', 'personalized-accessories']);
-    const storeCategories: MobileCategoryItem[] = [...categories]
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .filter((c) => !excludedSlugs.has(c.slug))
-      .map((c) => ({
-        id: c.id,
-        label: SHORT_CATEGORY_LABELS[c.slug] ?? c.name,
-        to: `/category/${c.slug}`,
-        imageUrl: c.imageUrl || STUDIO_MEDIA.giftBox,
-      }));
-
-    return [...PRIMARY_MOBILE_CATEGORIES, ...storeCategories];
-  }, [categories]);
+  const allMobileCategories = HOME_MOBILE_CATEGORIES;
 
   // Real active products from the store database stacked cleanly in 2-column rows
   const trendingProducts = useMemo(() => {
@@ -345,7 +368,7 @@ export function MobileHomePage() {
                     className="h-full w-full object-cover"
                   />
                 </div>
-                <span className="mt-1.5 w-full truncate text-[10.5px] font-semibold leading-tight text-[#2B0B4E] min-[400px]:text-[11px]">
+                <span className="mt-1.5 line-clamp-2 w-full px-0.5 text-[10px] font-semibold leading-[1.2] text-[#2B0B4E] min-[400px]:text-[10.5px]">
                   {cat.label}
                 </span>
               </Link>
