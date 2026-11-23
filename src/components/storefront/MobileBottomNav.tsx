@@ -116,21 +116,21 @@ export function MobileBottomNav() {
                 key={id}
                 to={to}
                 aria-current={isActive ? 'page' : undefined}
-                className="relative z-10 flex min-h-[50px] flex-col items-center justify-center gap-[3px] rounded-2xl px-1 py-1.5 text-center transition-transform duration-150 ease-out active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6A11CB]/50 focus-visible:ring-inset"
+                className="relative z-10 flex min-h-[50px] flex-col items-center justify-center gap-[3px] rounded-2xl px-1 py-1.5 text-center transition-transform duration-150 ease-out active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-inset"
               >
                 <Icon
                   aria-hidden="true"
                   className={`h-[19px] w-[19px] transition-colors duration-200 ${
                     isActive
-                      ? 'stroke-[2.15] text-[#6A11CB]'
-                      : 'stroke-[1.8] text-[#2B0B4E]'
+                      ? 'stroke-[2.2] text-white'
+                      : 'stroke-[1.8] text-white/80'
                   }`}
                 />
                 <span
                   className={`whitespace-nowrap text-[10.5px] leading-none tracking-[-0.01em] transition-colors duration-200 ${
                     isActive
-                      ? 'font-semibold text-[#6A11CB]'
-                      : 'font-medium text-[#2B0B4E]'
+                      ? 'font-semibold text-white'
+                      : 'font-medium text-white/80'
                   }`}
                 >
                   {label}
