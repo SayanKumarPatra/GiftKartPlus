@@ -12,22 +12,14 @@ import { formatInr } from '../../utils/format';
 
 import figmaHeroGiftBoxesImg from '../../assets/images/figma_hero_gift_boxes_1795420552395.jpg';
 import allGiftsImg from '../../assets/images/figma_cat_all_gifts_1795420531719.jpg';
-import coffeeMugImg from '../../assets/images/product_magic_mug_1795285112764.jpg';
-import tshirtPrintImg from '../../assets/images/product_tshirt_print_1795285052582.jpg';
-import photoFrameImg from '../../assets/images/product_photo_frame_1795285052399.jpg';
-import moonLampImg from '../../assets/images/mobile_sub_moon_lamp_1795431667937.jpg';
-import heartCushionImg from '../../assets/images/mobile_sub_heart_cushion_1795431665593.jpg';
-import giftBoxHamperImg from '../../assets/images/mobile_sub_surprise_box_1795431696834.jpg';
-import giftBagImg from '../../assets/images/category_gift_bag_1795289466578.jpg';
-import homeDecorImg from '../../assets/images/category_home_decor_1795289476486.jpg';
 import kitchenGiftsImg from '../../assets/images/mobile_cat_kitchen_gifts_1795431665296.jpg';
-import uniqueChocolatesImg from '../../assets/images/mobile_cat_unique_chocolates_1795442024270.jpg';
 
 interface MobileCategoryItem {
   id: string;
   label: string;
   to: string;
   imageUrl: string;
+  isPng?: boolean;
 }
 
 const HOME_MOBILE_CATEGORIES: MobileCategoryItem[] = [
@@ -41,49 +33,57 @@ const HOME_MOBILE_CATEGORIES: MobileCategoryItem[] = [
     id: 'coffee-mugs',
     label: 'Coffee Mugs',
     to: '/categories?cat=coffee-mugs',
-    imageUrl: coffeeMugImg,
+    imageUrl: '/assets/aistudio/Festive_Red_Ribbon_Coffee_Mug_195c9bba.png',
+    isPng: true,
   },
   {
     id: 'tshirt-prints',
     label: 'T-Shirt Prints',
     to: '/categories?cat=tshirt-prints',
-    imageUrl: tshirtPrintImg,
+    imageUrl: '/assets/aistudio/Tropical_Sunset_T-Shirt_on_Golden_Display_cf5d3e8e.png',
+    isPng: true,
   },
   {
     id: 'photo-frames',
     label: 'Photo Frames',
     to: '/categories?cat=photo-frames',
-    imageUrl: photoFrameImg,
+    imageUrl: '/assets/aistudio/Romantic_Framed_Couple_on_Golden_Pedestal_ac3f2968.png',
+    isPng: true,
   },
   {
     id: 'led-lighting-gifts',
     label: 'LED Lighting Gifts',
     to: '/categories?cat=led-lighting-gifts',
-    imageUrl: moonLampImg,
+    imageUrl: '/assets/aistudio/Romantic_Moonlight_Couple_Lamp_Gift_Set_a4d8a6f1.png',
+    isPng: true,
   },
   {
     id: 'cushions',
     label: 'Cushions',
     to: '/categories?cat=cushions',
-    imageUrl: heartCushionImg,
+    imageUrl: '/assets/aistudio/Cuddling_Couple_Pillow_on_Golden_Pedestal_402804e5.png',
+    isPng: true,
   },
   {
     id: 'gift-boxes-hampers',
     label: 'Gift Boxes & Hampers',
     to: '/categories?cat=gift-boxes-hampers',
-    imageUrl: giftBoxHamperImg,
+    imageUrl: '/assets/aistudio/Luxury_Purple_Valentine_Gift_Hamper_7db1384e.png',
+    isPng: true,
   },
   {
     id: 'gift-bags',
     label: 'Gift Bags',
     to: '/categories?cat=gift-bags',
-    imageUrl: giftBagImg,
+    imageUrl: '/assets/aistudio/GiftKart_Floral_Luxury_Gift_Bag_6f56e4fd.png',
+    isPng: true,
   },
   {
     id: 'home-decor-gifts',
     label: 'Home Decor Gifts',
     to: '/categories?cat=home-decor-gifts',
-    imageUrl: homeDecorImg,
+    imageUrl: '/assets/aistudio/Warm_Buddha_Moonlight_Decor_Display_c24a114f.png',
+    isPng: true,
   },
   {
     id: 'kitchen-gifts',
@@ -95,7 +95,8 @@ const HOME_MOBILE_CATEGORIES: MobileCategoryItem[] = [
     id: 'unique-chocolates',
     label: 'Unique Chocolates',
     to: '/categories?cat=unique-chocolates',
-    imageUrl: uniqueChocolatesImg,
+    imageUrl: '/assets/aistudio/Luxury_Chocolate_Gift_Pack_Display_eebbbf98.png',
+    isPng: true,
   },
 ];
 
@@ -359,16 +360,28 @@ export function MobileHomePage() {
                 to={cat.to}
                 className="group flex flex-col items-center text-center transition-transform duration-150 active:scale-95"
               >
-                <div className="h-[56px] w-[56px] overflow-hidden rounded-xl bg-[#F3E8FF] min-[400px]:h-[60px] min-[400px]:w-[60px]">
-                  <img
-                    src={cat.imageUrl}
-                    alt={cat.label}
-                    loading="eager"
-                    referrerPolicy="no-referrer"
-                    className="h-full w-full object-cover"
-                  />
+                <div className="flex h-[62px] w-full items-center justify-center min-[400px]:h-[66px]">
+                  {cat.isPng ? (
+                    <img
+                      src={cat.imageUrl}
+                      alt={cat.label}
+                      loading="eager"
+                      referrerPolicy="no-referrer"
+                      className="h-full w-auto max-w-[70px] object-contain drop-shadow-[0_4px_8px_rgba(43,11,78,0.14)] min-[400px]:max-w-[74px]"
+                    />
+                  ) : (
+                    <div className="h-[56px] w-[56px] overflow-hidden rounded-xl bg-[#F3E8FF] min-[400px]:h-[60px] min-[400px]:w-[60px]">
+                      <img
+                        src={cat.imageUrl}
+                        alt={cat.label}
+                        loading="eager"
+                        referrerPolicy="no-referrer"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  )}
                 </div>
-                <span className="mt-1.5 line-clamp-2 w-full px-0.5 text-[10px] font-semibold leading-[1.2] text-[#2B0B4E] min-[400px]:text-[10.5px]">
+                <span className="mt-1 line-clamp-2 w-full px-0.5 text-[10px] font-semibold leading-[1.2] text-[#2B0B4E] min-[400px]:text-[10.5px]">
                   {cat.label}
                 </span>
               </Link>
