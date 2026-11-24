@@ -276,9 +276,9 @@ export function MobileCategoriesPage() {
     }
     addToCart(product, { quantity: 1, selectedVariants: defaultVariants });
     pushToast({
-      title: 'Added to Cart',
-      description: `${product.name} added to your GiftKart bag.`,
+      title: 'Product is added to cart.',
       variant: 'success',
+      compact: true,
     });
   }
 

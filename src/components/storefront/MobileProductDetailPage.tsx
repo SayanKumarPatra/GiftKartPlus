@@ -234,9 +234,9 @@ export function MobileProductDetailPage({
       selectedVariants,
     });
     pushToast({
-      title: 'Added to Cart',
-      description: product.name,
+      title: 'Product is added to cart.',
       variant: 'success',
+      compact: true,
     });
   }
 
@@ -256,9 +256,9 @@ export function MobileProductDetailPage({
       selectedVariants: buildDefaultVariants(relProduct),
     });
     pushToast({
-      title: 'Added to Cart',
-      description: relProduct.name,
+      title: 'Product is added to cart.',
       variant: 'success',
+      compact: true,
     });
   }
 

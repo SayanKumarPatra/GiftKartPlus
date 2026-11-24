@@ -34,9 +34,9 @@ export function ProductCard({ product, categoryLabel }: ProductCardProps) {
     });
     addToCart(product, { quantity: 1, selectedVariants: defaultVariants });
     pushToast({
-      title: 'Added to Cart',
-      description: `${product.name} · ${formatInr(product.priceInr)}`,
+      title: 'Product is added to cart.',
       variant: 'success',
+      compact: true,
     });
   }
 

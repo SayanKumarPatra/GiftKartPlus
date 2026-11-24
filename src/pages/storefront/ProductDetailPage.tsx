@@ -161,9 +161,9 @@ export function ProductDetailPage() {
       customPhotoPreviewUrl: photoPreviewUrl,
     });
     pushToast({
-      title: 'Added to Cart',
-      description: `${product.name} × ${quantity}`,
+      title: 'Product is added to cart.',
       variant: 'success',
+      compact: true,
     });
   }
 
