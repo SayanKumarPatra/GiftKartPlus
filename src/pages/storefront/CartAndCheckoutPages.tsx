@@ -32,6 +32,7 @@ import { ProductImage } from '../../components/ui/ProductImage';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { MobileCartPage } from '../../components/storefront/MobileCartPage';
+import { MobileCheckoutPage } from '../../components/storefront/MobileCheckoutPage';
 
 export function CartPage() {
   const {
@@ -416,20 +417,6 @@ export function CheckoutPage() {
     subtotalInr + giftWrapChargeInr + deliveryChargeInr - discountInr
   );
 
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        title="No items in your Gift Bag"
-        description="Add a gift to your bag before proceeding to Demo Checkout."
-        action={
-          <Link to="/shop">
-            <Button size="sm">Return to Shop</Button>
-          </Link>
-        }
-      />
-    );
-  }
-
   async function applyCheckoutCoupon() {
     const res = await services.promotions.validateCoupon(couponCode, subtotalInr);
     if (!res.valid) {
@@ -525,13 +512,32 @@ export function CheckoutPage() {
   }
 
   return (
-    <form onSubmit={(e) => void handlePlaceDemoOrder(e)} className="space-y-6">
-      <div>
-        <p className="text-xs font-bold text-[#FF4D8D]">
-          Demo Order Placement ONLY · No Real Payment Collected
-        </p>
-        <h1 className="mt-1 text-3xl font-extrabold text-[#3B0764]">Demo Checkout</h1>
+    <>
+      {/* Normal Mobile (< 900px): Dedicated Reference-Matched 3-Step Mobile Checkout */}
+      <div className="-mx-3.5 -my-4 sm:-mx-6 sm:-my-5 lg:hidden">
+        <MobileCheckoutPage />
       </div>
+
+      {/* Desktop & Laptop (>= 900px): Existing Desktop Checkout Completely Unchanged */}
+      <div className="hidden lg:block">
+        {items.length === 0 ? (
+          <EmptyState
+            title="No items in your Gift Bag"
+            description="Add a gift to your bag before proceeding to Demo Checkout."
+            action={
+              <Link to="/shop">
+                <Button size="sm">Return to Shop</Button>
+              </Link>
+            }
+          />
+        ) : (
+        <form onSubmit={(e) => void handlePlaceDemoOrder(e)} className="space-y-6">
+          <div>
+            <p className="text-xs font-bold text-[#FF4D8D]">
+              Demo Order Placement ONLY · No Real Payment Collected
+            </p>
+            <h1 className="mt-1 text-3xl font-extrabold text-[#3B0764]">Demo Checkout</h1>
+          </div>
 
       <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
         <div className="space-y-5 lg:col-span-7">
@@ -822,7 +828,10 @@ export function CheckoutPage() {
           </button>
         </div>
       </div>
-    </form>
+        </form>
+        )}
+      </div>
+    </>
   );
 }
 
