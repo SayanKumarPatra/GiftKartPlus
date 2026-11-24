@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, Clock, Package, Search, User } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Package, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useOrders } from '../../hooks/useStoreData';
 import { useToast } from '../../context/ToastContext';
-import { services } from '../../services/registry';
-import type { DemoOrder } from '../../types';
 import { formatDateTime, formatInr } from '../../utils/format';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
@@ -93,12 +91,12 @@ export function CustomerAccountPage() {
             </Button>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Link
               to="/my-orders"
               className="rounded-2xl border border-[#EBD8FF] bg-[#F8F2FF] p-4 text-center text-xs font-bold text-[#6A11CB] hover:bg-[#EBD8FF]/70"
             >
-              My Demo Orders →
+              My Orders →
             </Link>
             <Link
               to="/addresses"
@@ -111,12 +109,6 @@ export function CustomerAccountPage() {
               className="rounded-2xl border border-[#EBD8FF] bg-[#F8F2FF] p-4 text-center text-xs font-bold text-[#6A11CB] hover:bg-[#EBD8FF]/70"
             >
               Saved Wishlist →
-            </Link>
-            <Link
-              to="/track-order"
-              className="rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-4 text-center text-xs font-bold text-[#2B0B4E] hover:bg-[#EBD8FF]/70"
-            >
-              Track Order →
             </Link>
           </div>
 
@@ -273,12 +265,6 @@ export function MyOrdersPage() {
                   >
                     Order Details →
                   </Link>
-                  <Link
-                    to={`/track-order?order=${order.orderNumber}`}
-                    className="font-semibold text-[#594A6B] hover:text-[#6A11CB]"
-                  >
-                    Track Status
-                  </Link>
                 </div>
               </div>
             </div>
@@ -287,160 +273,5 @@ export function MyOrdersPage() {
       )}
       </div>
     </>
-  );
-}
-
-export function TrackOrderPage() {
-  const [searchParams] = useSearchParams();
-  const initialOrder = searchParams.get('order') ?? 'GK-2026-1001';
-  const [query, setQuery] = useState(initialOrder);
-  const [order, setOrder] = useState<DemoOrder | null>(null);
-  const [searched, setSearched] = useState(false);
-
-  useEffect(() => {
-    void services.orders.getOrderByNumber(initialOrder).then((found) => {
-      if (found) {
-        setOrder(found);
-        setSearched(true);
-      }
-    });
-  }, [initialOrder]);
-
-  async function handleLookup(e: React.FormEvent) {
-    e.preventDefault();
-    const found = await services.orders.getOrderByNumber(query);
-    setOrder(found);
-    setSearched(true);
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="gk-promo-gradient rounded-3xl border border-[#EBD8FF] p-6 sm:p-8">
-        <h1 className="text-3xl font-extrabold text-[#3B0764]">Track Demo Order</h1>
-        <p className="mt-1.5 text-sm text-[#4B2C70]">
-          Enter your GiftKart order number (try <span className="font-mono font-bold text-[#6A11CB]">GK-2026-1001</span> or{' '}
-          <span className="font-mono font-bold text-[#6A11CB]">GK-2026-1002</span>) to view frozen snapshots and timestamped status history.
-        </p>
-
-        <form onSubmit={(e) => void handleLookup(e)} className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="GK-2026-1001"
-            className="min-h-[46px] flex-1 rounded-full border border-[#EBD8FF] bg-white px-5 font-mono text-sm font-bold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="gk-btn-purple inline-flex min-h-[46px] items-center justify-center gap-2 rounded-full px-7 text-sm font-bold"
-          >
-            <Search className="h-4 w-4" />
-            <span>Track Order</span>
-          </button>
-        </form>
-      </div>
-
-      {searched && !order && (
-        <EmptyState
-          title="Order not found"
-          description={`We couldn't find a local demo order matching "${query}".`}
-        />
-      )}
-
-      {order && (
-        <div className="gk-card space-y-6 rounded-3xl p-6 sm:p-8">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#EBD8FF] pb-4">
-            <div>
-              <p className="font-mono text-xs font-bold text-[#FF4D8D]">
-                {order.orderNumber} · DEMO ORDER ONLY · {order.customer.deliveryZoneNameSnapshot}
-              </p>
-              <h2 className="mt-1 text-2xl font-extrabold text-[#3B0764]">
-                Current Status: {order.fulfillmentStatus}
-              </h2>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-[#6E5B85]">Grand Total</p>
-              <p className="font-mono text-2xl font-extrabold tabular-nums text-[#6A11CB]">
-                {formatInr(order.grandTotalInr)}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-12">
-            <div className="space-y-4 lg:col-span-6">
-              <h3 className="text-sm font-extrabold text-[#2B0B4E]">
-                Frozen Item &amp; Gift Wrapping Snapshots
-              </h3>
-              {order.items.map((item, idx) => (
-                <div
-                  key={`${item.productSkuSnapshot}-${idx}`}
-                  className="rounded-2xl border border-[#EBD8FF] bg-[#F8F2FF]/70 p-4 text-xs"
-                >
-                  <div className="flex justify-between gap-2">
-                    <span className="font-bold text-[#2B0B4E]">
-                      {item.productNameSnapshot} × {item.quantity}
-                    </span>
-                    <span className="font-mono font-bold tabular-nums text-[#6A11CB]">
-                      {formatInr(item.lineTotalInr)}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 font-mono text-[11px] text-[#6E5B85]">
-                    SKU: {item.productSkuSnapshot} · Unit: {formatInr(item.unitPriceInrSnapshot)}
-                  </p>
-                  {item.personalizationDetails && (
-                    <p className="mt-1 font-semibold text-[#6A11CB]">
-                      Personalization: {item.personalizationDetails}
-                    </p>
-                  )}
-                </div>
-              ))}
-
-              {order.giftWrap.enabled && (
-                <div className="rounded-2xl border border-[#EBD8FF] bg-[#FFF0F6]/70 p-4 text-xs">
-                  <p className="font-bold text-[#FF4D8D]">
-                    Gift Wrap: {order.giftWrap.styleNameSnapshot} ({formatInr(order.giftWrap.chargeInrSnapshot)})
-                  </p>
-                  <p className="mt-1 text-[#2B0B4E]">
-                    Recipient: {order.giftWrap.recipientName || 'Not specified'}
-                  </p>
-                  {order.giftWrap.giftMessage && (
-                    <p className="mt-1 italic text-[#594A6B]">&ldquo;{order.giftWrap.giftMessage}&rdquo;</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-3 lg:col-span-6">
-              <h3 className="flex items-center gap-2 text-sm font-extrabold text-[#2B0B4E]">
-                <Clock className="h-4 w-4 text-[#6A11CB]" />
-                <span>Timestamped Status History</span>
-              </h3>
-              <ol className="space-y-3">
-                {order.statusHistory.map((entry, idx) => (
-                  <li
-                    key={`${entry.timestamp}-${idx}`}
-                    className="rounded-2xl border border-[#EBD8FF] bg-white p-4 text-xs"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1.5 font-bold text-[#2B0B4E]">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                        {entry.status}
-                      </span>
-                      <span className="font-mono text-[11px] tabular-nums text-[#6E5B85]">
-                        {formatDateTime(entry.timestamp)}
-                      </span>
-                    </div>
-                    {entry.note && <p className="mt-1.5 text-[#594A6B]">{entry.note}</p>}
-                    <p className="mt-1 text-[11px] text-[#8B7AA0]">
-                      Updated by: {entry.updatedBy}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
   );
 }

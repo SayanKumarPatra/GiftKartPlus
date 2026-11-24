@@ -48,6 +48,7 @@ export interface IOrderService {
     nextStatus: OrderFulfillmentStatus,
     note?: string
   ): Promise<DemoOrder>;
+  cancelOrderByCustomer(orderId: string, reason?: string): Promise<DemoOrder>;
 }
 
 export interface CouponValidationResult {

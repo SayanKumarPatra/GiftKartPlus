@@ -42,6 +42,8 @@ import {
   useStoreSettings,
 } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
+import { STORAGE_KEYS, readStorage } from '../../storage/localStorageEngine';
+import type { SavedAddress } from '../../types';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
 import {
@@ -50,6 +52,33 @@ import {
   validateIndianPincode,
   validateRequired,
 } from '../../utils/validation';
+
+function normalizeIndianPhoneInput(raw?: string): string {
+  if (!raw) return '';
+  const digits = raw.replace(/\D/g, '');
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
+function pickSavedAddress(
+  addresses: SavedAddress[],
+  preferredId?: string | null
+): SavedAddress | null {
+  if (addresses.length === 0) return null;
+  const candidate =
+    (preferredId ? addresses.find((a) => a.id === preferredId) : undefined) ??
+    addresses.find((a) => a.isDefault) ??
+    addresses[0];
+  if (
+    candidate &&
+    candidate.fullName.trim() &&
+    candidate.phone.trim() &&
+    candidate.addressLine1.trim() &&
+    candidate.pincode.trim()
+  ) {
+    return candidate;
+  }
+  return null;
+}
 
 type CheckoutStep = 1 | 2 | 3;
 
@@ -119,21 +148,47 @@ export function MobileCheckoutPage() {
     [settings?.deliveryZones]
   );
 
-  // Step state (1: Address, 2: Confirm Details, 3: Payment)
-  const [step, setStep] = useState<CheckoutStep>(1);
+  // Read saved address synchronously on mount so returning users start directly on Step 2 (Confirm Details)
+  const initialSavedAddress = useMemo(() => {
+    const stored = readStorage<SavedAddress[]>(STORAGE_KEYS.SAVED_ADDRESSES, []);
+    return pickSavedAddress(stored, routeState?.selectedAddressId);
+  }, [routeState?.selectedAddressId]);
+
+  const startedAtConfirmStep = Boolean(initialSavedAddress);
+
+  // Step state: skip Step 1 when a saved address already exists; otherwise start at Step 1
+  const [step, setStep] = useState<CheckoutStep>(() =>
+    initialSavedAddress ? 2 : 1
+  );
 
   // Step 1 form state
-  const [fullName, setFullName] = useState(customerAccount?.fullName ?? '');
-  const [phone, setPhone] = useState(customerAccount?.phone ?? '');
-  const [email, setEmail] = useState(customerAccount?.email ?? '');
-  const [addressLine1, setAddressLine1] = useState('');
-  const [landmark, setLandmark] = useState('');
-  const [pincode, setPincode] = useState('');
+  const [fullName, setFullName] = useState(
+    () => initialSavedAddress?.fullName || customerAccount?.fullName || ''
+  );
+  const [phone, setPhone] = useState(() =>
+    normalizeIndianPhoneInput(
+      initialSavedAddress?.phone || customerAccount?.phone || ''
+    )
+  );
+  const [email, setEmail] = useState(
+    () => customerAccount?.email || initialSavedAddress?.email || ''
+  );
+  const [addressLine1, setAddressLine1] = useState(
+    () => initialSavedAddress?.addressLine1 || ''
+  );
+  const [landmark, setLandmark] = useState(
+    () => initialSavedAddress?.area || ''
+  );
+  const [pincode, setPincode] = useState(
+    () => initialSavedAddress?.pincode || ''
+  );
   const [saveForFuture, setSaveForFuture] = useState(true);
   const [activeAddressId, setActiveAddressId] = useState<string | null>(
-    routeState?.selectedAddressId ?? null
+    () => initialSavedAddress?.id ?? routeState?.selectedAddressId ?? null
   );
-  const [addressPrefilled, setAddressPrefilled] = useState(false);
+  const [addressPrefilled, setAddressPrefilled] = useState(() =>
+    Boolean(initialSavedAddress)
+  );
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Step 2 coupon state (synced from Cart router state when present)
@@ -161,27 +216,30 @@ export function MobileCheckoutPage() {
       setFullName(customerAccount.fullName);
     }
     if (customerAccount?.phone && !phone && !addressPrefilled) {
-      setPhone(customerAccount.phone);
+      setPhone(normalizeIndianPhoneInput(customerAccount.phone));
     }
   }, [customerAccount, email, fullName, phone, addressPrefilled]);
 
-  // Pre-fill Step 1 fields once from saved address (route selected or default)
+  // Fallback async hydration if savedAddresses arrives after mount
   useEffect(() => {
     if (addressPrefilled || savedAddresses.length === 0) return;
-    const preferred =
-      savedAddresses.find((a) => a.id === routeState?.selectedAddressId) ??
-      savedAddresses.find((a) => a.isDefault) ??
-      savedAddresses[0];
+    const preferred = pickSavedAddress(
+      savedAddresses,
+      routeState?.selectedAddressId
+    );
     if (!preferred) return;
 
     setActiveAddressId(preferred.id);
     setFullName(preferred.fullName || customerAccount?.fullName || '');
-    setPhone(preferred.phone || customerAccount?.phone || '');
+    setPhone(
+      normalizeIndianPhoneInput(preferred.phone || customerAccount?.phone || '')
+    );
     setEmail(customerAccount?.email || preferred.email || '');
     setAddressLine1(preferred.addressLine1 || '');
     setLandmark(preferred.area || '');
     setPincode(preferred.pincode || '');
     setAddressPrefilled(true);
+    setStep(2);
   }, [savedAddresses, addressPrefilled, routeState?.selectedAddressId, customerAccount]);
 
   // Re-validate applied coupon if cart subtotal changes
@@ -278,7 +336,19 @@ export function MobileCheckoutPage() {
       return;
     }
     if (step === 2) {
+      if (startedAtConfirmStep) {
+        if (window.history.length > 1) {
+          navigate(-1);
+        } else {
+          navigate('/cart');
+        }
+        return;
+      }
       setStep(1);
+      return;
+    }
+    if (step === 1 && startedAtConfirmStep && fullName.trim() && addressLine1.trim() && pincode.trim()) {
+      setStep(2);
       return;
     }
     if (window.history.length > 1) {
@@ -293,7 +363,7 @@ export function MobileCheckoutPage() {
     if (!addr) return;
     setActiveAddressId(addr.id);
     setFullName(addr.fullName);
-    setPhone(addr.phone);
+    setPhone(normalizeIndianPhoneInput(addr.phone));
     setEmail(customerAccount?.email || addr.email || email);
     setAddressLine1(addr.addressLine1);
     setLandmark(addr.area || '');
@@ -454,6 +524,8 @@ export function MobileCheckoutPage() {
         deliveryChargeInr: 0,
         grandTotalInr: pricing.orderTotalInr,
         couponCode: couponDiscount > 0 ? appliedCouponCode : undefined,
+        paymentMethod:
+          paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'UPI Payment',
       });
 
       clearCart();

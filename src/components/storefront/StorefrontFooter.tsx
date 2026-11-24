@@ -41,7 +41,6 @@ const ABOUT_LINKS = [
   { label: 'About Us', to: '/about' },
   { label: 'Our Story', to: '/about' },
   { label: 'Customization Guide', to: '/customization-guide' },
-  { label: 'Track Order', to: '/track-order' },
   { label: 'Careers', to: '/contact' },
 ];
 

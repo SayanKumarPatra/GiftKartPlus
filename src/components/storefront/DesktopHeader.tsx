@@ -137,9 +137,8 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
                 <div className="rounded-xl border border-[#E6DCF5] bg-white p-1.5 shadow-lg shadow-[#2B0B4E]/10">
                   {[
                     { label: customerAccount ? 'My Profile' : 'Sign In / Account', to: '/account' },
-                    { label: 'My Demo Orders', to: '/my-orders' },
+                    { label: 'My Orders', to: '/my-orders' },
                     { label: 'Saved Addresses', to: '/addresses' },
-                    { label: 'Track Order', to: '/track-order' },
                   ].map((item) => (
                     <Link
                       key={item.to}

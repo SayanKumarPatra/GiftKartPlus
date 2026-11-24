@@ -91,6 +91,7 @@ export class LocalOrderService implements IOrderService {
       deliveryChargeInr: input.deliveryChargeInr,
       grandTotalInr: input.grandTotalInr,
       couponCode: input.couponCode,
+      paymentMethod: input.paymentMethod ?? 'Cash on Delivery (COD)',
       paymentGatewayStatus: 'CASHFREE_NOT_CONNECTED',
       fulfillmentStatus: 'Demo Placed',
       statusHistory: [initialHistoryEntry],
@@ -125,6 +126,40 @@ export class LocalOrderService implements IOrderService {
     const updated: DemoOrder = {
       ...target,
       fulfillmentStatus: nextStatus,
+      statusHistory: [...target.statusHistory, historyEntry],
+      updatedAt: now,
+    };
+
+    const nextAll = [...existing];
+    nextAll[index] = updated;
+    writeStorage(STORAGE_KEYS.ORDERS, nextAll, 'orders');
+    return updated;
+  }
+
+  async cancelOrderByCustomer(orderId: string, reason?: string): Promise<DemoOrder> {
+    const existing = this.readOrders();
+    const index = existing.findIndex((o) => o.id === orderId);
+    if (index < 0) {
+      throw new Error(`Order not found: ${orderId}`);
+    }
+    const target = existing[index];
+    if (target.fulfillmentStatus !== 'Demo Placed') {
+      throw new Error(
+        'Order cannot be cancelled once processing has started.'
+      );
+    }
+
+    const now = new Date().toISOString();
+    const historyEntry: OrderStatusHistoryEntry = {
+      status: 'Cancelled',
+      timestamp: now,
+      note: reason?.trim() || 'Cancelled by customer before processing.',
+      updatedBy: 'Customer',
+    };
+
+    const updated: DemoOrder = {
+      ...target,
+      fulfillmentStatus: 'Cancelled',
       statusHistory: [...target.statusHistory, historyEntry],
       updatedAt: now,
     };

@@ -740,6 +740,7 @@ export const SEED_DEMO_ORDERS: DemoOrder[] = [
     deliveryChargeInr: 0,
     grandTotalInr: 978,
     couponCode: 'KAHANI10',
+    paymentMethod: 'Cash on Delivery (COD)',
     paymentGatewayStatus: 'CASHFREE_NOT_CONNECTED',
     fulfillmentStatus: 'Preparing',
     statusHistory: [
@@ -809,6 +810,7 @@ export const SEED_DEMO_ORDERS: DemoOrder[] = [
     discountInr: 0,
     deliveryChargeInr: 69,
     grandTotalInr: 866,
+    paymentMethod: 'Cash on Delivery (COD)',
     paymentGatewayStatus: 'CASHFREE_NOT_CONNECTED',
     fulfillmentStatus: 'Demo Placed',
     statusHistory: [

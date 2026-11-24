@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
 import { StorefrontLayout } from '../layouts/StorefrontLayout';
 import { AdminLayout } from '../layouts/AdminLayout';
 import { AdminRouteGuard } from '../components/admin/AdminRouteGuard';
@@ -18,7 +18,6 @@ import {
 import {
   CustomerAccountPage,
   MyOrdersPage,
-  TrackOrderPage,
 } from '../pages/storefront/AccountAndOrderPages';
 import {
   CustomizationGuidePage,
@@ -99,7 +98,7 @@ export function AppRouter() {
           <Route path="addresses" element={<SavedAddressesPage />} />
           <Route path="account" element={<CustomerAccountPage />} />
           <Route path="my-orders" element={<MyOrdersPage />} />
-          <Route path="track-order" element={<TrackOrderPage />} />
+          <Route path="track-order" element={<Navigate to="/my-orders" replace />} />
           <Route path="customization-guide" element={<CustomizationGuidePage />} />
           <Route path="about" element={<AboutUsPage />} />
           <Route path="contact" element={<ContactUsPage />} />

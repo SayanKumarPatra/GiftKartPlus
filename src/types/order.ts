@@ -29,7 +29,7 @@ export interface OrderStatusHistoryEntry {
   status: OrderFulfillmentStatus;
   timestamp: string;
   note?: string;
-  updatedBy: 'System (Demo Order)' | 'Admin';
+  updatedBy: 'System (Demo Order)' | 'Admin' | 'Customer';
 }
 
 export interface OrderCustomerDetails {
@@ -59,6 +59,7 @@ export interface DemoOrder {
   deliveryChargeInr: number;
   grandTotalInr: number;
   couponCode?: string;
+  paymentMethod?: string;
   paymentGatewayStatus: PaymentGatewayStatus;
   fulfillmentStatus: OrderFulfillmentStatus;
   statusHistory: OrderStatusHistoryEntry[];
@@ -77,4 +78,5 @@ export interface CreateDemoOrderInput {
   deliveryChargeInr: number;
   grandTotalInr: number;
   couponCode?: string;
+  paymentMethod?: string;
 }

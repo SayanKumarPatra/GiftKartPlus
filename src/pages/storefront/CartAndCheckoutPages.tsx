@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  CheckCircle2,
+  ChevronRight,
   Gift,
   MapPin,
   Minus,
+  Package,
   Plus,
   ShieldAlert,
   ShoppingBag,
@@ -835,12 +836,30 @@ export function CheckoutPage() {
   );
 }
 
+const ORDER_BURST_PARTICLES: {
+  tx: string;
+  ty: string;
+  color: string;
+  size: string;
+  shape: string;
+}[] = [
+  { tx: '-58px', ty: '-48px', color: '#6A11CB', size: 'h-2.5 w-2.5', shape: 'rounded-full' },
+  { tx: '58px', ty: '-46px', color: '#FF4D8D', size: 'h-2.5 w-2.5', shape: 'rounded-full' },
+  { tx: '-70px', ty: '6px', color: '#F59E0B', size: 'h-2 w-3.5', shape: 'rounded-full' },
+  { tx: '70px', ty: '8px', color: '#16A34A', size: 'h-2 w-3.5', shape: 'rounded-full' },
+  { tx: '-46px', ty: '54px', color: '#FF4D8D', size: 'h-2.5 w-2.5', shape: 'rounded-xs' },
+  { tx: '48px', ty: '52px', color: '#6A11CB', size: 'h-2.5 w-2.5', shape: 'rounded-xs' },
+  { tx: '0px', ty: '-68px', color: '#16A34A', size: 'h-2 w-2', shape: 'rounded-full' },
+  { tx: '12px', ty: '64px', color: '#F59E0B', size: 'h-2 w-2', shape: 'rounded-full' },
+];
+
 export function OrderConfirmationPage() {
   const { orderNumber } = useParams();
   const [order, setOrder] = useState<DemoOrder | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
     let active = true;
     if (orderNumber) {
       void services.orders
@@ -860,99 +879,157 @@ export function OrderConfirmationPage() {
   }, [orderNumber]);
 
   if (loading) {
-    return <div className="h-64 animate-pulse rounded-3xl bg-[#F8F2FF]" />;
+    return (
+      <div className="mx-auto max-w-md px-4 py-12">
+        <div className="h-72 animate-pulse rounded-[28px] bg-[#F5ECFF]" />
+      </div>
+    );
   }
 
   if (!order) {
     return (
-      <EmptyState
-        title="Order receipt not found"
-        description="Look up your order number on the Track Order page."
-        action={
-          <Link to="/track-order">
-            <Button size="sm">Go to Track Order</Button>
-          </Link>
-        }
-      />
+      <div className="mx-auto max-w-md px-4 py-12">
+        <EmptyState
+          title="Order details unavailable"
+          description="You can view all your orders and live status directly inside My Orders."
+          action={
+            <Link to="/my-orders">
+              <Button size="sm">My Orders</Button>
+            </Link>
+          }
+        />
+      </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="gk-promo-gradient rounded-3xl border border-[#EBD8FF] p-7 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-emerald-600 shadow-sm">
-          <CheckCircle2 className="h-8 w-8" />
-        </div>
-        <p className="mt-3 font-mono text-xs font-bold text-[#FF4D8D]">
-          DEMO ORDER CONFIRMED · NO PAYMENT COLLECTED
-        </p>
-        <h1 className="mt-1 text-3xl font-extrabold text-[#3B0764]">
-          Thank You, {order.customer.fullName}!
-        </h1>
-        <p className="mt-2 text-sm text-[#4B2C70]">
-          Order <span className="font-mono font-extrabold text-[#6A11CB]">{order.orderNumber}</span> placed on{' '}
-          {formatDateTime(order.createdAt)} for delivery in{' '}
-          <strong>{order.customer.deliveryZoneNameSnapshot}</strong>.
-        </p>
-      </div>
+    <div className="-mx-3.5 -my-4 min-h-[calc(100dvh-110px)] bg-gradient-to-b from-[#FDF9FF] via-[#FAF4FF] to-[#F5ECFF] px-4 pb-28 pt-8 sm:-mx-6 sm:-my-5 lg:mx-auto lg:my-0 lg:min-h-0 lg:max-w-xl lg:bg-none lg:px-0 lg:pb-12 lg:pt-6">
+      <div className="mx-auto flex max-w-md flex-col items-center text-center">
+        {/* Official App Order Placed Celebration Animation */}
+        <div className="relative flex h-32 w-32 items-center justify-center">
+          {/* Concentric Expanding Success Ripples */}
+          <span
+            aria-hidden="true"
+            className="gk-anim-order-ripple-1 absolute h-20 w-20 rounded-full border-2 border-[#16A34A]/45 bg-[#DCFCE7]/50"
+          />
+          <span
+            aria-hidden="true"
+            className="gk-anim-order-ripple-2 absolute h-20 w-20 rounded-full border-2 border-[#6A11CB]/30 bg-[#EBD8FF]/35"
+          />
 
-      <div className="gk-card space-y-5 rounded-3xl p-6">
-        <h2 className="text-base font-extrabold text-[#3B0764]">
-          Immutable Order Snapshot
-        </h2>
-        <ul className="divide-y divide-[#EBD8FF] text-sm">
-          {order.items.map((item, idx) => (
-            <li key={`${item.productSkuSnapshot}-${idx}`} className="py-3">
-              <div className="flex justify-between gap-2">
-                <span className="font-bold text-[#2B0B4E]">
-                  {item.productNameSnapshot} × {item.quantity}
-                </span>
-                <span className="font-mono font-bold tabular-nums text-[#6A11CB]">
+          {/* Celebratory Confetti Burst Particles */}
+          {ORDER_BURST_PARTICLES.map((particle, idx) => (
+            <span
+              key={idx}
+              aria-hidden="true"
+              style={
+                {
+                  '--tx': particle.tx,
+                  '--ty': particle.ty,
+                  backgroundColor: particle.color,
+                } as React.CSSProperties
+              }
+              className={`gk-anim-confetti absolute ${particle.size} ${particle.shape}`}
+            />
+          ))}
+
+          {/* Blooming Success Circle with Self-Drawing Checkmark */}
+          <div className="gk-anim-order-pop relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#22C55E] to-[#16A34A] shadow-[0_14px_30px_-6px_rgba(22,163,74,0.52)] ring-[6px] ring-[#DCFCE7]">
+            <svg
+              viewBox="0 0 48 48"
+              fill="none"
+              aria-hidden="true"
+              className="h-10 w-10"
+            >
+              <path
+                d="M12.5 24.8L20.5 32.8L35.8 16.5"
+                stroke="#FFFFFF"
+                strokeWidth="4.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="gk-anim-check-draw"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Title & Confirmation Copy */}
+        <div className="gk-anim-slide-up-1 mt-2">
+          <h1 className="text-[24px] font-extrabold tracking-[-0.02em] text-[#2B0B4E]">
+            Order Placed Successfully!
+          </h1>
+          <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#5B4775]">
+            Thank you, <span className="font-bold text-[#2B0B4E]">{order.customer.fullName}</span>! Your GiftKart order has been confirmed.
+          </p>
+        </div>
+
+        {/* Compact Order Summary Card (No Tracking ID) */}
+        <div className="gk-anim-slide-up-2 mt-6 w-full rounded-[22px] border border-[#EBD8FF] bg-white p-4 text-left shadow-[0_10px_28px_-14px_rgba(106,17,203,0.18)]">
+          <ul className="divide-y divide-[#F3E9FF]">
+            {order.items.map((item, idx) => (
+              <li
+                key={`${item.productSkuSnapshot}-${idx}`}
+                className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+              >
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#F2E6FF] bg-[#FAF6FF]">
+                  <ProductImage
+                    src={item.imageSnapshot}
+                    alt={item.productNameSnapshot}
+                    aspectClass="aspect-square"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-[13.5px] font-extrabold leading-snug text-[#2B0B4E]">
+                    {item.productNameSnapshot}
+                  </p>
+                  <p className="mt-0.5 text-[12px] font-semibold text-[#6E5B85]">
+                    Qty: {item.quantity}
+                  </p>
+                </div>
+                <span className="shrink-0 text-[14.5px] font-extrabold tabular-nums text-[#FF1F7A]">
                   {formatInr(item.lineTotalInr)}
                 </span>
-              </div>
-              <p className="font-mono text-xs text-[#6E5B85]">
-                SKU: {item.productSkuSnapshot} · Unit: {formatInr(item.unitPriceInrSnapshot)}
-              </p>
-              {item.personalizationDetails && (
-                <p className="mt-0.5 text-xs text-[#6A11CB]">
-                  Personalization: {item.personalizationDetails}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
 
-        {order.giftWrap.enabled && (
-          <div className="rounded-2xl border border-[#EBD8FF] bg-[#FFF0F6]/70 p-4 text-xs">
-            <p className="font-bold text-[#6A11CB]">
-              Gift Wrapping: {order.giftWrap.styleNameSnapshot} ({formatInr(order.giftWrap.chargeInrSnapshot)})
-            </p>
-            {order.giftWrap.recipientName && (
-              <p className="mt-1 text-[#2B0B4E]">Recipient: {order.giftWrap.recipientName}</p>
-            )}
-            {order.giftWrap.giftMessage && (
-              <p className="mt-0.5 italic text-[#594A6B]">&ldquo;{order.giftWrap.giftMessage}&rdquo;</p>
-            )}
+          <div className="mt-3.5 space-y-2 border-t border-[#EFE3FF] pt-3 text-[12.5px]">
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-[#6E5B85]">Delivery Address</span>
+              <span className="max-w-[65%] text-right font-semibold leading-snug text-[#2B0B4E]">
+                {order.customer.addressLine1}, {order.customer.city} - {order.customer.pincode}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[#6E5B85]">Payment Method</span>
+              <span className="font-bold text-[#2B0B4E]">
+                {order.paymentMethod || 'Cash on Delivery (COD)'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[#6E5B85]">Order Date</span>
+              <span className="font-semibold text-[#2B0B4E]">
+                {formatDateTime(order.createdAt)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between border-t border-[#EFE3FF] pt-2.5 text-[15px] font-extrabold text-[#2B0B4E]">
+              <span>Order Total</span>
+              <span className="tabular-nums text-[#6A11CB]">
+                {formatInr(order.grandTotalInr)}
+              </span>
+            </div>
           </div>
-        )}
-
-        <div className="flex justify-between border-t border-[#EBD8FF] pt-4 text-lg font-extrabold text-[#3B0764]">
-          <span>Grand Total</span>
-          <span className="font-mono tabular-nums text-[#6A11CB]">
-            {formatInr(order.grandTotalInr)}
-          </span>
         </div>
 
-        <div className="flex flex-wrap gap-3 pt-2">
-          <Link to={`/track-order?order=${order.orderNumber}`}>
-            <Button>Track This Order</Button>
-          </Link>
-          <Link to="/my-orders">
-            <Button variant="glass">View My Orders</Button>
-          </Link>
-          <Link to="/shop">
-            <Button variant="ghost">Continue Shopping</Button>
+        {/* Single Action Option: My Orders */}
+        <div className="gk-anim-slide-up-3 mt-5 w-full">
+          <Link
+            to="/my-orders"
+            className="flex h-[52px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[16px] font-extrabold text-white shadow-[0_8px_22px_-4px_rgba(162,28,175,0.48)] transition-transform active:scale-[0.985]"
+          >
+            <Package className="h-[19px] w-[19px] shrink-0 stroke-[2.2]" />
+            <span>My Orders</span>
+            <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.5]" />
           </Link>
         </div>
       </div>

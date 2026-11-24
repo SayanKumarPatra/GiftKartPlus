@@ -33,7 +33,6 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
     Icon: Package,
     matches: (pathname) =>
       pathname === '/my-orders' ||
-      pathname === '/track-order' ||
       pathname.startsWith('/order/') ||
       pathname.startsWith('/order-confirmation/'),
   },

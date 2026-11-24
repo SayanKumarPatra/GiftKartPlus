@@ -10,7 +10,6 @@ import {
   Package,
   Phone,
   ShoppingCart,
-  Truck,
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -29,7 +28,6 @@ interface DrawerMainLink {
 
 const MOBILE_DRAWER_MAIN_LINKS: DrawerMainLink[] = [
   { label: 'Home', to: '/', Icon: Home },
-  { label: 'Track Order', to: '/track-order', Icon: Truck },
   { label: 'My Orders', to: '/my-orders', Icon: Package },
   { label: 'Saved Addresses', to: '/addresses', Icon: MapPin },
   { label: 'About Us', to: '/about', Icon: Info },

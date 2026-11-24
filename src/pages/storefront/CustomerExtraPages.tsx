@@ -38,8 +38,10 @@ import { ProductImage } from '../../components/ui/ProductImage';
  * ========================================================================== */
 export function OrderDetailsPage() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
+  const { pushToast } = useToast();
   const [order, setOrder] = useState<DemoOrder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -56,6 +58,31 @@ export function OrderDetailsPage() {
       active = false;
     };
   }, [orderNumber]);
+
+  async function handleCancelOrder() {
+    if (!order || order.fulfillmentStatus !== 'Demo Placed' || cancelling) return;
+    setCancelling(true);
+    try {
+      const updated = await services.orders.cancelOrderByCustomer(order.id);
+      setOrder(updated);
+      pushToast({
+        title: 'Order Cancelled',
+        description: `Order ${updated.orderNumber} has been cancelled before processing.`,
+        variant: 'info',
+      });
+    } catch (err) {
+      pushToast({
+        title: 'Unable to Cancel Order',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Order cannot be cancelled once processing has started.',
+        variant: 'error',
+      });
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -105,8 +132,10 @@ export function OrderDetailsPage() {
               {order.orderNumber}
             </h1>
             <p className="mt-1 text-xs text-[#594A6B]">
-              Placed on {formatDateTime(order.createdAt)} · Cashfree:{' '}
-              <strong className="text-[#6A11CB]">Integration Ready — Not Connected</strong>
+              Placed on {formatDateTime(order.createdAt)} · Payment:{' '}
+              <strong className="text-[#6A11CB]">
+                {order.paymentMethod || 'Cash on Delivery (COD)'}
+              </strong>
             </p>
           </div>
           <div className="text-left sm:text-right">
@@ -234,6 +263,12 @@ export function OrderDetailsPage() {
             <span>Delivery ({order.customer.deliveryZoneNameSnapshot})</span>
             <span className="font-mono">{formatInr(order.deliveryChargeInr)}</span>
           </div>
+          <div className="flex justify-between text-[#594A6B]">
+            <span>Payment Method</span>
+            <span className="font-bold text-[#2B0B4E]">
+              {order.paymentMethod || 'Cash on Delivery (COD)'}
+            </span>
+          </div>
           <div className="flex justify-between border-t border-[#EBD8FF] pt-2 text-sm font-extrabold text-[#2B0B4E]">
             <span>Grand Total</span>
             <span className="font-mono text-[#6A11CB]">{formatInr(order.grandTotalInr)}</span>
@@ -262,18 +297,32 @@ export function OrderDetailsPage() {
           ))}
         </ol>
 
-        <div className="flex flex-wrap gap-3 pt-2">
+        <div className="flex flex-wrap items-center gap-3 pt-2">
           <Link to="/my-orders">
             <Button variant="glass" size="sm">
               <ArrowLeft className="h-3.5 w-3.5" />
               <span>Back to My Orders</span>
             </Button>
           </Link>
-          <Link to={`/track-order?order=${order.orderNumber}`}>
-            <Button variant="primary" size="sm">
-              Track Order Live View
+          {order.fulfillmentStatus === 'Demo Placed' && (
+            <Button
+              type="button"
+              variant="glass"
+              size="sm"
+              disabled={cancelling}
+              onClick={() => void handleCancelOrder()}
+              className="border-rose-200 text-rose-700 hover:border-rose-300 hover:bg-rose-50"
+            >
+              {cancelling ? 'Cancelling...' : 'Cancel Order'}
             </Button>
-          </Link>
+          )}
+          {(order.fulfillmentStatus === 'Confirmed' ||
+            order.fulfillmentStatus === 'Preparing' ||
+            order.fulfillmentStatus === 'Out for Delivery') && (
+            <span className="text-xs font-medium text-[#6E5B85]">
+              Cancellation is unavailable once processing has started.
+            </span>
+          )}
         </div>
       </div>
     </div>

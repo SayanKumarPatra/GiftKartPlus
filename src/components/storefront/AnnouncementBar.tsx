@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Headphones, PackageSearch, Sparkles } from 'lucide-react';
+import { Headphones, Sparkles } from 'lucide-react';
 import { useStoreSettings } from '../../hooks/useStoreData';
 
 export function AnnouncementBar() {
@@ -14,7 +14,6 @@ export function AnnouncementBar() {
     announcement?.desktopText ??
     'Delivery in Jalchak • Customization Available • Demo Orders Only (No COD)';
   const showSupport = announcement?.showSupportLink ?? true;
-  const showTrack = announcement?.showTrackOrderLink ?? true;
 
   return (
     <div
@@ -37,15 +36,6 @@ export function AnnouncementBar() {
             >
               <Headphones className="h-3.5 w-3.5" />
               <span>Customer Support</span>
-            </Link>
-          )}
-          {showTrack && (
-            <Link
-              to="/track-order"
-              className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-0.5 text-white transition-colors hover:bg-white/25"
-            >
-              <PackageSearch className="h-3.5 w-3.5" />
-              <span>Track Order</span>
             </Link>
           )}
         </div>
