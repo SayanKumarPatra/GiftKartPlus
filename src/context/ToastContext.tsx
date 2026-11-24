@@ -27,10 +27,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const pushToast = useCallback(
     (toast: Omit<ToastItem, 'id'>) => {
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      setToasts((prev) => [...prev.slice(-3), { ...toast, id }]);
+      setToasts((prev) => [...prev.slice(-2), { ...toast, id }]);
       window.setTimeout(() => {
         dismissToast(id);
-      }, 3600);
+      }, 2800);
     },
     [dismissToast]
   );
@@ -40,7 +40,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="fixed bottom-20 right-4 z-50 flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-2.5 lg:bottom-6"
+        className="pointer-events-none fixed inset-x-4 bottom-[132px] z-50 mx-auto flex max-w-sm flex-col gap-2 lg:inset-x-auto lg:bottom-6 lg:right-4 lg:mx-0"
       >
         {toasts.map((toast) => {
           const Icon =
@@ -58,9 +58,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           return (
             <div
               key={toast.id}
-              className="glass-surface-strong flex items-start gap-3 rounded-2xl p-3.5 text-sm text-[#1A1025] transition-all duration-150"
+              className="pointer-events-auto glass-surface-strong flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-sm text-[#1A1025] shadow-[0_8px_24px_rgba(43,11,78,0.16)] transition-all duration-150"
             >
-              <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${iconColor}`} />
+              <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} />
               <div className="min-w-0 flex-1">
                 <p className="font-semibold leading-snug text-[#1A1025]">{toast.title}</p>
                 {toast.description && (

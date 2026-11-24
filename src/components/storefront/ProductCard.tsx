@@ -13,14 +13,19 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, categoryLabel }: ProductCardProps) {
-  const { addToCart, toggleWishlist, isWishlisted, openCartDrawer } = useCart();
+  const { items, addToCart, toggleWishlist, isWishlisted } = useCart();
   const { customerAccount } = useAuth();
   const { pushToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const saved = isWishlisted(product.id);
+  const isInCart = items.some((item) => item.productId === product.id);
 
   function handleAddToCart() {
+    if (isInCart) {
+      navigate('/cart');
+      return;
+    }
     const defaultVariants: Record<string, string> = {};
     product.variants.forEach((group) => {
       if (group.options.length > 0) {
@@ -33,7 +38,6 @@ export function ProductCard({ product, categoryLabel }: ProductCardProps) {
       description: `${product.name} · ${formatInr(product.priceInr)}`,
       variant: 'success',
     });
-    openCartDrawer();
   }
 
   function handleWishlistClick() {
@@ -103,15 +107,23 @@ export function ProductCard({ product, categoryLabel }: ProductCardProps) {
           {categoryLabel ? `By GiftKart · ${categoryLabel}` : 'By GiftKart'}
         </p>
 
-        {/* Bottom Full-Width Solid Add to Cart Button */}
+        {/* Bottom Full-Width Add to Cart / Go to Cart Button */}
         <div className="mt-auto pt-2.5 sm:pt-3">
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={product.stockCount <= 0}
-            className="flex h-9 w-full cursor-pointer items-center justify-center rounded-lg bg-[#5A11AD] px-3 text-[11.5px] font-semibold text-white transition-colors hover:bg-[#460B8C] active:bg-[#3A0875] disabled:cursor-not-allowed disabled:opacity-50 sm:h-[38px] sm:text-xs"
+            disabled={!isInCart && product.stockCount <= 0}
+            className={`flex h-9 w-full cursor-pointer items-center justify-center rounded-lg px-3 text-[11.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:h-[38px] sm:text-xs ${
+              isInCart
+                ? 'border border-[#6A11CB] bg-[#F5ECFF] text-[#6A11CB] hover:bg-[#EDE0FF]'
+                : 'bg-[#5A11AD] text-white hover:bg-[#460B8C] active:bg-[#3A0875]'
+            }`}
           >
-            {product.stockCount > 0 ? 'Add to Cart' : 'Out of Stock'}
+            {isInCart
+              ? 'Go to Cart'
+              : product.stockCount > 0
+                ? 'Add to Cart'
+                : 'Out of Stock'}
           </button>
         </div>
       </div>

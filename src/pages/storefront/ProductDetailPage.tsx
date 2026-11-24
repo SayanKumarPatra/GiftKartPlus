@@ -38,12 +38,12 @@ export function ProductDetailPage() {
   const { data: giftWrapConfig } = useGiftWrapConfig();
   const { data: settings } = useStoreSettings();
   const {
+    items,
     addToCart,
     toggleWishlist,
     isWishlisted,
     giftWrap,
     setGiftWrapEnabled,
-    openCartDrawer,
   } = useCart();
   const { pushToast } = useToast();
 
@@ -95,6 +95,11 @@ export function ProductDetailPage() {
   const category = categories.find((c) => c.id === product.categoryId);
   const subcategory = category?.subcategories.find((s) => s.id === product.subcategoryId);
   const saved = isWishlisted(product.id);
+  const isInCart = items.some(
+    (item) =>
+      item.productId === product.id &&
+      JSON.stringify(item.selectedVariants) === JSON.stringify(selectedVariants)
+  );
   const activeStyles = giftWrapConfig?.styles.filter((s) => s.isActive) ?? [];
   const activeZones = settings?.deliveryZones.filter((z) => z.isActive) ?? [];
 
@@ -144,6 +149,10 @@ export function ProductDetailPage() {
 
   function handleAddToCart() {
     if (!product) return;
+    if (isInCart) {
+      navigate('/cart');
+      return;
+    }
     addToCart(product, {
       quantity,
       selectedVariants,
@@ -152,11 +161,10 @@ export function ProductDetailPage() {
       customPhotoPreviewUrl: photoPreviewUrl,
     });
     pushToast({
-      title: 'Added to Gift Bag',
+      title: 'Added to Cart',
       description: `${product.name} × ${quantity}`,
       variant: 'success',
     });
-    openCartDrawer();
   }
 
   const galleryImages = product.images.length > 0 ? product.images : [''];
@@ -441,14 +449,20 @@ export function ProductDetailPage() {
             <button
               type="button"
               onClick={handleAddToCart}
-              disabled={product.stockCount <= 0}
-              className="gk-btn-purple flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-full px-6 text-sm font-bold transition-all disabled:opacity-50"
+              disabled={!isInCart && product.stockCount <= 0}
+              className={`flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-full px-6 text-sm font-bold transition-all disabled:opacity-50 ${
+                isInCart
+                  ? 'border-2 border-[#6A11CB] bg-[#F5ECFF] text-[#6A11CB] hover:bg-[#EDE0FF]'
+                  : 'gk-btn-purple'
+              }`}
             >
               <ShoppingCart className="h-4 w-4" />
               <span>
-                {product.stockCount > 0
-                  ? `Add to Cart · ${formatInr(product.priceInr * quantity)}`
-                  : 'Currently Out of Stock'}
+                {isInCart
+                  ? 'Go to Cart'
+                  : product.stockCount > 0
+                    ? `Add to Cart · ${formatInr(product.priceInr * quantity)}`
+                    : 'Currently Out of Stock'}
               </span>
             </button>
 

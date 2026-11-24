@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
+  ArrowRight,
   Candy,
   Coffee,
   Gift,
@@ -106,7 +107,7 @@ export function MobileProductDetailPage({
   const navigate = useNavigate();
   const location = useLocation();
   const { customerAccount } = useAuth();
-  const { addToCart, toggleWishlist, isWishlisted, openCartDrawer } = useCart();
+  const { items, addToCart, toggleWishlist, isWishlisted } = useCart();
   const { pushToast } = useToast();
 
   const [activeImageIdx, setActiveImageIdx] = useState(0);
@@ -120,6 +121,15 @@ export function MobileProductDetailPage({
     setSelectedVariants(buildDefaultVariants(product));
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, [product.id]);
+
+  const isInCart = useMemo(() => {
+    const selectedSig = JSON.stringify(selectedVariants);
+    return items.some(
+      (item) =>
+        item.productId === product.id &&
+        JSON.stringify(item.selectedVariants) === selectedSig
+    );
+  }, [items, product.id, selectedVariants]);
 
   const galleryImages = useMemo(
     () => (product.images.length > 0 ? product.images : ['']),
@@ -214,6 +224,10 @@ export function MobileProductDetailPage({
   }
 
   function handleAddToCart() {
+    if (isInCart) {
+      navigate('/cart');
+      return;
+    }
     if (isOutOfStock) return;
     addToCart(product, {
       quantity: 1,
@@ -224,7 +238,6 @@ export function MobileProductDetailPage({
       description: product.name,
       variant: 'success',
     });
-    openCartDrawer();
   }
 
   function handleBuyNow() {
@@ -506,15 +519,28 @@ export function MobileProductDetailPage({
         className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-30 border-t border-[#EBD8FF]/90 bg-white/96 px-3 py-2 shadow-[0_-6px_18px_rgba(106,17,203,0.08)] backdrop-blur-md lg:hidden"
       >
         <div className="mx-auto grid max-w-[480px] grid-cols-2 gap-2.5">
-          {/* Add to Cart Button */}
+          {/* Add to Cart / Go to Cart Button */}
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={isOutOfStock}
-            className="inline-flex h-[43px] items-center justify-center gap-2 rounded-full border-[1.5px] border-[#6A11CB] bg-white px-3 text-[13.5px] font-extrabold text-[#2B0B4E] whitespace-nowrap transition-transform active:scale-[0.98] disabled:opacity-45"
+            disabled={!isInCart && isOutOfStock}
+            className={`inline-flex h-[43px] items-center justify-center gap-2 rounded-full border-[1.5px] px-3 text-[13.5px] font-extrabold whitespace-nowrap transition-all active:scale-[0.98] disabled:opacity-45 ${
+              isInCart
+                ? 'border-[#6A11CB] bg-[#F5ECFF] text-[#6A11CB]'
+                : 'border-[#6A11CB] bg-white text-[#2B0B4E]'
+            }`}
           >
             <ShoppingCart className="h-4 w-4 shrink-0 text-[#6A11CB] stroke-[2.2]" />
-            <span>{isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</span>
+            <span>
+              {isInCart
+                ? 'Go to Cart'
+                : isOutOfStock
+                  ? 'Out of Stock'
+                  : 'Add to Cart'}
+            </span>
+            {isInCart && (
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#6A11CB] stroke-[2.5]" />
+            )}
           </button>
 
           {/* Buy Now Gradient Button */}
