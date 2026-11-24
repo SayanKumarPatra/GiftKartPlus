@@ -23,6 +23,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ProductImage } from '../../components/ui/ProductImage';
 import { ProductCard } from '../../components/storefront/ProductCard';
+import { MobileProductDetailPage } from '../../components/storefront/MobileProductDetailPage';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { formatInr } from '../../utils/format';
@@ -161,7 +162,20 @@ export function ProductDetailPage() {
   const galleryImages = product.images.length > 0 ? product.images : [''];
 
   return (
-    <div className="space-y-12">
+    <>
+      {/* Normal Mobile (< 900px): Universal Premium Mobile Product Details Redesign */}
+      <div className="-mx-3.5 -my-4 sm:-mx-6 sm:-my-5 lg:hidden">
+        <MobileProductDetailPage
+          product={product}
+          category={category}
+          categories={categories}
+          products={products}
+          supportPhone={settings?.supportPhone}
+        />
+      </div>
+
+      {/* Desktop & Mobile Desktop-Site (>= 900px): Existing Desktop Product Details Unchanged */}
+      <div className="hidden space-y-12 lg:block">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#6E5B85]">
         <Link to="/" className="hover:text-[#6A11CB]">Home</Link>
@@ -490,6 +504,7 @@ export function ProductDetailPage() {
           </div>
         </section>
       )}
-    </div>
+      </div>
+    </>
   );
 }
