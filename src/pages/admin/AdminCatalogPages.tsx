@@ -42,11 +42,10 @@ import { Button } from '../../components/ui/Button';
 import { ProductImage } from '../../components/ui/ProductImage';
 
 const MEDIA_OPTIONS: { label: string; url: string }[] = [
-  { label: 'Banner 1 — Personalized Gifts', url: HERO_BANNERS.personalized },
-  { label: 'Banner 2 — Birthday Gifts', url: HERO_BANNERS.birthday },
-  { label: 'Banner 3 — Anniversary Gifts', url: HERO_BANNERS.anniversary },
-  { label: 'Banner 4 — Customized Photo Gifts', url: HERO_BANNERS.photoGifts },
-  { label: 'Banner 5 — Special Occasion Gifts', url: HERO_BANNERS.specialOccasion },
+  { label: 'Banner 1 — Welcome to GiftKart', url: HERO_BANNERS.welcome },
+  { label: 'Banner 2 — Find the Perfect Gift', url: HERO_BANNERS.perfectGift },
+  { label: 'Banner 3 — Premium Birthday Gifts', url: HERO_BANNERS.birthdayCollection },
+  { label: 'Banner 4 — Romantic & Couple Gifts', url: HERO_BANNERS.romanticShowcase },
   { label: 'Coffee Mug Studio', url: STUDIO_MEDIA.coffeeMug },
   { label: 'LED Lamp Studio', url: STUDIO_MEDIA.ledLamp },
   { label: 'Photo Frame Studio', url: STUDIO_MEDIA.photoFrame },

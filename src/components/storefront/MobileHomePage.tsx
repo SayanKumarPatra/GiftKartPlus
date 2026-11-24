@@ -9,8 +9,7 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
-
-import figmaHeroGiftBoxesImg from '../../assets/images/figma_hero_gift_boxes_1795420552395.jpg';
+import { SEED_HERO_SLIDES } from '../../data/seedData';
 
 interface MobileCategoryItem {
   id: string;
@@ -25,7 +24,7 @@ const HOME_MOBILE_CATEGORIES: MobileCategoryItem[] = [
     id: 'all-gifts',
     label: 'All Gifts',
     to: '/categories?cat=all-gifts',
-    imageUrl: '/assets/aistudio/All_Gifts_Purple_Gold_Badge_ac57488c.png',
+    imageUrl: '/assets/aistudio/Glossy_Purple_Gift_Box_with_Golden_Bow-edited_09de3fec.png',
     isPng: true,
   },
   {
@@ -100,15 +99,12 @@ const HOME_MOBILE_CATEGORIES: MobileCategoryItem[] = [
   },
 ];
 
-type MobileHeroEntry =
-  | { kind: 'figma-primary'; id: string }
-  | {
-      kind: 'admin-slide';
-      id: string;
-      imageUrl: string;
-      alt: string;
-      href: string;
-    };
+interface MobileHeroSlide {
+  id: string;
+  imageUrl: string;
+  alt: string;
+  href: string;
+}
 
 export function MobileHomePage() {
   const { data: settings } = useStoreSettings();
@@ -124,20 +120,21 @@ export function MobileHomePage() {
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
-  const heroEntries = useMemo<MobileHeroEntry[]>(() => {
-    const adminSlides: MobileHeroEntry[] = (settings?.heroSlides ?? [])
+  const heroEntries = useMemo<MobileHeroSlide[]>(() => {
+    const sourceSlides =
+      settings?.heroSlides && settings.heroSlides.length > 0
+        ? settings.heroSlides
+        : SEED_HERO_SLIDES;
+
+    return sourceSlides
       .filter((s) => s.isActive)
       .sort((a, b) => a.sortOrder - b.sortOrder)
-      .slice(0, 4)
       .map((s) => ({
-        kind: 'admin-slide',
         id: s.id,
         imageUrl: s.imageUrl,
-        alt: `${s.titlePrefix} ${s.titleHighlight}`,
+        alt: `${s.titlePrefix} ${s.titleHighlight}`.trim(),
         href: s.ctaHref || '/shop',
       }));
-
-    return [{ kind: 'figma-primary', id: 'figma-hero-primary' }, ...adminSlides];
   }, [settings?.heroSlides]);
 
   const slideCount = heroEntries.length;
@@ -252,62 +249,21 @@ export function MobileHomePage() {
           </form>
         </section>
 
-        {/* STEP 03 – FLATTER HERO SLIDER WITH SUBTLE SIDE GAP & LIGHT BORDER RADIUS */}
-        <section aria-label="Promotional offers" className="px-2.5">
-          <div
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            className="relative h-[128px] w-full overflow-hidden rounded-xl bg-[#5B0EB7] shadow-[0_8px_20px_-10px_rgba(106,17,203,0.35)] min-[390px]:h-[136px] min-[420px]:h-[144px]"
-          >
+        {/* STEP 03 – 3:1 HERO SLIDING BANNERS WITH SUBTLE SIDE GAP & LIGHT BORDER RADIUS */}
+        {heroEntries.length > 0 && (
+          <section aria-label="Promotional offers" className="px-2.5">
             <div
-              className="flex h-full w-full transition-transform duration-500 ease-out will-change-transform"
-              style={{
-                transform: `translate3d(-${safeSlideIndex * 100}%, 0, 0)`,
-              }}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              className="relative aspect-[3/1] w-full overflow-hidden rounded-xl bg-[#5B0EB7] shadow-[0_8px_20px_-10px_rgba(106,17,203,0.35)]"
             >
-              {heroEntries.map((entry) =>
-                entry.kind === 'figma-primary' ? (
-                  <div
-                    key={entry.id}
-                    className="relative flex h-full w-full shrink-0 items-center overflow-hidden bg-gradient-to-r from-[#4E069E] via-[#6A11CB] to-[#7C21E0]"
-                  >
-                    {/* Right-side Figma Gift Box Artwork with Soft Glowing Ring */}
-                    <div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 right-0 w-[52%]"
-                    >
-                      <img
-                        src={figmaHeroGiftBoxesImg}
-                        alt=""
-                        loading="eager"
-                        decoding="async"
-                        draggable={false}
-                        className="h-full w-full select-none object-cover object-center"
-                      />
-                      <div className="absolute inset-y-0 left-0 w-14 bg-gradient-to-r from-[#5D0DB7] via-[#5D0DB7]/65 to-transparent" />
-                    </div>
-
-                    {/* Left-side Exact Figma Promotional Copy & CTA */}
-                    <div className="relative z-10 flex max-w-[60%] flex-col items-start pl-3.5 pr-1 pb-2">
-                      <p className="text-[9px] font-bold uppercase tracking-[0.06em] text-white/95 min-[410px]:text-[10px]">
-                        MAKE EVERY OCCASION
-                      </p>
-                      <h1 className="mt-0.5 text-[22px] font-black italic leading-[0.98] tracking-tight text-white drop-shadow-[0_2px_8px_rgba(43,11,78,0.35)] min-[410px]:text-[25px]">
-                        SPECIAL
-                      </h1>
-                      <p className="mt-1 text-[9.5px] font-medium leading-[1.25] text-[#F5EAFF] min-[410px]:text-[10.5px]">
-                        Unique &amp; Personalized Gifts for Your Loved Ones
-                      </p>
-                      <Link
-                        to="/shop"
-                        className="mt-2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FF1F7A] to-[#FF4D8D] px-3 py-1 text-[10px] font-bold text-white shadow-[0_6px_14px_-4px_rgba(255,31,122,0.65)] transition-transform active:scale-95"
-                      >
-                        <span>Shop Now</span>
-                        <ArrowRight className="h-2.5 w-2.5 stroke-[2.6]" />
-                      </Link>
-                    </div>
-                  </div>
-                ) : (
+              <div
+                className="flex h-full w-full transition-transform duration-500 ease-out will-change-transform"
+                style={{
+                  transform: `translate3d(-${safeSlideIndex * 100}%, 0, 0)`,
+                }}
+              >
+                {heroEntries.map((entry) => (
                   <Link
                     key={entry.id}
                     to={entry.href}
@@ -320,33 +276,33 @@ export function MobileHomePage() {
                       decoding="async"
                       draggable={false}
                       referrerPolicy="no-referrer"
-                      className="h-full w-full select-none object-cover object-[center_52%]"
+                      className="h-full w-full select-none object-cover object-center"
                     />
                   </Link>
-                )
-              )}
-            </div>
-
-            {/* Bottom Slider Pagination Indicators */}
-            {slideCount > 1 && (
-              <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5">
-                {heroEntries.map((entry, idx) => (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    aria-label={`View promotional slide ${idx + 1}`}
-                    onClick={() => jumpToSlide(idx)}
-                    className={`block cursor-pointer rounded-full transition-all duration-300 ${
-                      idx === safeSlideIndex
-                        ? 'h-1.5 w-5 bg-white shadow-xs'
-                        : 'h-1.5 w-1.5 bg-white/50'
-                    }`}
-                  />
                 ))}
               </div>
-            )}
-          </div>
-        </section>
+
+              {/* Bottom Slider Pagination Indicators */}
+              {slideCount > 1 && (
+                <div className="absolute bottom-1.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/20 px-2 py-0.5 backdrop-blur-[2px]">
+                  {heroEntries.map((entry, idx) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      aria-label={`View promotional slide ${idx + 1}`}
+                      onClick={() => jumpToSlide(idx)}
+                      className={`block cursor-pointer rounded-full transition-all duration-300 ${
+                        idx === safeSlideIndex
+                          ? 'h-1.5 w-5 bg-white shadow-xs'
+                          : 'h-1.5 w-1.5 bg-white/55'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </div>
 
       {/* LOWER SOFT LAVENDER ZONE: Cardless 2-Row Categories (4 Visible per Row) + 2-Column Trending Gifts */}

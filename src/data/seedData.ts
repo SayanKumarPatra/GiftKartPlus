@@ -520,64 +520,52 @@ export const SEED_PRODUCTS: Product[] = [
 
 export const SEED_HERO_SLIDES: HeroSlide[] = [
   {
-    id: 'slide-personalized',
-    titlePrefix: 'Make Every Gift',
-    titleHighlight: 'Special',
-    subtitle: 'Custom Mugs • Printed T-Shirts • Photo Frames & More for Jalchak',
+    id: 'slide-welcome',
+    titlePrefix: 'Welcome to',
+    titleHighlight: 'GiftKart',
+    subtitle: 'Har Gift Mein Ek Kahani — Personalized & Unique Gifts for Every Occasion',
     ctaLabel: 'Shop Now',
     ctaHref: '/shop',
-    imageUrl: HERO_BANNERS.personalized,
+    imageUrl: HERO_BANNERS.welcome,
     occasionTag: 'Special Occasion',
     isActive: true,
     sortOrder: 1,
   },
   {
-    id: 'slide-birthday',
-    titlePrefix: 'Find the Perfect',
-    titleHighlight: 'Birthday Gift',
-    subtitle: 'Personalized Gifts • Custom Prints • Photo Frames & Boutique Wrapping',
-    ctaLabel: 'Shop Birthday Gifts',
-    ctaHref: '/shop?occasion=Birthday',
-    imageUrl: HERO_BANNERS.birthday,
-    occasionTag: 'Birthday',
+    id: 'slide-perfect-gift',
+    titlePrefix: 'Find the',
+    titleHighlight: 'Perfect Gift',
+    subtitle: 'Curated Gift Boxes, Roses, Teddy Bears, Photo Mugs & LED Keepsakes',
+    ctaLabel: 'Explore Gifts',
+    ctaHref: '/shop',
+    imageUrl: HERO_BANNERS.perfectGift,
+    occasionTag: 'Special Occasion',
     isActive: true,
     sortOrder: 2,
   },
   {
-    id: 'slide-anniversary',
-    titlePrefix: 'Make Your Anniversary',
-    titleHighlight: 'More Special',
-    subtitle: 'Personalized Gifts • Couple Gifts • 3D LED Heart Photo Lamps & Cushions',
-    ctaLabel: 'Shop Anniversary Gifts',
-    ctaHref: '/shop?occasion=Anniversary',
-    imageUrl: HERO_BANNERS.anniversary,
-    occasionTag: 'Anniversary',
+    id: 'slide-birthday-collection',
+    titlePrefix: 'Premium',
+    titleHighlight: 'Birthday Gifts',
+    subtitle: 'LED Photo Frames, Custom Birthday T-Shirts, Mugs, Wallets & Keychains',
+    ctaLabel: 'Shop Birthday Gifts',
+    ctaHref: '/shop?occasion=Birthday',
+    imageUrl: HERO_BANNERS.birthdayCollection,
+    occasionTag: 'Birthday',
     isActive: true,
     sortOrder: 3,
   },
   {
-    id: 'slide-photo-gifts',
-    titlePrefix: 'Customized',
-    titleHighlight: 'Photo Gifts',
-    subtitle: 'Turn Your Cherished Memories into Photo Frames, Mugs, Cushions & LED Lamps',
-    ctaLabel: 'Create Your Photo Gift',
-    ctaHref: '/shop?category=customized-photo-gifts',
-    imageUrl: HERO_BANNERS.photoGifts,
+    id: 'slide-romantic-showcase',
+    titlePrefix: 'Romantic &',
+    titleHighlight: 'Couple Gifts',
+    subtitle: 'Glowing Photo Frames, Heart Lamps, Magic Mugs, Rose Domes & Moon Lamps',
+    ctaLabel: 'Shop Couple Gifts',
+    ctaHref: '/shop?occasion=Couple',
+    imageUrl: HERO_BANNERS.romanticShowcase,
     occasionTag: 'Couple',
     isActive: true,
     sortOrder: 4,
-  },
-  {
-    id: 'slide-special-occasion',
-    titlePrefix: 'Gifts for Every',
-    titleHighlight: 'Special Occasion',
-    subtitle: 'Thoughtful • Personalized • Memorable Surprises for Birthdays, Festivals & Milestones',
-    ctaLabel: 'Explore All Occasions',
-    ctaHref: '/shop?occasion=Special%20Occasion',
-    imageUrl: HERO_BANNERS.specialOccasion,
-    occasionTag: 'Festival',
-    isActive: true,
-    sortOrder: 5,
   },
 ];
 
@@ -896,9 +884,32 @@ export const SEED_REVIEWS: ProductReview[] = [
   },
 ];
 
+const LEGACY_HERO_BANNER_PATHS = new Set<string>([
+  '/assets/aistudio/Make_Every_Gift_Special_9ee4a9d3.png',
+  '/assets/aistudio/GiftKart_Birthday_Gifting_Celebration_0fecf298.png',
+  '/assets/aistudio/Make_Your_Anniversary_Special_5496186d.png',
+  '/assets/aistudio/Customized_Photo_Gifts_for_Every_Memory_2fc1ffab.png',
+  '/assets/aistudio/GiftKart_Special_Occasion_Gifts_032e3256.png',
+]);
+
 export function ensureDemoSeedHydrated(): void {
   const alreadySeeded = readStorage<boolean>(STORAGE_KEYS.SEEDED_FLAG, false);
   if (alreadySeeded) {
+    // Seamlessly upgrade legacy default hero banners while preserving all other user/store data
+    const storedSettings = readStorage<StoreSettings | null>(
+      STORAGE_KEYS.STORE_SETTINGS,
+      null
+    );
+    if (
+      storedSettings &&
+      Array.isArray(storedSettings.heroSlides) &&
+      storedSettings.heroSlides.some((s) => LEGACY_HERO_BANNER_PATHS.has(s.imageUrl))
+    ) {
+      writeStorage(STORAGE_KEYS.STORE_SETTINGS, {
+        ...storedSettings,
+        heroSlides: SEED_HERO_SLIDES,
+      });
+    }
     return;
   }
   writeStorage(STORAGE_KEYS.CATEGORIES, SEED_CATEGORIES);

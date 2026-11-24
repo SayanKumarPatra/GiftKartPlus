@@ -14,11 +14,10 @@ export const BRAND_ASSETS = {
 } as const;
 
 export const HERO_BANNERS = {
-  personalized: '/assets/aistudio/Make_Every_Gift_Special_9ee4a9d3.png',
-  birthday: '/assets/aistudio/GiftKart_Birthday_Gifting_Celebration_0fecf298.png',
-  anniversary: '/assets/aistudio/Make_Your_Anniversary_Special_5496186d.png',
-  photoGifts: '/assets/aistudio/Customized_Photo_Gifts_for_Every_Memory_2fc1ffab.png',
-  specialOccasion: '/assets/aistudio/GiftKart_Special_Occasion_Gifts_032e3256.png',
+  welcome: '/assets/aistudio/GiftKart_Welcome_in_Purple_Glow_7020a048.png',
+  perfectGift: '/assets/aistudio/Find_the_Perfect_Gift_91a52dfd.png',
+  birthdayCollection: '/assets/aistudio/Premium_Birthday_Gift_Collection_7f0b0c94.png',
+  romanticShowcase: '/assets/aistudio/GiftKart_Romantic_Gifts_Showcase_7430d422.png',
 } as const;
 
 export const STUDIO_MEDIA = {

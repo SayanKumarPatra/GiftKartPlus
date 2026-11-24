@@ -73,7 +73,7 @@ export function HeroSliderSection() {
       <div
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="relative h-[160px] w-full overflow-hidden sm:h-[220px] md:h-[280px] lg:h-[350px] xl:h-[390px]"
+        className="relative aspect-[3/1] w-full overflow-hidden bg-[#5B0EB7]"
       >
         {/* GPU-Accelerated Continuous Horizontal Track (All Slides Pre-Mounted) */}
         <div
@@ -89,7 +89,7 @@ export function HeroSliderSection() {
                 decoding="async"
                 draggable={false}
                 referrerPolicy="no-referrer"
-                className="h-full w-full select-none object-cover object-[center_53%]"
+                className="h-full w-full select-none object-cover object-center"
               />
             </div>
           ))}
