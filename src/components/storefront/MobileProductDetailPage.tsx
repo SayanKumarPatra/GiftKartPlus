@@ -7,12 +7,12 @@ import {
   Heart,
   Home,
   Image as ImageIcon,
+  KeyRound,
   Lightbulb,
   Package,
   Shirt,
   ShoppingBag,
   ShoppingCart,
-  Utensils,
   Zap,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -78,8 +78,8 @@ function getCategoryMeta(category?: Category): {
   if (slug.includes('home-decor') || name.includes('home decor')) {
     return { Icon: Home, sidebarParam: 'home-decor-gifts' };
   }
-  if (slug.includes('kitchen') || name.includes('kitchen')) {
-    return { Icon: Utensils, sidebarParam: 'kitchen-gifts' };
+  if (slug.includes('keychain') || name.includes('keychain') || name.includes('key chain')) {
+    return { Icon: KeyRound, sidebarParam: 'keychains' };
   }
   if (slug.includes('chocolate') || name.includes('chocolate')) {
     return { Icon: Candy, sidebarParam: 'unique-chocolates' };

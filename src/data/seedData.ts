@@ -452,7 +452,7 @@ export const SEED_PRODUCTS: Product[] = [
     compareAtPriceInr: 399,
     categoryId: 'cat-keychain',
     occasionTags: ['Friendship', 'Couple', 'Return Gifts'],
-    images: [STUDIO_MEDIA.cushionKeychain],
+    images: [STUDIO_MEDIA.keychain, STUDIO_MEDIA.cushionKeychain],
     variants: [
       { name: 'Finish', options: ['Mirror Silver', 'Rose Tone'] },
     ],

@@ -223,6 +223,22 @@ export const ASSET_MANIFEST: AssetManifestEntry[] = [
     status: 'Active (Local Studio)',
   },
   {
+    filename: 'All_Gifts_Purple_Gold_Badge_ac57488c.png',
+    category: 'Category & Product',
+    purpose: 'All Gifts 3D golden pedestal transparent category icon',
+    usedIn: 'MobileHomePage (All Gifts category)',
+    path: '/assets/aistudio/All_Gifts_Purple_Gold_Badge_ac57488c.png',
+    status: 'Active (Uploaded)',
+  },
+  {
+    filename: 'Golden_Pedestal_Keychain_Collection_b507d441.png',
+    category: 'Category & Product',
+    purpose: 'Keychains 3D golden pedestal transparent category icon',
+    usedIn: 'MobileHomePage (Keychains category)',
+    path: '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.png',
+    status: 'Active (Uploaded)',
+  },
+  {
     filename: 'category_keychain_1795289469540.jpg',
     category: 'Category & Product',
     purpose: 'Keychain dedicated studio category photography',

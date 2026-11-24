@@ -11,8 +11,6 @@ import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
 
 import figmaHeroGiftBoxesImg from '../../assets/images/figma_hero_gift_boxes_1795420552395.jpg';
-import allGiftsImg from '../../assets/images/figma_cat_all_gifts_1795420531719.jpg';
-import kitchenGiftsImg from '../../assets/images/mobile_cat_kitchen_gifts_1795431665296.jpg';
 
 interface MobileCategoryItem {
   id: string;
@@ -27,7 +25,8 @@ const HOME_MOBILE_CATEGORIES: MobileCategoryItem[] = [
     id: 'all-gifts',
     label: 'All Gifts',
     to: '/categories?cat=all-gifts',
-    imageUrl: allGiftsImg,
+    imageUrl: '/assets/aistudio/All_Gifts_Purple_Gold_Badge_ac57488c.png',
+    isPng: true,
   },
   {
     id: 'coffee-mugs',
@@ -86,10 +85,11 @@ const HOME_MOBILE_CATEGORIES: MobileCategoryItem[] = [
     isPng: true,
   },
   {
-    id: 'kitchen-gifts',
-    label: 'Kitchen Gifts',
-    to: '/categories?cat=kitchen-gifts',
-    imageUrl: kitchenGiftsImg,
+    id: 'keychains',
+    label: 'Keychains',
+    to: '/categories?cat=keychains',
+    imageUrl: '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.png',
+    isPng: true,
   },
   {
     id: 'unique-chocolates',

@@ -7,13 +7,13 @@ import {
   Heart,
   Home,
   Image as ImageIcon,
+  KeyRound,
   Lightbulb,
   Package,
   Search,
   Shirt,
   ShoppingBag,
   ShoppingCart,
-  Utensils,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCategories, useProducts } from '../../hooks/useStoreData';
@@ -33,7 +33,7 @@ type SidebarCategoryKey =
   | 'gift-boxes-hampers'
   | 'gift-bags'
   | 'home-decor-gifts'
-  | 'kitchen-gifts'
+  | 'keychains'
   | 'unique-chocolates';
 
 interface SidebarCategoryConfig {
@@ -133,13 +133,14 @@ const ORDERED_SIDEBAR_CATEGORIES: SidebarCategoryConfig[] = [
       /home\s*decor/i.test(cat.name),
   },
   {
-    id: 'kitchen-gifts',
-    label: 'Kitchen Gifts',
-    Icon: Utensils,
+    id: 'keychains',
+    label: 'Keychains',
+    Icon: KeyRound,
     matchesCategory: (cat) =>
-      cat.id === 'cat-kitchen-gifts' ||
-      cat.slug === 'kitchen-gifts' ||
-      /kitchen/i.test(cat.name),
+      cat.id === 'cat-keychain' ||
+      cat.slug === 'keychain' ||
+      cat.slug === 'keychains' ||
+      /key\s*chain/i.test(cat.name),
   },
   {
     id: 'unique-chocolates',
@@ -175,7 +176,10 @@ export function MobileCategoriesPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  const catParam = searchParams.get('cat') as SidebarCategoryKey | null;
+  const rawCatParam = searchParams.get('cat');
+  const catParam = (
+    rawCatParam === 'keychain' ? 'keychains' : rawCatParam
+  ) as SidebarCategoryKey | null;
   const isValidCatParam = ORDERED_SIDEBAR_CATEGORIES.some(
     (c) => c.id === catParam
   );
