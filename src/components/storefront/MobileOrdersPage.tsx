@@ -12,7 +12,6 @@ import {
   Package,
   RefreshCw,
   RotateCcw,
-  Search,
   ShieldCheck,
   Truck,
   User,
@@ -567,7 +566,6 @@ export function MobileOrdersPage() {
   const [searchParams] = useSearchParams();
 
   const previewParam = searchParams.get('view'); // optional design preview query: logged-out | orders | empty | details
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterTabKey>('all');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(
     previewParam === 'details' ? SAMPLE_MOBILE_ORDERS[0].id : null
@@ -606,16 +604,6 @@ export function MobileOrdersPage() {
     ? ordersSource.find((o) => o.id === selectedOrderId) ?? null
     : null;
 
-  function handleSearchSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = searchQuery.trim();
-    if (!trimmed) {
-      navigate('/search');
-      return;
-    }
-    navigate(`/search?search=${encodeURIComponent(trimmed)}`);
-  }
-
   const filterTabs: Array<{ key: FilterTabKey; label: string; count: number }> = [
     { key: 'all', label: 'All Orders', count: statusCounts.all },
     { key: 'Processing', label: 'Processing', count: statusCounts.Processing },
@@ -624,24 +612,7 @@ export function MobileOrdersPage() {
   ];
 
   return (
-    <div className="min-h-[calc(100dvh-132px)] w-full overflow-x-clip bg-gradient-to-b from-[#FCE9F6] via-[#FAF0FF] to-[#F6EEFF]">
-      {/* Search Bar Directly Beneath Existing Mobile Header */}
-      <div className="px-3.5 pb-2 pt-2.5">
-        <form
-          onSubmit={handleSearchSubmit}
-          className="flex h-[44px] w-full items-center gap-2.5 rounded-full border border-[#EBD8FF]/90 bg-white px-4 shadow-[0_4px_14px_rgba(106,17,203,0.08)] focus-within:border-[#6A11CB]/50 focus-within:ring-2 focus-within:ring-[#6A11CB]/15"
-        >
-          <Search className="h-[18px] w-[18px] shrink-0 text-[#6A11CB] stroke-[2.2]" />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search for Gifts, Products & More..."
-            aria-label="Search for Gifts, Products & More"
-            className="h-full w-full min-w-0 bg-transparent text-[13px] font-medium text-[#2B0B4E] placeholder:text-[#7E6B95] focus:outline-none"
-          />
-        </form>
-      </div>
+    <div className="min-h-[calc(100dvh-132px)] w-full overflow-x-clip bg-gradient-to-b from-[#FCE9F6] via-[#FAF0FF] to-[#F6EEFF] pt-1.5">
 
       {/* STATE 1: LOGGED-OUT SCREEN (Strictly zero order IDs, products, or customer data) */}
       {!isLoggedInView ? (

@@ -1,12 +1,10 @@
-import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ChevronRight,
   CreditCard,
   MessageCircle,
   Package,
   RotateCcw,
-  Search,
   ShoppingBag,
   Truck,
   User,
@@ -83,9 +81,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 export function MobileHelpSupportPage() {
   const { customerAccount, isAuthReady } = useAuth();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState('');
 
   const previewParam = searchParams.get('view'); // optional preview override: logged-out | logged-in
 
@@ -102,35 +98,8 @@ export function MobileHelpSupportPage() {
     ? `https://wa.me/${cleanPhone}?text=${encodedMessage}`
     : `https://api.whatsapp.com/send?text=${encodedMessage}`;
 
-  function handleSearchSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = searchQuery.trim();
-    if (!trimmed) {
-      navigate('/search');
-      return;
-    }
-    navigate(`/search?search=${encodeURIComponent(trimmed)}`);
-  }
-
   return (
-    <div className="min-h-[calc(100dvh-132px)] w-full overflow-x-clip bg-gradient-to-b from-[#FCE9F6] via-[#FAF0FF] to-[#F6EEFF]">
-      {/* Search Bar Directly Below Existing Mobile Header */}
-      <div className="px-3.5 pb-2 pt-2.5">
-        <form
-          onSubmit={handleSearchSubmit}
-          className="flex h-[44px] w-full items-center gap-2.5 rounded-full border border-[#EBD8FF]/90 bg-white px-4 shadow-[0_4px_14px_rgba(106,17,203,0.08)] focus-within:border-[#6A11CB]/50 focus-within:ring-2 focus-within:ring-[#6A11CB]/15"
-        >
-          <Search className="h-[18px] w-[18px] shrink-0 text-[#6A11CB] stroke-[2.2]" />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search for Gifts, Products & More..."
-            aria-label="Search for Gifts, Products & More"
-            className="h-full w-full min-w-0 bg-transparent text-[13px] font-medium text-[#2B0B4E] placeholder:text-[#7E6B95] focus:outline-none"
-          />
-        </form>
-      </div>
+    <div className="min-h-[calc(100dvh-132px)] w-full overflow-x-clip bg-gradient-to-b from-[#FCE9F6] via-[#FAF0FF] to-[#F6EEFF] pt-1.5">
 
       {/* Prevent flashing Logged-out screen while persisted auth session hydrates */}
       {!isAuthReady && !previewParam ? (

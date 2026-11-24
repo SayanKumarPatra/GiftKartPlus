@@ -47,7 +47,7 @@ const MOBILE_DRAWER_POLICY_LINKS = [
 
 export function MobileHeader(_props: MobileHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { itemCount, wishlistIds, openCartDrawer } = useCart();
+  const { itemCount, wishlistIds } = useCart();
   const location = useLocation();
 
   useEffect(() => {
@@ -103,9 +103,8 @@ export function MobileHeader(_props: MobileHeaderProps) {
             )}
           </Link>
 
-          <button
-            type="button"
-            onClick={openCartDrawer}
+          <Link
+            to="/cart"
             aria-label={`Cart (${itemCount})`}
             className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#4B148C] transition-colors active:bg-[#EBD8FF]/50"
           >
@@ -115,7 +114,7 @@ export function MobileHeader(_props: MobileHeaderProps) {
                 {itemCount}
               </span>
             )}
-          </button>
+          </Link>
         </div>
       </header>
 

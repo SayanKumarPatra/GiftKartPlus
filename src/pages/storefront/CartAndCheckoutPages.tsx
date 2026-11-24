@@ -31,6 +31,7 @@ import {
 import { ProductImage } from '../../components/ui/ProductImage';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
+import { MobileCartPage } from '../../components/storefront/MobileCartPage';
 
 export function CartPage() {
   const {
@@ -67,25 +68,30 @@ export function CartPage() {
     pushToast({ title: 'Coupon Applied', description: res.message, variant: 'success' });
   }
 
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        title="Your Gift Bag is empty"
-        description="Add personalized mugs, printed T-shirts, photo frames, or keepsake boxes to begin crafting your gift."
-        icon={<ShoppingBag className="h-5 w-5" />}
-        action={
-          <Link to="/shop">
-            <Button size="md">Explore GiftKart Shop</Button>
-          </Link>
-        }
-      />
-    );
-  }
-
   const grandEstimate = Math.max(0, subtotalInr + giftWrapChargeInr - couponDiscount);
 
   return (
-    <div className="space-y-6">
+    <>
+      {/* Normal Mobile (< 900px): Dedicated Reference-Matched Mobile Cart Page */}
+      <div className="-mx-3.5 -my-4 sm:-mx-6 sm:-my-5 lg:hidden">
+        <MobileCartPage />
+      </div>
+
+      {/* Desktop & Laptop (>= 900px): Existing Desktop Cart Page Completely Unchanged */}
+      <div className="hidden lg:block">
+        {items.length === 0 ? (
+          <EmptyState
+            title="Your Gift Bag is empty"
+            description="Add personalized mugs, printed T-shirts, photo frames, or keepsake boxes to begin crafting your gift."
+            icon={<ShoppingBag className="h-5 w-5" />}
+            action={
+              <Link to="/shop">
+                <Button size="md">Explore GiftKart Shop</Button>
+              </Link>
+            }
+          />
+        ) : (
+        <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-extrabold text-[#3B0764]">Your Gift Bag</h1>
         <p className="mt-1 text-sm text-[#594A6B]">
@@ -360,7 +366,10 @@ export function CartPage() {
           </p>
         </div>
       </div>
-    </div>
+        </div>
+        )}
+      </div>
+    </>
   );
 }
 

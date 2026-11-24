@@ -1,4 +1,4 @@
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Heart, Package } from 'lucide-react';
 import { useCategories, useProducts } from '../../hooks/useStoreData';
 import type { OccasionTag } from '../../types';
@@ -22,6 +22,7 @@ export function ShopPage({
   isSearchPage = false,
 }: ShopPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { data: categories } = useCategories();
 
   const categorySlug = searchParams.get('category') ?? '';
@@ -71,13 +72,20 @@ export function ShopPage({
       {/* Clean Minimal Product Listing Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EFE3FF] pb-3">
         <div className="min-w-0">
-          <Link
-            to="/categories"
-            className="inline-flex items-center gap-1 text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
+          <button
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate('/');
+              }
+            }}
+            className="inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Categories</span>
-          </Link>
+            <span>Back</span>
+          </button>
           <h1 className="mt-1 truncate text-xl font-extrabold tracking-tight text-[#2B0B4E] sm:text-2xl">
             {pageHeading}
           </h1>
@@ -231,23 +239,60 @@ export function AllCategoriesPage() {
   );
 }
 
-export function CategoryDetailPage() {
-  const { slug } = useParams();
-  const { data: categories } = useCategories();
-  const category = categories.find((c) => c.slug === slug);
+const KNOWN_STOREFRONT_CATEGORY_ALIASES: Record<
+  string,
+  { fallbackLabel: string; pattern: RegExp }
+> = {
+  'coffee-mug': { fallbackLabel: 'Coffee Mugs', pattern: /coffee\s*mug/i },
+  'coffee-mugs': { fallbackLabel: 'Coffee Mugs', pattern: /coffee\s*mug/i },
+  't-shirt-print': { fallbackLabel: 'T-Shirt Prints', pattern: /t[-\s]?shirt/i },
+  'tshirt-prints': { fallbackLabel: 'T-Shirt Prints', pattern: /t[-\s]?shirt/i },
+  'photo-frame': { fallbackLabel: 'Photo Frames', pattern: /photo\s*frame/i },
+  'photo-frames': { fallbackLabel: 'Photo Frames', pattern: /photo\s*frame/i },
+  'led-lighting-gifts': { fallbackLabel: 'LED Lighting Gifts', pattern: /led|lighting/i },
+  cushions: { fallbackLabel: 'Cushions', pattern: /cushion/i },
+  'gift-box': { fallbackLabel: 'Gift Boxes & Hampers', pattern: /gift\s*box|hamper/i },
+  'gift-boxes-hampers': { fallbackLabel: 'Gift Boxes & Hampers', pattern: /gift\s*box|hamper/i },
+  'gift-bag': { fallbackLabel: 'Gift Bags', pattern: /gift\s*bag/i },
+  'gift-bags': { fallbackLabel: 'Gift Bags', pattern: /gift\s*bag/i },
+  'home-decor-gifts': { fallbackLabel: 'Home Decor Gifts', pattern: /home\s*decor/i },
+  keychain: { fallbackLabel: 'Keychains', pattern: /key\s*chain/i },
+  keychains: { fallbackLabel: 'Keychains', pattern: /key\s*chain/i },
+  'unique-chocolates': { fallbackLabel: 'Unique Chocolates', pattern: /chocolate/i },
+};
 
-  const { data: products } = useProducts({
-    categoryId: category?.id,
+export function CategoryDetailPage() {
+  const { slug = '' } = useParams();
+  const navigate = useNavigate();
+  const { data: categories } = useCategories();
+
+  const normalizedSlug = slug.trim().toLowerCase();
+  const aliasMeta = KNOWN_STOREFRONT_CATEGORY_ALIASES[normalizedSlug];
+
+  const category =
+    categories.find((c) => c.slug.toLowerCase() === normalizedSlug) ??
+    (aliasMeta
+      ? categories.find(
+          (c) =>
+            aliasMeta.pattern.test(c.name) || aliasMeta.pattern.test(c.slug)
+        )
+      : undefined);
+
+  const { data: fetchedProducts, isLoading } = useProducts({
+    categoryId: category ? category.id : '__no_matching_category__',
   });
 
-  if (!category) {
+  const products = category ? fetchedProducts : [];
+  const categoryTitle = category?.name ?? aliasMeta?.fallbackLabel;
+
+  if (!categoryTitle) {
     return (
       <EmptyState
         title="Category not found"
-        description="Explore GiftKart categories to find the perfect personalized gift."
+        description="Explore GiftKart products to find the perfect personalized gift."
         action={
-          <Link to="/categories">
-            <Button size="sm">Browse Categories</Button>
+          <Link to="/shop">
+            <Button size="sm">View All Gifts</Button>
           </Link>
         }
       />
@@ -259,18 +304,27 @@ export function CategoryDetailPage() {
       {/* Clean Minimal Category Products Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EFE3FF] pb-3">
         <div className="min-w-0">
-          <Link
-            to="/categories"
-            className="inline-flex items-center gap-1 text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
+          <button
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate('/');
+              }
+            }}
+            className="inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Categories</span>
-          </Link>
+            <span>Back</span>
+          </button>
           <h1 className="mt-1 text-xl font-extrabold tracking-tight text-[#2B0B4E] sm:text-2xl">
-            {category.name}
+            {categoryTitle}
           </h1>
           <p className="text-xs font-medium text-[#6E5B85]">
-            {products.length} {products.length === 1 ? 'gift' : 'gifts'} available
+            {isLoading
+              ? 'Loading gifts...'
+              : `${products.length} ${products.length === 1 ? 'gift' : 'gifts'} available`}
           </p>
         </div>
 
@@ -282,14 +336,23 @@ export function CategoryDetailPage() {
         </Link>
       </div>
 
-      {products.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-72 animate-pulse rounded-2xl border border-[#EBD8FF] bg-[#F8F2FF]"
+            />
+          ))}
+        </div>
+      ) : products.length === 0 ? (
         <EmptyState
-          title={`No products listed in ${category.name} yet`}
+          title={`No products listed in ${categoryTitle} yet`}
           description="New gifts in this collection are coming soon. Explore all available gifts across GiftKart."
           icon={<Package className="h-5 w-5" />}
           action={
-            <Link to="/categories">
-              <Button size="sm">Browse Categories</Button>
+            <Link to="/shop">
+              <Button size="sm">View All Gifts</Button>
             </Link>
           }
         />
@@ -299,7 +362,7 @@ export function CategoryDetailPage() {
             <ProductCard
               key={product.id}
               product={product}
-              categoryLabel={category.name}
+              categoryLabel={categoryTitle}
             />
           ))}
         </div>

@@ -24,8 +24,7 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
     label: 'Categories',
     to: '/categories',
     Icon: LayoutGrid,
-    matches: (pathname) =>
-      pathname === '/categories' || pathname.startsWith('/category/'),
+    matches: (pathname) => pathname === '/categories',
   },
   {
     id: 'order',
