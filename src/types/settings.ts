@@ -75,6 +75,7 @@ export interface SavedAddress {
   email: string;
   addressLine1: string;
   area: string;
+  landmark?: string;
   deliveryZoneId: string;
   city: string;
   state: string;

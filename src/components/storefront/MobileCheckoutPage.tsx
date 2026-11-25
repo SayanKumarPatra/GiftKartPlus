@@ -201,6 +201,7 @@ export function MobileCheckoutPage() {
     routeState?.couponDiscount ?? 0
   );
   const [couponValidating, setCouponValidating] = useState(false);
+  const [couponError, setCouponError] = useState('');
 
   // Step 3 payment state (only COD is active; UPI is disabled)
   const [paymentMethod] = useState<'cod'>('cod');
@@ -435,35 +436,24 @@ export function MobileCheckoutPage() {
   async function applyCouponCode(rawCode: string) {
     const code = rawCode.trim().toUpperCase();
     if (!code) {
-      pushToast({
-        title: 'Enter Coupon Code',
-        description: 'Please type a valid coupon code.',
-        variant: 'error',
-      });
+      setCouponError('Please enter a valid coupon code.');
       return;
     }
+    setCouponError('');
     setCouponValidating(true);
     try {
       const res = await services.promotions.validateCoupon(code, subtotalInr);
       if (!res.valid) {
         setCouponDiscount(0);
         setAppliedCouponCode(undefined);
-        pushToast({
-          title: 'Coupon Not Applied',
-          description: res.message,
-          variant: 'error',
-        });
+        setCouponError(res.message);
         return;
       }
       setCouponDiscount(res.discountInr);
       setAppliedCouponCode(res.coupon?.code ?? code);
       setCouponInput(res.coupon?.code ?? code);
+      setCouponError('');
       setCouponPanelOpen(false);
-      pushToast({
-        title: 'Coupon Applied',
-        description: res.message,
-        variant: 'success',
-      });
     } finally {
       setCouponValidating(false);
     }
@@ -473,11 +463,7 @@ export function MobileCheckoutPage() {
     setAppliedCouponCode(undefined);
     setCouponDiscount(0);
     setCouponInput('');
-    pushToast({
-      title: 'Coupon Removed',
-      description: 'Coupon discount removed from your order.',
-      variant: 'info',
-    });
+    setCouponError('');
   }
 
   async function handlePlaceOrder() {
@@ -1147,9 +1133,10 @@ export function MobileCheckoutPage() {
                     <input
                       type="text"
                       value={couponInput}
-                      onChange={(e) =>
-                        setCouponInput(e.target.value.toUpperCase())
-                      }
+                      onChange={(e) => {
+                        setCouponInput(e.target.value.toUpperCase());
+                        if (couponError) setCouponError('');
+                      }}
                       placeholder="Enter coupon code"
                       aria-label="Coupon code"
                       className="h-[42px] min-w-0 flex-1 rounded-xl border border-[#E6D4FF] bg-[#FAF6FF] px-3 font-mono text-[13px] font-bold uppercase text-[#2B0B4E] placeholder:font-sans placeholder:font-medium placeholder:normal-case placeholder:text-[#84729B] focus:border-[#6A11CB] focus:outline-none"
@@ -1162,6 +1149,12 @@ export function MobileCheckoutPage() {
                       {couponValidating ? '...' : 'Apply'}
                     </button>
                   </form>
+
+                  {couponError && (
+                    <p className="mt-2 text-[12px] font-semibold text-rose-600">
+                      {couponError}
+                    </p>
+                  )}
 
                   {appliedCouponCode && (
                     <div className="mt-2.5 flex items-center justify-between rounded-xl bg-[#ECFDF5] px-3 py-2 text-[12px]">

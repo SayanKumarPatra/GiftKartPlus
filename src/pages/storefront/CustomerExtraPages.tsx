@@ -32,6 +32,7 @@ import {
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ProductImage } from '../../components/ui/ProductImage';
+import { MobileSavedAddressesPage } from '../../components/storefront/MobileSavedAddressesPage';
 
 /* ============================================================================
  * #14 ORDER DETAILS PAGE (/order/:orderNumber)
@@ -398,8 +399,15 @@ export function SavedAddressesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-[#6E5B85]">
+    <>
+      {/* Normal Mobile (< 900px): Reference-Matched Compact One-Screen Address Management */}
+      <div className="-mx-3.5 -my-4 sm:-mx-6 sm:-my-5 lg:hidden">
+        <MobileSavedAddressesPage />
+      </div>
+
+      {/* Desktop & Laptop (>= 900px): Existing Desktop Saved Addresses Unchanged */}
+      <div className="mx-auto hidden max-w-5xl space-y-6 lg:block">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-[#6E5B85]">
         <Link to="/" className="hover:text-[#6A11CB]">Home</Link>
         <span>/</span>
         <Link to="/account" className="hover:text-[#6A11CB]">Account</Link>
@@ -602,7 +610,8 @@ export function SavedAddressesPage() {
           </Button>
         </form>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

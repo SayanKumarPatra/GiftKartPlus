@@ -27,6 +27,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const pushToast = useCallback(
     (toast: Omit<ToastItem, 'id'>) => {
+      const isAdminRoute =
+        typeof window !== 'undefined' &&
+        window.location.pathname.startsWith('/admin');
+      if (!toast.compact && !isAdminRoute) {
+        return;
+      }
+
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       setToasts((prev) => {
         if (toast.compact) {
