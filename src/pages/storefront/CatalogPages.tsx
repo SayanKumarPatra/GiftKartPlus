@@ -10,7 +10,11 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
-import { buildPopulatedCategoryGroups } from '../../utils/storefrontHelpers';
+import {
+  buildStorefrontCategoryGroups,
+  isAllGiftsCategory,
+  resolveCategoryBySlug,
+} from '../../utils/storefrontHelpers';
 
 interface ShopPageProps {
   bestSellersOnly?: boolean;
@@ -32,13 +36,16 @@ export function ShopPage({
   const occasionParam = (searchParams.get('occasion') ?? '') as OccasionTag | '';
   const searchQuery = searchParams.get('search') ?? '';
 
-  const activeCategory = categories.find((c) => c.slug === categorySlug);
+  const activeCategory = resolveCategoryBySlug(categorySlug, categories);
   const activeSubcategory = activeCategory?.subcategories.find(
     (s) => s.slug === subcategorySlug
   );
 
   const { data: products, isLoading } = useProducts({
-    categoryId: activeCategory?.id,
+    categoryId:
+      activeCategory && !isAllGiftsCategory(activeCategory)
+        ? activeCategory.id
+        : undefined,
     subcategoryId: activeSubcategory?.id,
     occasion: occasionParam || undefined,
     search: searchQuery || undefined,
@@ -159,13 +166,18 @@ export function AllCategoriesPage() {
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>('featured');
 
   const categoryGroups = useMemo(
-    () => buildPopulatedCategoryGroups(categories, products),
+    () => buildStorefrontCategoryGroups(categories, products),
     [categories, products]
   );
 
-  const catParam = searchParams.get('cat') ?? 'all-gifts';
+  const rawCatParam = searchParams.get('cat') ?? 'all-gifts';
+  const resolvedCat = useMemo(
+    () => resolveCategoryBySlug(rawCatParam, categories),
+    [rawCatParam, categories]
+  );
   const activeGroup =
-    categoryGroups.find((g) => g.id === catParam) ?? categoryGroups[0];
+    categoryGroups.find((g) => g.slug === (resolvedCat?.slug ?? rawCatParam)) ??
+    categoryGroups[0];
 
   const sortedProducts = useMemo(() => {
     const list = [...(activeGroup?.products ?? [])];
@@ -339,51 +351,24 @@ export function AllCategoriesPage() {
   );
 }
 
-const KNOWN_STOREFRONT_CATEGORY_ALIASES: Record<
-  string,
-  { fallbackLabel: string; pattern: RegExp }
-> = {
-  'coffee-mug': { fallbackLabel: 'Coffee Mugs', pattern: /coffee\s*mug/i },
-  'coffee-mugs': { fallbackLabel: 'Coffee Mugs', pattern: /coffee\s*mug/i },
-  't-shirt-print': { fallbackLabel: 'T-Shirt Prints', pattern: /t[-\s]?shirt/i },
-  'tshirt-prints': { fallbackLabel: 'T-Shirt Prints', pattern: /t[-\s]?shirt/i },
-  'photo-frame': { fallbackLabel: 'Photo Frames', pattern: /photo\s*frame/i },
-  'photo-frames': { fallbackLabel: 'Photo Frames', pattern: /photo\s*frame/i },
-  'led-lighting-gifts': { fallbackLabel: 'LED Lighting Gifts', pattern: /led|lighting/i },
-  cushions: { fallbackLabel: 'Cushions', pattern: /cushion/i },
-  'gift-box': { fallbackLabel: 'Gift Boxes & Hampers', pattern: /gift\s*box|hamper/i },
-  'gift-boxes-hampers': { fallbackLabel: 'Gift Boxes & Hampers', pattern: /gift\s*box|hamper/i },
-  'gift-bag': { fallbackLabel: 'Gift Bags', pattern: /gift\s*bag/i },
-  'gift-bags': { fallbackLabel: 'Gift Bags', pattern: /gift\s*bag/i },
-  'home-decor-gifts': { fallbackLabel: 'Home Decor Gifts', pattern: /home\s*decor/i },
-  keychain: { fallbackLabel: 'Keychains', pattern: /key\s*chain/i },
-  keychains: { fallbackLabel: 'Keychains', pattern: /key\s*chain/i },
-  'unique-chocolates': { fallbackLabel: 'Unique Chocolates', pattern: /chocolate/i },
-};
-
 export function CategoryDetailPage() {
   const { slug = '' } = useParams();
   const navigate = useNavigate();
   const { data: categories } = useCategories();
 
-  const normalizedSlug = slug.trim().toLowerCase();
-  const aliasMeta = KNOWN_STOREFRONT_CATEGORY_ALIASES[normalizedSlug];
-
-  const category =
-    categories.find((c) => c.slug.toLowerCase() === normalizedSlug) ??
-    (aliasMeta
-      ? categories.find(
-          (c) =>
-            aliasMeta.pattern.test(c.name) || aliasMeta.pattern.test(c.slug)
-        )
-      : undefined);
+  const category = resolveCategoryBySlug(slug, categories);
+  const isAllGifts = isAllGiftsCategory(category);
 
   const { data: fetchedProducts, isLoading } = useProducts({
-    categoryId: category ? category.id : '__no_matching_category__',
+    categoryId: category
+      ? isAllGifts
+        ? undefined
+        : category.id
+      : '__no_matching_category__',
   });
 
   const products = category ? fetchedProducts : [];
-  const categoryTitle = category?.name ?? aliasMeta?.fallbackLabel;
+  const categoryTitle = category?.name;
 
   if (!categoryTitle) {
     return (

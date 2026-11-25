@@ -1,28 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import {
-  ArrowRight,
-  Candy,
-  Coffee,
-  Gift,
-  Heart,
-  Home,
-  Image as ImageIcon,
-  KeyRound,
-  Lightbulb,
-  Package,
-  Shirt,
-  ShoppingBag,
-  ShoppingCart,
-  Zap,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { ArrowRight, Gift, Heart, ShoppingCart, Zap } from 'lucide-react';
 import type { Category, Product } from '../../types';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
+import { getCategoryPresentation } from '../../utils/storefrontHelpers';
 
 interface MobileProductDetailPageProps {
   product: Product;
@@ -45,47 +30,18 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-function getCategoryMeta(category?: Category): {
-  Icon: LucideIcon;
-  sidebarParam: string;
-} {
+function getCategoryMeta(category?: Category) {
   if (!category) {
-    return { Icon: Gift, sidebarParam: 'all-gifts' };
+    return {
+      Icon: Gift,
+      sidebarParam: 'all-gifts',
+    };
   }
-  const slug = category.slug.toLowerCase();
-  const name = category.name.toLowerCase();
-
-  if (slug.includes('mug') || name.includes('mug')) {
-    return { Icon: Coffee, sidebarParam: 'coffee-mugs' };
-  }
-  if (slug.includes('t-shirt') || slug.includes('tshirt') || name.includes('t-shirt')) {
-    return { Icon: Shirt, sidebarParam: 'tshirt-prints' };
-  }
-  if (slug.includes('frame') || name.includes('frame')) {
-    return { Icon: ImageIcon, sidebarParam: 'photo-frames' };
-  }
-  if (slug.includes('led') || slug.includes('lighting') || name.includes('led')) {
-    return { Icon: Lightbulb, sidebarParam: 'led-lighting-gifts' };
-  }
-  if (slug.includes('cushion') || name.includes('cushion')) {
-    return { Icon: Heart, sidebarParam: 'cushions' };
-  }
-  if (slug.includes('gift-box') || name.includes('box') || name.includes('hamper')) {
-    return { Icon: Package, sidebarParam: 'gift-boxes-hampers' };
-  }
-  if (slug.includes('gift-bag') || name.includes('bag')) {
-    return { Icon: ShoppingBag, sidebarParam: 'gift-bags' };
-  }
-  if (slug.includes('home-decor') || name.includes('home decor')) {
-    return { Icon: Home, sidebarParam: 'home-decor-gifts' };
-  }
-  if (slug.includes('keychain') || name.includes('keychain') || name.includes('key chain')) {
-    return { Icon: KeyRound, sidebarParam: 'keychains' };
-  }
-  if (slug.includes('chocolate') || name.includes('chocolate')) {
-    return { Icon: Candy, sidebarParam: 'unique-chocolates' };
-  }
-  return { Icon: Gift, sidebarParam: 'all-gifts' };
+  const presentation = getCategoryPresentation(category);
+  return {
+    Icon: presentation.Icon,
+    sidebarParam: category.slug || 'all-gifts',
+  };
 }
 
 function buildDefaultVariants(targetProduct: Product): Record<string, string> {

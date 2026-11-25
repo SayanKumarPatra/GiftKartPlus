@@ -25,6 +25,7 @@ import { resetAllDemoSeedData } from '../../data/seedData';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { formatDateTime, formatInr } from '../../utils/format';
+import { isAllGiftsCategory } from '../../utils/storefrontHelpers';
 import type {
   Coupon,
   CouponDiscountType,
@@ -829,11 +830,13 @@ export function AdminReportsPage() {
 
       <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs">
         <h2 className="font-display text-base font-bold text-[#2A0E4D]">
-          Catalog Coverage Across 15 Official Categories
+          Catalog Coverage Across {categories.length} Official Categories
         </h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {categories.map((cat) => {
-            const count = products.filter((p) => p.categoryId === cat.id).length;
+            const count = isAllGiftsCategory(cat)
+              ? products.length
+              : products.filter((p) => p.categoryId === cat.id).length;
             return (
               <div
                 key={cat.id}

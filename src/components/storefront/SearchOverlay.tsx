@@ -74,7 +74,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search magic mugs, T-shirt prints, LED photo frames, SKU..."
+            placeholder="Search Photo Frame, Coffee Mugs, T-shirt Prints, LED Lighting, PVC Card..."
             className="w-full bg-transparent text-sm text-[#2A0E4D] placeholder:text-[#7B6496] focus:outline-none sm:text-base"
           />
           <button

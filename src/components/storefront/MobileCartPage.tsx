@@ -276,7 +276,7 @@ export function MobileCartPage() {
             Your Cart is Empty
           </h2>
           <p className="mt-1.5 max-w-[260px] text-[13px] leading-relaxed text-[#6A5782]">
-            Add personalized mugs, photo frames, cushions, or keychains to get started.
+            Add photo frames, coffee mugs, T-shirt prints, or keychains to get started.
           </p>
           <Link
             to="/shop"

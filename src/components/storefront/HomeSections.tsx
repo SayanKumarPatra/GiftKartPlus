@@ -107,7 +107,7 @@ export function HeroSliderSection() {
 }
 
 /* ============================================================================
- * 2. DESKTOP SHOP BY CATEGORY (Populated Categories Only + All Gifts)
+ * 2. DESKTOP SHOP BY CATEGORY (All 10 Active Official Categories Synchronized)
  * ========================================================================== */
 export function ShopByCategorySection() {
   const { data: categories } = useCategories();
@@ -147,14 +147,14 @@ export function ShopByCategorySection() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-4 gap-3.5 lg:grid-cols-6 xl:grid-cols-8">
+        <div className="grid grid-cols-5 gap-3.5">
           {categoryGroups.map((group) => (
             <Link
               key={group.id}
               to={
-                group.id === 'all-gifts'
+                group.isAllGifts
                   ? '/categories?cat=all-gifts'
-                  : `/categories?cat=${encodeURIComponent(group.id)}`
+                  : `/categories?cat=${encodeURIComponent(group.slug)}`
               }
               className="group flex flex-col items-center rounded-xl border border-[#EFE4FF] bg-[#FCFAFF] p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-[#6A11CB]/40 hover:bg-white hover:shadow-[0_10px_22px_-12px_rgba(106,17,203,0.22)]"
             >

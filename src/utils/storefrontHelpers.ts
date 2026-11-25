@@ -1,186 +1,165 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-  Candy,
   Coffee,
+  CreditCard,
   Gift,
-  Heart,
   Home,
   Image as ImageIcon,
   KeyRound,
   Lightbulb,
   Package,
   Shirt,
-  ShoppingBag,
+  Sparkles,
 } from 'lucide-react';
 import type { Category, OrderFulfillmentStatus, Product, SavedAddress } from '../types';
 import { STUDIO_MEDIA } from '../config/appConfig';
+import { ALL_GIFTS_CATEGORY_ID } from '../data/seedData';
 
 /* ============================================================================
- * 1. SHARED CURATED CATEGORIES (Matches Mobile Categories & Shop by Category)
- *    - No subcategories on customer storefront
- *    - Empty categories (0 available in-stock active products) are hidden
- *    - Includes Unique Chocolates
+ * 1. CENTRALIZED STOREFRONT CATEGORY ENGINE (Single Source of Truth)
+ *    - Synchronized dynamically with useCategories() across Mobile, Desktop & Admin
+ *    - Displays all active categories in exact sortOrder (exact 10 official categories)
  * ========================================================================== */
 
-export type SidebarCategoryKey =
-  | 'all-gifts'
-  | 'coffee-mugs'
-  | 'tshirt-prints'
-  | 'photo-frames'
-  | 'led-lighting-gifts'
-  | 'cushions'
-  | 'gift-boxes-hampers'
-  | 'gift-bags'
-  | 'home-decor-gifts'
-  | 'keychains'
-  | 'unique-chocolates';
-
-export interface CuratedCategoryConfig {
-  id: SidebarCategoryKey;
-  label: string;
+export interface CategoryPresentation {
   Icon: LucideIcon;
   artworkUrl: string;
   isPngArtwork: boolean;
-  matchesCategory: (category: Category) => boolean;
 }
 
-export const ORDERED_SIDEBAR_CATEGORIES: CuratedCategoryConfig[] = [
-  {
-    id: 'all-gifts',
-    label: 'All Gifts',
-    Icon: Gift,
-    artworkUrl:
-      '/assets/aistudio/Glossy_Purple_Gift_Box_with_Golden_Bow-edited_09de3fec.png',
-    isPngArtwork: true,
-    matchesCategory: () => true,
+const CATEGORY_ICON_BY_ID: Record<string, LucideIcon> = {
+  [ALL_GIFTS_CATEGORY_ID]: Gift,
+  'cat-photo-frame': ImageIcon,
+  'cat-coffee-mugs': Coffee,
+  'cat-tshirt-prints': Shirt,
+  'cat-home-decor': Home,
+  'cat-hand-made': Sparkles,
+  'cat-keychain': KeyRound,
+  'cat-gifts-bag-box': Package,
+  'cat-led-lighting': Lightbulb,
+  'cat-pvc-card': CreditCard,
+};
+
+const CATEGORY_DEFAULT_ARTWORK_BY_ID: Record<
+  string,
+  { url: string; isPng: boolean }
+> = {
+  [ALL_GIFTS_CATEGORY_ID]: {
+    url: '/assets/aistudio/Glossy_Purple_Gift_Box_with_Golden_Bow-edited_09de3fec.png',
+    isPng: true,
   },
-  {
-    id: 'coffee-mugs',
-    label: 'Coffee Mugs',
-    Icon: Coffee,
-    artworkUrl: '/assets/aistudio/Festive_Red_Ribbon_Coffee_Mug_195c9bba.png',
-    isPngArtwork: true,
-    matchesCategory: (cat) =>
-      cat.id === 'cat-coffee-mug' ||
-      cat.slug === 'coffee-mug' ||
-      cat.slug === 'coffee-mugs' ||
-      /coffee\s*mug/i.test(cat.name),
+  'cat-photo-frame': {
+    url: '/assets/aistudio/Romantic_Framed_Couple_on_Golden_Pedestal_ac3f2968.png',
+    isPng: true,
   },
-  {
-    id: 'tshirt-prints',
-    label: 'T-Shirt Prints',
-    Icon: Shirt,
-    artworkUrl:
-      '/assets/aistudio/Tropical_Sunset_T-Shirt_on_Golden_Display_cf5d3e8e.png',
-    isPngArtwork: true,
-    matchesCategory: (cat) =>
-      cat.id === 'cat-tshirt-print' ||
-      cat.slug === 't-shirt-print' ||
-      cat.slug === 't-shirt-prints' ||
-      /t[-\s]?shirt/i.test(cat.name),
+  'cat-coffee-mugs': {
+    url: '/assets/aistudio/Festive_Red_Ribbon_Coffee_Mug_195c9bba.png',
+    isPng: true,
   },
-  {
-    id: 'photo-frames',
-    label: 'Photo Frames',
-    Icon: ImageIcon,
-    artworkUrl:
-      '/assets/aistudio/Romantic_Framed_Couple_on_Golden_Pedestal_ac3f2968.png',
-    isPngArtwork: true,
-    matchesCategory: (cat) =>
-      cat.id === 'cat-photo-frame' ||
-      cat.slug === 'photo-frame' ||
-      cat.slug === 'photo-frames' ||
-      /photo\s*frame/i.test(cat.name),
+  'cat-tshirt-prints': {
+    url: '/assets/aistudio/Tropical_Sunset_T-Shirt_on_Golden_Display_cf5d3e8e.png',
+    isPng: true,
   },
-  {
-    id: 'led-lighting-gifts',
-    label: 'LED Lighting Gifts',
-    Icon: Lightbulb,
-    artworkUrl:
-      '/assets/aistudio/Romantic_Moonlight_Couple_Lamp_Gift_Set_a4d8a6f1.png',
-    isPngArtwork: true,
-    matchesCategory: (cat) =>
-      cat.id === 'cat-led-lighting' ||
-      cat.slug === 'led-lighting-gifts' ||
-      /led|lighting/i.test(cat.name),
+  'cat-home-decor': {
+    url: '/assets/aistudio/Warm_Buddha_Moonlight_Decor_Display_c24a114f.png',
+    isPng: true,
   },
-  {
-    id: 'cushions',
-    label: 'Cushions',
-    Icon: Heart,
-    artworkUrl:
-      '/assets/aistudio/Cuddling_Couple_Pillow_on_Golden_Pedestal_402804e5.png',
-    isPngArtwork: true,
-    matchesCategory: (cat) =>
-      cat.id === 'cat-cushions' ||
-      cat.slug === 'cushions' ||
-      cat.slug === 'cushion' ||
-      /cushion/i.test(cat.name),
+  'cat-hand-made': {
+    url: STUDIO_MEDIA.handmadeGift,
+    isPng: false,
   },
-  {
-    id: 'gift-boxes-hampers',
-    label: 'Gift Boxes & Hampers',
-    Icon: Package,
-    artworkUrl:
-      '/assets/aistudio/Luxury_Purple_Valentine_Gift_Hamper_7db1384e.png',
-    isPngArtwork: true,
-    matchesCategory: (cat) =>
-      cat.id === 'cat-gift-box' ||
-      cat.slug === 'gift-box' ||
-      cat.slug === 'gift-boxes-hampers' ||
-      /gift\s*box|hamper/i.test(cat.name),
+  'cat-keychain': {
+    url: '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.png',
+    isPng: true,
   },
-  {
-    id: 'gift-bags',
-    label: 'Gift Bags',
-    Icon: ShoppingBag,
-    artworkUrl:
-      '/assets/aistudio/GiftKart_Floral_Luxury_Gift_Bag_6f56e4fd.png',
-    isPngArtwork: true,
-    matchesCategory: (cat) =>
-      cat.id === 'cat-gift-bag' ||
-      cat.slug === 'gift-bag' ||
-      cat.slug === 'gift-bags' ||
-      /gift\s*bag/i.test(cat.name),
+  'cat-gifts-bag-box': {
+    url: '/assets/aistudio/Luxury_Purple_Valentine_Gift_Hamper_7db1384e.png',
+    isPng: true,
   },
-  {
-    id: 'home-decor-gifts',
-    label: 'Home Decor Gifts',
-    Icon: Home,
-    artworkUrl:
-      '/assets/aistudio/Warm_Buddha_Moonlight_Decor_Display_c24a114f.png',
-    isPngArtwork: true,
-    matchesCategory: (cat) =>
-      cat.id === 'cat-home-decor' ||
-      cat.slug === 'home-decor-gifts' ||
-      /home\s*decor/i.test(cat.name),
+  'cat-led-lighting': {
+    url: '/assets/aistudio/Romantic_Moonlight_Couple_Lamp_Gift_Set_a4d8a6f1.png',
+    isPng: true,
   },
-  {
-    id: 'keychains',
-    label: 'Keychains',
-    Icon: KeyRound,
-    artworkUrl:
-      '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.png',
-    isPngArtwork: true,
-    matchesCategory: (cat) =>
-      cat.id === 'cat-keychain' ||
-      cat.slug === 'keychain' ||
-      cat.slug === 'keychains' ||
-      /key\s*chain/i.test(cat.name),
+  'cat-pvc-card': {
+    url: STUDIO_MEDIA.pvcCard,
+    isPng: false,
   },
-  {
-    id: 'unique-chocolates',
-    label: 'Unique Chocolates',
-    Icon: Candy,
-    artworkUrl: STUDIO_MEDIA.giftBox,
-    isPngArtwork: false,
-    matchesCategory: (cat) =>
-      cat.id === 'cat-unique-chocolates' ||
-      cat.slug === 'unique-chocolates' ||
-      cat.slug === 'chocolates' ||
-      /chocolate/i.test(cat.name),
-  },
-];
+};
+
+export function isAllGiftsCategory(
+  category: Pick<Category, 'id' | 'slug'> | undefined | null
+): boolean {
+  if (!category) return false;
+  return (
+    category.id === ALL_GIFTS_CATEGORY_ID ||
+    category.slug.trim().toLowerCase() === 'all-gifts'
+  );
+}
+
+export function getCategoryPresentation(category: Category): CategoryPresentation {
+  const defaultMeta = CATEGORY_DEFAULT_ARTWORK_BY_ID[category.id];
+  const resolvedUrl = category.imageUrl?.trim() || defaultMeta?.url || STUDIO_MEDIA.giftBox;
+  const isPng = resolvedUrl.toLowerCase().endsWith('.png');
+  const Icon = CATEGORY_ICON_BY_ID[category.id] ?? Gift;
+
+  return {
+    Icon,
+    artworkUrl: resolvedUrl,
+    isPngArtwork: isPng,
+  };
+}
+
+/**
+ * Resolves a URL category slug/query parameter safely against active categories,
+ * supporting minor legacy URL bookmarks cleanly without exposing old categories.
+ */
+const URL_SLUG_COMPAT_MAP: Record<string, string> = {
+  'all-gifts': 'all-gifts',
+  'photo-frame': 'photo-frame',
+  'photo-frames': 'photo-frame',
+  'coffee-mugs': 'coffee-mugs',
+  'coffee-mug': 'coffee-mugs',
+  't-shirt-prints': 't-shirt-prints',
+  't-shirt-print': 't-shirt-prints',
+  'tshirt-prints': 't-shirt-prints',
+  'home-decor': 'home-decor',
+  'home-decor-gifts': 'home-decor',
+  'hand-made': 'hand-made',
+  'handmade-gift': 'hand-made',
+  'handmade-gifts': 'hand-made',
+  keychain: 'keychain',
+  keychains: 'keychain',
+  'gifts-bag-box': 'gifts-bag-box',
+  'gift-box': 'gifts-bag-box',
+  'gift-bag': 'gifts-bag-box',
+  'gift-bags': 'gifts-bag-box',
+  'gift-boxes-hampers': 'gifts-bag-box',
+  'led-lighting': 'led-lighting',
+  'led-lighting-gifts': 'led-lighting',
+  'pvc-card': 'pvc-card',
+  'pvc-cards': 'pvc-card',
+};
+
+export function resolveCategoryBySlug(
+  rawSlug: string | null | undefined,
+  categories: Category[]
+): Category | undefined {
+  const normalized = (rawSlug ?? '').trim().toLowerCase();
+  if (!normalized) return undefined;
+
+  const exact = categories.find(
+    (c) =>
+      c.slug.trim().toLowerCase() === normalized ||
+      c.id.trim().toLowerCase() === normalized
+  );
+  if (exact) return exact;
+
+  const mappedSlug = URL_SLUG_COMPAT_MAP[normalized];
+  if (mappedSlug) {
+    return categories.find((c) => c.slug.trim().toLowerCase() === mappedSlug);
+  }
+  return undefined;
+}
 
 export function deduplicateProducts(list: Product[]): Product[] {
   const seen = new Set<string>();
@@ -201,8 +180,12 @@ export function getAvailableStorefrontProducts(products: Product[]): Product[] {
 }
 
 export interface PopulatedCategoryGroup {
+  /** URL-friendly canonical slug used in ?cat= and /category/:slug */
   id: string;
+  categoryId: string;
+  slug: string;
   label: string;
+  isAllGifts: boolean;
   Icon: LucideIcon;
   artworkUrl: string;
   isPngArtwork: boolean;
@@ -210,66 +193,42 @@ export interface PopulatedCategoryGroup {
 }
 
 /**
- * Returns ordered categories for Storefront (All Gifts + curated non-empty categories
- * + any extra custom admin categories that have >= 1 active in-stock product).
+ * Single centralized builder used across Mobile Home, Desktop Home,
+ * Mobile Categories, Desktop Categories, and Product Listing tabs.
+ * Returns every active category in exact sortOrder synchronized with Admin Panel.
  */
-export function buildPopulatedCategoryGroups(
+export function buildStorefrontCategoryGroups(
   categories: Category[],
   products: Product[]
 ): PopulatedCategoryGroup[] {
   const available = getAvailableStorefrontProducts(products);
-  const activeCategories = categories.filter((c) => c.isActive);
-  const matchedCatIdsGlobal = new Set<string>();
-  const groups: PopulatedCategoryGroup[] = [];
+  const activeCategories = [...categories]
+    .filter((c) => c.isActive)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  for (const def of ORDERED_SIDEBAR_CATEGORIES) {
-    if (def.id === 'all-gifts') {
-      groups.push({
-        id: def.id,
-        label: def.label,
-        Icon: def.Icon,
-        artworkUrl: def.artworkUrl,
-        isPngArtwork: def.isPngArtwork,
-        products: available,
-      });
-      continue;
-    }
+  return activeCategories.map((cat) => {
+    const allGifts = isAllGiftsCategory(cat);
+    const presentation = getCategoryPresentation(cat);
+    const matchedProducts = allGifts
+      ? available
+      : available.filter((p) => p.categoryId === cat.id);
 
-    const matchingCats = activeCategories.filter((c) => def.matchesCategory(c));
-    const matchingIds = new Set(matchingCats.map((c) => c.id));
-    matchingCats.forEach((c) => matchedCatIdsGlobal.add(c.id));
-
-    const matchedProducts = available.filter((p) => matchingIds.has(p.categoryId));
-    if (matchedProducts.length > 0) {
-      groups.push({
-        id: def.id,
-        label: def.label,
-        Icon: def.Icon,
-        artworkUrl: matchingCats[0]?.imageUrl && !def.isPngArtwork ? matchingCats[0].imageUrl : def.artworkUrl,
-        isPngArtwork: def.isPngArtwork,
-        products: matchedProducts,
-      });
-    }
-  }
-
-  // Also include any newly added active admin categories that have >= 1 available product
-  for (const cat of activeCategories) {
-    if (matchedCatIdsGlobal.has(cat.id)) continue;
-    const catProducts = available.filter((p) => p.categoryId === cat.id);
-    if (catProducts.length > 0) {
-      groups.push({
-        id: cat.slug,
-        label: cat.name,
-        Icon: Gift,
-        artworkUrl: cat.imageUrl || STUDIO_MEDIA.giftBox,
-        isPngArtwork: false,
-        products: catProducts,
-      });
-    }
-  }
-
-  return groups;
+    return {
+      id: cat.slug,
+      categoryId: cat.id,
+      slug: cat.slug,
+      label: cat.name,
+      isAllGifts: allGifts,
+      Icon: presentation.Icon,
+      artworkUrl: presentation.artworkUrl,
+      isPngArtwork: presentation.isPngArtwork,
+      products: matchedProducts,
+    };
+  });
 }
+
+// Exported alias for seamless compatibility across all storefront modules
+export const buildPopulatedCategoryGroups = buildStorefrontCategoryGroups;
 
 /* ============================================================================
  * 2. PRODUCT VARIANTS & PERSONALIZATION HELPERS (Matches Mobile PDP rules)

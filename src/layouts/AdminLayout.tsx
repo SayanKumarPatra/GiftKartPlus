@@ -66,7 +66,7 @@ const ADMIN_NAV_GROUPS = [
 const ROUTE_TITLES: Record<string, string> = {
   '/admin': 'Dashboard Overview',
   '/admin/products': 'Products Management',
-  '/admin/categories': 'Categories & Subcategories (15 Official)',
+  '/admin/categories': 'Categories & Subcategories (10 Official)',
   '/admin/orders': 'Demo Orders & Status History',
   '/admin/customers': 'Customer Records (Demo)',
   '/admin/inventory': 'Inventory & Stock Control',

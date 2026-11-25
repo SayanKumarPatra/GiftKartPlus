@@ -966,7 +966,7 @@ export function CustomizationGuidePage() {
     {
       step: '01',
       title: 'Select Your Base Product & Finish',
-      body: 'Choose from customizable mugs, printed T-shirts, LED photo frames, cushions, and keepsakes directly from the product catalog.',
+      body: 'Choose from photo frames, coffee mugs, T-shirt prints, home decor, LED lighting, keychains, and PVC cards directly from the product catalog.',
       img: STUDIO_MEDIA.coffeeMug,
     },
     {

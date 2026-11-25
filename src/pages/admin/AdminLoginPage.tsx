@@ -66,7 +66,7 @@ export function AdminLoginPage() {
               Demo Admin Sign In
             </h1>
             <p className="mt-1 text-xs text-[#5F4B78]">
-              Manage catalog, 15 official categories, banners, gift wrapping, demo orders, and delivery zones.
+              Manage catalog, 10 official categories, banners, gift wrapping, demo orders, and delivery zones.
             </p>
           </div>
 

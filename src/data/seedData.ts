@@ -14,53 +14,30 @@ import { STORAGE_KEYS, readStorage, writeStorage } from '../storage/localStorage
 
 const SEED_TIMESTAMP = '2026-11-15T10:00:00.000Z';
 
+export const ALL_GIFTS_CATEGORY_ID = 'cat-all-gifts';
+
 /**
- * Exact 15 official GiftKart main categories and exact verbatim subcategories
- * for Coffee Mug, T-shirt Print, and Photo Frame.
+ * Exact 10 official GiftKart categories in mandated display order.
+ * Single centralized seed source synchronized across Storefront & Admin Panel.
  */
 export const SEED_CATEGORIES: Category[] = [
   {
-    id: 'cat-coffee-mug',
-    slug: 'coffee-mug',
-    name: 'Coffee Mug',
-    description: 'Custom ceramic, magic heat-reveal, photo, couple, and name-printed coffee mugs.',
-    imageUrl: STUDIO_MEDIA.coffeeMug,
+    id: ALL_GIFTS_CATEGORY_ID,
+    slug: 'all-gifts',
+    name: 'All Gifts',
+    description: 'Explore every personalized and curated gift collection across GiftKart.',
+    imageUrl: '/assets/aistudio/Glossy_Purple_Gift_Box_with_Golden_Bow-edited_09de3fec.png',
     sortOrder: 1,
     isActive: true,
-    subcategories: [
-      { id: 'sub-mug-normal', slug: 'normal-mug', name: 'Normal Mug', isActive: true, sortOrder: 1 },
-      { id: 'sub-mug-magic', slug: 'magic-mug', name: 'Magic Mug', isActive: true, sortOrder: 2 },
-      { id: 'sub-mug-photo', slug: 'photo-mug', name: 'Photo Mug', isActive: true, sortOrder: 3 },
-      { id: 'sub-mug-couple', slug: 'couple-mug', name: 'Couple Mug', isActive: true, sortOrder: 4 },
-      { id: 'sub-mug-name', slug: 'name-printed', name: 'Name Printed', isActive: true, sortOrder: 5 },
-      { id: 'sub-mug-color', slug: 'color-changing', name: 'Color Changing', isActive: true, sortOrder: 6 },
-    ],
-  },
-  {
-    id: 'cat-tshirt-print',
-    slug: 't-shirt-print',
-    name: 'T-shirt Print',
-    description: 'Custom printed T-shirts in Regular, Infinity, Leather Print, Couple, Name, Oversized, and Polo styles.',
-    imageUrl: STUDIO_MEDIA.tshirtPrint,
-    sortOrder: 2,
-    isActive: true,
-    subcategories: [
-      { id: 'sub-tshirt-regular', slug: 'regular', name: 'Regular', isActive: true, sortOrder: 1 },
-      { id: 'sub-tshirt-infinity', slug: 'infinity', name: 'Infinity', isActive: true, sortOrder: 2 },
-      { id: 'sub-tshirt-leather', slug: 'leather-print', name: 'Leather Print', isActive: true, sortOrder: 3 },
-      { id: 'sub-tshirt-couple', slug: 'couple', name: 'Couple', isActive: true, sortOrder: 4 },
-      { id: 'sub-tshirt-name', slug: 'name', name: 'Name', isActive: true, sortOrder: 5 },
-      { id: 'sub-tshirt-oversized', slug: 'oversized', name: 'Oversized', isActive: true, sortOrder: 6 },
-      { id: 'sub-tshirt-polo', slug: 'polo', name: 'Polo', isActive: true, sortOrder: 7 },
-    ],
+    subcategories: [],
   },
   {
     id: 'cat-photo-frame',
     slug: 'photo-frame',
     name: 'Photo Frame',
     description: 'Memory frames across Normal, LED Lighting, Stone Print, Crystal, Collage, Wooden, and Acrylic finishes.',
-    imageUrl: STUDIO_MEDIA.photoFrame,
-    sortOrder: 3,
+    imageUrl: '/assets/aistudio/Romantic_Framed_Couple_on_Golden_Pedestal_ac3f2968.png',
+    sortOrder: 2,
     isActive: true,
     subcategories: [
       { id: 'sub-frame-normal', slug: 'normal', name: 'Normal', isActive: true, sortOrder: 1 },
@@ -73,30 +50,55 @@ export const SEED_CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'cat-gift-box',
-    slug: 'gift-box',
-    name: 'Gift Box',
-    description: 'Signature rigid presentation boxes and surprise keepsake gift boxes.',
-    imageUrl: STUDIO_MEDIA.giftBox,
-    sortOrder: 4,
+    id: 'cat-coffee-mugs',
+    slug: 'coffee-mugs',
+    name: 'Coffee Mugs',
+    description: 'Custom ceramic, magic heat-reveal, photo, couple, and name-printed coffee mugs.',
+    imageUrl: '/assets/aistudio/Festive_Red_Ribbon_Coffee_Mug_195c9bba.png',
+    sortOrder: 3,
     isActive: true,
-    subcategories: [],
+    subcategories: [
+      { id: 'sub-mug-normal', slug: 'normal-mug', name: 'Normal Mug', isActive: true, sortOrder: 1 },
+      { id: 'sub-mug-magic', slug: 'magic-mug', name: 'Magic Mug', isActive: true, sortOrder: 2 },
+      { id: 'sub-mug-photo', slug: 'photo-mug', name: 'Photo Mug', isActive: true, sortOrder: 3 },
+      { id: 'sub-mug-couple', slug: 'couple-mug', name: 'Couple Mug', isActive: true, sortOrder: 4 },
+      { id: 'sub-mug-name', slug: 'name-printed', name: 'Name Printed', isActive: true, sortOrder: 5 },
+      { id: 'sub-mug-color', slug: 'color-changing', name: 'Color Changing', isActive: true, sortOrder: 6 },
+    ],
   },
   {
-    id: 'cat-gift-bag',
-    slug: 'gift-bag',
-    name: 'Gift Bag',
-    description: 'Boutique textured paper and ribbon-handle gift bags in festive finishes.',
-    imageUrl: STUDIO_MEDIA.giftBag,
+    id: 'cat-tshirt-prints',
+    slug: 't-shirt-prints',
+    name: 'T-shirt Prints',
+    description: 'Custom printed T-shirts in Regular, Infinity, Leather Print, Couple, Name, Oversized, and Polo styles.',
+    imageUrl: '/assets/aistudio/Tropical_Sunset_T-Shirt_on_Golden_Display_cf5d3e8e.png',
+    sortOrder: 4,
+    isActive: true,
+    subcategories: [
+      { id: 'sub-tshirt-regular', slug: 'regular', name: 'Regular', isActive: true, sortOrder: 1 },
+      { id: 'sub-tshirt-infinity', slug: 'infinity', name: 'Infinity', isActive: true, sortOrder: 2 },
+      { id: 'sub-tshirt-leather', slug: 'leather-print', name: 'Leather Print', isActive: true, sortOrder: 3 },
+      { id: 'sub-tshirt-couple', slug: 'couple', name: 'Couple', isActive: true, sortOrder: 4 },
+      { id: 'sub-tshirt-name', slug: 'name', name: 'Name', isActive: true, sortOrder: 5 },
+      { id: 'sub-tshirt-oversized', slug: 'oversized', name: 'Oversized', isActive: true, sortOrder: 6 },
+      { id: 'sub-tshirt-polo', slug: 'polo', name: 'Polo', isActive: true, sortOrder: 7 },
+    ],
+  },
+  {
+    id: 'cat-home-decor',
+    slug: 'home-decor',
+    name: 'Home Decor',
+    description: 'Custom wall clocks, tabletop nameplates, photo keepsakes, and home decor accents.',
+    imageUrl: '/assets/aistudio/Warm_Buddha_Moonlight_Decor_Display_c24a114f.png',
     sortOrder: 5,
     isActive: true,
     subcategories: [],
   },
   {
-    id: 'cat-handmade-gift',
-    slug: 'handmade-gift',
-    name: 'Handmade Gift',
-    description: 'Artisan explosion boxes, scrapbook albums, and hand-painted keepsakes.',
+    id: 'cat-hand-made',
+    slug: 'hand-made',
+    name: 'Hand Made',
+    description: 'Artisan explosion boxes, scrapbook albums, and handcrafted personalized keepsakes.',
     imageUrl: STUDIO_MEDIA.handmadeGift,
     sortOrder: 6,
     isActive: true,
@@ -105,94 +107,82 @@ export const SEED_CATEGORIES: Category[] = [
   {
     id: 'cat-keychain',
     slug: 'keychain',
-    name: 'Keychain',
+    name: 'KeyChain',
     description: 'Engraved metal, acrylic photo, and wooden monogram keychains.',
-    imageUrl: STUDIO_MEDIA.keychain,
+    imageUrl: '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.png',
     sortOrder: 7,
     isActive: true,
     subcategories: [],
   },
   {
-    id: 'cat-led-lighting',
-    slug: 'led-lighting-gifts',
-    name: 'LED & Lighting Gifts',
-    description: 'Custom 3D heart photo lamps, moon lamps, and warm acrylic bedside keepsakes.',
-    imageUrl: STUDIO_MEDIA.ledLamp,
+    id: 'cat-gifts-bag-box',
+    slug: 'gifts-bag-box',
+    name: 'Gifts Bag + Box',
+    description: 'Signature rigid presentation gift boxes, hampers, and boutique ribbon gift bags.',
+    imageUrl: '/assets/aistudio/Luxury_Purple_Valentine_Gift_Hamper_7db1384e.png',
     sortOrder: 8,
     isActive: true,
     subcategories: [],
   },
   {
-    id: 'cat-cushions',
-    slug: 'cushions',
-    name: 'Cushions',
-    description: 'Plush satin photo cushions, sequin reveal pillows, and embroidered heart cushions.',
-    imageUrl: STUDIO_MEDIA.cushionKeychain,
+    id: 'cat-led-lighting',
+    slug: 'led-lighting',
+    name: 'LED Lighting',
+    description: 'Custom 3D heart photo lamps, moon lamps, and warm acrylic bedside keepsakes.',
+    imageUrl: '/assets/aistudio/Romantic_Moonlight_Couple_Lamp_Gift_Set_a4d8a6f1.png',
     sortOrder: 9,
     isActive: true,
     subcategories: [],
   },
   {
-    id: 'cat-personalized-accessories',
-    slug: 'personalized-accessories',
-    name: 'Personalized Accessories',
-    description: 'Name-engraved wallets, passport covers, desk trays, and personalized charms.',
-    imageUrl: STUDIO_MEDIA.personalizedAccessories,
+    id: 'cat-pvc-card',
+    slug: 'pvc-card',
+    name: 'PVC Card',
+    description: 'Custom printed glossy PVC photo cards, wallet keepsake cards, and personalized ID cards.',
+    imageUrl: STUDIO_MEDIA.pvcCard,
     sortOrder: 10,
     isActive: true,
     subcategories: [],
   },
-  {
-    id: 'cat-home-decor',
-    slug: 'home-decor-gifts',
-    name: 'Home Decor Gifts',
-    description: 'Custom wooden wall clocks, tabletop nameplates, and desk decor accents.',
-    imageUrl: STUDIO_MEDIA.homeDecor,
-    sortOrder: 11,
-    isActive: true,
-    subcategories: [],
-  },
-  {
-    id: 'cat-customized-stationery',
-    slug: 'customized-stationery',
-    name: 'Customized Stationery',
-    description: 'Monogrammed leatherette diaries, engraved metallic pens, and executive desk sets.',
-    imageUrl: STUDIO_MEDIA.stationeryDecor,
-    sortOrder: 12,
-    isActive: true,
-    subcategories: [],
-  },
-  {
-    id: 'cat-couple-friendship',
-    slug: 'couple-friendship-gifts',
-    name: 'Couple & Friendship Gifts',
-    description: 'Matching keepsake sets, twin mugs, and milestone gifts for partners and best friends.',
-    imageUrl: STUDIO_MEDIA.coupleFriendship,
-    sortOrder: 13,
-    isActive: true,
-    subcategories: [],
-  },
-  {
-    id: 'cat-customized-photo-gifts',
-    slug: 'customized-photo-gifts',
-    name: 'Customized Photo Gifts',
-    description: 'Polaroid kits, photo slates, acrylic LED plaques, and custom photo keepsakes.',
-    imageUrl: STUDIO_MEDIA.customizedPhotoGifts,
-    sortOrder: 14,
-    isActive: true,
-    subcategories: [],
-  },
-  {
-    id: 'cat-special-occasion',
-    slug: 'special-occasion-gifts',
-    name: 'Special Occasion Gifts',
-    description: 'Thoughtful celebration editions crafted for birthdays, weddings, anniversaries, and festivals.',
-    imageUrl: STUDIO_MEDIA.specialOccasionGifts,
-    sortOrder: 15,
-    isActive: true,
-    subcategories: [],
-  },
 ];
+
+export const OFFICIAL_CATEGORY_IDS = new Set(SEED_CATEGORIES.map((c) => c.id));
+
+/**
+ * Maps obsolete legacy category IDs safely onto the new 10 official categories
+ * so no existing or admin-created product is ever lost or orphaned.
+ */
+export const LEGACY_CATEGORY_ID_MAP: Record<string, string> = {
+  'cat-all-gifts': ALL_GIFTS_CATEGORY_ID,
+  'cat-photo-frame': 'cat-photo-frame',
+  'cat-customized-photo-gifts': 'cat-photo-frame',
+  'cat-coffee-mug': 'cat-coffee-mugs',
+  'cat-coffee-mugs': 'cat-coffee-mugs',
+  'cat-tshirt-print': 'cat-tshirt-prints',
+  'cat-tshirt-prints': 'cat-tshirt-prints',
+  'cat-home-decor': 'cat-home-decor',
+  'cat-cushions': 'cat-home-decor',
+  'cat-customized-stationery': 'cat-home-decor',
+  'cat-personalized-accessories': 'cat-home-decor',
+  'cat-handmade-gift': 'cat-hand-made',
+  'cat-hand-made': 'cat-hand-made',
+  'cat-keychain': 'cat-keychain',
+  'cat-gift-box': 'cat-gifts-bag-box',
+  'cat-gift-bag': 'cat-gifts-bag-box',
+  'cat-gifts-bag-box': 'cat-gifts-bag-box',
+  'cat-special-occasion': 'cat-gifts-bag-box',
+  'cat-couple-friendship': 'cat-gifts-bag-box',
+  'cat-unique-chocolates': 'cat-gifts-bag-box',
+  'cat-led-lighting': 'cat-led-lighting',
+  'cat-pvc-card': 'cat-pvc-card',
+};
+
+export function remapLegacyCategoryId(categoryId: string): string {
+  if (OFFICIAL_CATEGORY_IDS.has(categoryId)) {
+    return categoryId;
+  }
+  return LEGACY_CATEGORY_ID_MAP[categoryId] ?? 'cat-hand-made';
+}
 
 export const SEED_PRODUCTS: Product[] = [
   {
@@ -204,7 +194,7 @@ export const SEED_PRODUCTS: Product[] = [
     description: 'Crafted from 330ml AAA-grade glossy ceramic, our Personalized Photo Magic Mug unveils your cherished photograph and custom message cleanly when filled with a hot beverage.',
     priceInr: 349,
     compareAtPriceInr: 499,
-    categoryId: 'cat-coffee-mug',
+    categoryId: 'cat-coffee-mugs',
     subcategoryId: 'sub-mug-magic',
     occasionTags: ['Birthday', 'Anniversary', 'Friendship', 'Special Occasion'],
     images: [STUDIO_MEDIA.coffeeMug, STUDIO_MEDIA.heroPersonalized],
@@ -290,7 +280,7 @@ export const SEED_PRODUCTS: Product[] = [
     description: 'Soft, breathable combed cotton couple T-shirt pair finished with vibrant wash-resistant DTF artwork. Tailored comfortably for Jalchak weather.',
     priceInr: 799,
     compareAtPriceInr: 1199,
-    categoryId: 'cat-tshirt-print',
+    categoryId: 'cat-tshirt-prints',
     subcategoryId: 'sub-tshirt-couple',
     occasionTags: ['Couple', 'Anniversary', 'Friendship'],
     images: [STUDIO_MEDIA.tshirtPrint],
@@ -319,7 +309,7 @@ export const SEED_PRODUCTS: Product[] = [
     description: 'Lovingly curated rigid keepsake box lined in blush satin with hand-calligraphed note cards, wooden love charm, and dried lavender accents.',
     priceInr: 1499,
     compareAtPriceInr: 1999,
-    categoryId: 'cat-gift-box',
+    categoryId: 'cat-gifts-bag-box',
     occasionTags: ['Birthday', 'Anniversary', 'Festival', 'Special Occasion', 'Return Gifts'],
     images: [STUDIO_MEDIA.giftBox, STUDIO_MEDIA.heroPersonalized],
     variants: [
@@ -346,7 +336,7 @@ export const SEED_PRODUCTS: Product[] = [
     description: 'Celebrate morning chai and coffee together with matching ceramic mugs featuring crisp dishwasher-safe sublimation prints.',
     priceInr: 599,
     compareAtPriceInr: 799,
-    categoryId: 'cat-coffee-mug',
+    categoryId: 'cat-coffee-mugs',
     subcategoryId: 'sub-mug-couple',
     occasionTags: ['Couple', 'Anniversary', 'Wedding'],
     images: [STUDIO_MEDIA.coffeeMug],
@@ -372,7 +362,7 @@ export const SEED_PRODUCTS: Product[] = [
     description: 'Relaxed modern oversized silhouette crafted in 240 GSM French terry cotton with ultra-crisp custom front & back printing.',
     priceInr: 699,
     compareAtPriceInr: 899,
-    categoryId: 'cat-tshirt-print',
+    categoryId: 'cat-tshirt-prints',
     subcategoryId: 'sub-tshirt-oversized',
     occasionTags: ['Birthday', 'Friendship'],
     images: [STUDIO_MEDIA.tshirtPrint],
@@ -425,7 +415,7 @@ export const SEED_PRODUCTS: Product[] = [
     description: 'Supremely soft velvet finish with concealed zip and resilient microfiber filler included.',
     priceInr: 549,
     compareAtPriceInr: 749,
-    categoryId: 'cat-cushions',
+    categoryId: 'cat-home-decor',
     occasionTags: ['Birthday', 'Friendship', 'Couple'],
     images: [STUDIO_MEDIA.cushionKeychain],
     variants: [
@@ -475,7 +465,7 @@ export const SEED_PRODUCTS: Product[] = [
     description: 'Designed for executives, writers, and corporate celebrations with 192 ivory fountain-friendly pages and crisp name engraving.',
     priceInr: 899,
     compareAtPriceInr: 1149,
-    categoryId: 'cat-customized-stationery',
+    categoryId: 'cat-home-decor',
     occasionTags: ['Corporate', 'Return Gifts', 'Birthday'],
     images: [STUDIO_MEDIA.stationeryDecor],
     variants: [
@@ -500,7 +490,7 @@ export const SEED_PRODUCTS: Product[] = [
     description: 'Clean metallic desk set crafted for corporate gifting, graduations, and new job milestones.',
     priceInr: 749,
     compareAtPriceInr: 949,
-    categoryId: 'cat-personalized-accessories',
+    categoryId: 'cat-home-decor',
     occasionTags: ['Corporate', 'Special Occasion'],
     images: [STUDIO_MEDIA.stationeryDecor],
     variants: [
@@ -894,6 +884,60 @@ const LEGACY_HERO_BANNER_PATHS = new Set<string>([
   '/assets/aistudio/GiftKart_Special_Occasion_Gifts_032e3256.png',
 ]);
 
+const OBSOLETE_LEGACY_CATEGORY_IDS = new Set<string>([
+  'cat-coffee-mug',
+  'cat-tshirt-print',
+  'cat-gift-box',
+  'cat-gift-bag',
+  'cat-handmade-gift',
+  'cat-cushions',
+  'cat-personalized-accessories',
+  'cat-customized-stationery',
+  'cat-couple-friendship',
+  'cat-customized-photo-gifts',
+  'cat-special-occasion',
+  'cat-unique-chocolates',
+]);
+
+function runCategoryMigrationV2IfNeeded(): void {
+  const alreadyMigrated = readStorage<boolean>(
+    STORAGE_KEYS.CATEGORY_MIGRATION_V2,
+    false
+  );
+  const storedCategories = readStorage<Category[]>(STORAGE_KEYS.CATEGORIES, []);
+  const hasObsoleteCategories = storedCategories.some((c) =>
+    OBSOLETE_LEGACY_CATEGORY_IDS.has(c.id)
+  );
+
+  if (alreadyMigrated && !hasObsoleteCategories && storedCategories.length > 0) {
+    return;
+  }
+
+  // 1. Replace cached categories safely with the exact 10 official GiftKart categories
+  writeStorage(STORAGE_KEYS.CATEGORIES, SEED_CATEGORIES);
+
+  // 2. Preserve 100% of existing products while safely remapping obsolete categoryId references
+  const storedProducts = readStorage<Product[]>(STORAGE_KEYS.PRODUCTS, SEED_PRODUCTS);
+  let productsChanged = false;
+  const migratedProducts = storedProducts.map((product) => {
+    const mappedCategoryId = remapLegacyCategoryId(product.categoryId);
+    if (mappedCategoryId !== product.categoryId) {
+      productsChanged = true;
+      return {
+        ...product,
+        categoryId: mappedCategoryId,
+      };
+    }
+    return product;
+  });
+
+  if (productsChanged) {
+    writeStorage(STORAGE_KEYS.PRODUCTS, migratedProducts);
+  }
+
+  writeStorage(STORAGE_KEYS.CATEGORY_MIGRATION_V2, true, 'catalog');
+}
+
 export function ensureDemoSeedHydrated(): void {
   const alreadySeeded = readStorage<boolean>(STORAGE_KEYS.SEEDED_FLAG, false);
   if (alreadySeeded) {
@@ -912,6 +956,9 @@ export function ensureDemoSeedHydrated(): void {
         heroSlides: SEED_HERO_SLIDES,
       });
     }
+
+    // Safely migrate cached legacy categories -> exact 10 official categories without losing products or orders
+    runCategoryMigrationV2IfNeeded();
     return;
   }
   writeStorage(STORAGE_KEYS.CATEGORIES, SEED_CATEGORIES);
@@ -923,6 +970,7 @@ export function ensureDemoSeedHydrated(): void {
   writeStorage(STORAGE_KEYS.SAVED_ADDRESSES, SEED_SAVED_ADDRESSES);
   writeStorage(STORAGE_KEYS.PRODUCT_REVIEWS, SEED_REVIEWS);
   writeStorage(STORAGE_KEYS.NEWSLETTER_SUBSCRIBERS, []);
+  writeStorage(STORAGE_KEYS.CATEGORY_MIGRATION_V2, true);
   writeStorage(STORAGE_KEYS.SEEDED_FLAG, true);
 }
 
@@ -936,5 +984,6 @@ export function resetAllDemoSeedData(): void {
   writeStorage(STORAGE_KEYS.SAVED_ADDRESSES, SEED_SAVED_ADDRESSES, 'community');
   writeStorage(STORAGE_KEYS.PRODUCT_REVIEWS, SEED_REVIEWS, 'community');
   writeStorage(STORAGE_KEYS.NEWSLETTER_SUBSCRIBERS, [], 'community');
+  writeStorage(STORAGE_KEYS.CATEGORY_MIGRATION_V2, true);
   writeStorage(STORAGE_KEYS.SEEDED_FLAG, true, 'all');
 }

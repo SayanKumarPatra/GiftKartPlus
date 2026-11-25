@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Flame, Heart, Search } from 'lucide-react';
 import {
+  useCategories,
   useProducts,
   useStoreSettings,
 } from '../../hooks/useStoreData';
@@ -10,102 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
 import { SEED_HERO_SLIDES } from '../../data/seedData';
-import { STUDIO_MEDIA } from '../../config/appConfig';
-
-interface MobileCategoryItem {
-  id: string;
-  label: string;
-  to: string;
-  imageUrl: string;
-  isPng?: boolean;
-}
-
-const HOME_MOBILE_CATEGORIES: MobileCategoryItem[] = [
-  {
-    id: 'all-gifts',
-    label: 'All Gifts',
-    to: '/shop',
-    imageUrl: '/assets/aistudio/Glossy_Purple_Gift_Box_with_Golden_Bow-edited_09de3fec.png',
-    isPng: true,
-  },
-  {
-    id: 'coffee-mugs',
-    label: 'Coffee Mugs',
-    to: '/category/coffee-mug',
-    imageUrl: '/assets/aistudio/Festive_Red_Ribbon_Coffee_Mug_195c9bba.png',
-    isPng: true,
-  },
-  {
-    id: 'tshirt-prints',
-    label: 'T-Shirt Prints',
-    to: '/category/t-shirt-print',
-    imageUrl: '/assets/aistudio/Tropical_Sunset_T-Shirt_on_Golden_Display_cf5d3e8e.png',
-    isPng: true,
-  },
-  {
-    id: 'photo-frames',
-    label: 'Photo Frames',
-    to: '/category/photo-frame',
-    imageUrl: '/assets/aistudio/Romantic_Framed_Couple_on_Golden_Pedestal_ac3f2968.png',
-    isPng: true,
-  },
-  {
-    id: 'led-lighting-gifts',
-    label: 'LED Lighting Gifts',
-    to: '/category/led-lighting-gifts',
-    imageUrl: '/assets/aistudio/Romantic_Moonlight_Couple_Lamp_Gift_Set_a4d8a6f1.png',
-    isPng: true,
-  },
-  {
-    id: 'cushions',
-    label: 'Cushions',
-    to: '/category/cushions',
-    imageUrl: '/assets/aistudio/Cuddling_Couple_Pillow_on_Golden_Pedestal_402804e5.png',
-    isPng: true,
-  },
-  {
-    id: 'gift-boxes-hampers',
-    label: 'Gift Boxes & Hampers',
-    to: '/category/gift-box',
-    imageUrl: '/assets/aistudio/Luxury_Purple_Valentine_Gift_Hamper_7db1384e.png',
-    isPng: true,
-  },
-  {
-    id: 'gift-bags',
-    label: 'Gift Bags',
-    to: '/category/gift-bag',
-    imageUrl: '/assets/aistudio/GiftKart_Floral_Luxury_Gift_Bag_6f56e4fd.png',
-    isPng: true,
-  },
-  {
-    id: 'home-decor-gifts',
-    label: 'Home Decor Gifts',
-    to: '/category/home-decor-gifts',
-    imageUrl: '/assets/aistudio/Warm_Buddha_Moonlight_Decor_Display_c24a114f.png',
-    isPng: true,
-  },
-  {
-    id: 'keychains',
-    label: 'Keychains',
-    to: '/category/keychain',
-    imageUrl: '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.png',
-    isPng: true,
-  },
-  {
-    id: 'handmade-gift',
-    label: 'Handmade Gifts',
-    to: '/category/handmade-gift',
-    imageUrl: STUDIO_MEDIA.handmadeGift,
-    isPng: false,
-  },
-  {
-    id: 'customized-photo-gifts',
-    label: 'Photo Gifts',
-    to: '/category/customized-photo-gifts',
-    imageUrl: STUDIO_MEDIA.customizedPhotoGifts,
-    isPng: false,
-  },
-];
+import { buildStorefrontCategoryGroups } from '../../utils/storefrontHelpers';
 
 interface MobileHeroSlide {
   id: string;
@@ -116,6 +22,7 @@ interface MobileHeroSlide {
 
 export function MobileHomePage() {
   const { data: settings } = useStoreSettings();
+  const { data: categories } = useCategories();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { toggleWishlist, isWishlisted } = useCart();
   const { customerAccount } = useAuth();
@@ -156,7 +63,17 @@ export function MobileHomePage() {
     return () => window.clearInterval(timer);
   }, [slideCount, resetTick]);
 
-  const allMobileCategories = HOME_MOBILE_CATEGORIES;
+  const allMobileCategories = useMemo(
+    () =>
+      buildStorefrontCategoryGroups(categories, products).map((group) => ({
+        id: group.id,
+        label: group.label,
+        to: group.isAllGifts ? '/shop' : `/category/${encodeURIComponent(group.slug)}`,
+        imageUrl: group.artworkUrl,
+        isPng: group.isPngArtwork,
+      })),
+    [categories, products]
+  );
 
   // Real active products from the store database stacked cleanly in 2-column rows
   const trendingProducts = useMemo(() => {

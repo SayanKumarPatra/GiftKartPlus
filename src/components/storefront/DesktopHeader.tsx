@@ -96,7 +96,7 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search personalized mugs, photo frames, LED lamps, cushions, chocolates..."
+            placeholder="Search Photo Frame, Coffee Mugs, T-shirt Prints, LED Lighting, PVC Card..."
             className="w-full bg-transparent px-4 text-[13px] font-medium text-[#1E1035] placeholder:text-[#7E7094] focus:outline-none"
           />
           <button

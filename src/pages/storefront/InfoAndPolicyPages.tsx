@@ -57,7 +57,7 @@ export function AboutUsPage() {
         </p>
         <p className="mt-3 max-w-3xl text-[13.5px] leading-relaxed text-neutral-700 sm:text-[14.5px]">
           {settings?.pageContent?.aboutStory ||
-            'Founded in Jalchak, West Bengal, GiftKart is a dedicated gifting storefront offering personalized photo mugs, custom printed T-shirts, illuminated LED photo frames, plush cushions, keepsakes, and curated gift wrapping. Every order is prepared with attention to print clarity, safe packaging, and transparent INR pricing.'}
+            'Founded in Jalchak, West Bengal, GiftKart is a dedicated gifting storefront offering personalized photo frames, coffee mugs, custom T-shirt prints, home decor, hand made gifts, keychains, LED lighting, PVC cards, and curated gift bags & boxes. Every order is prepared with attention to print clarity, safe packaging, and transparent INR pricing.'}
         </p>
       </header>
 
@@ -74,8 +74,8 @@ export function AboutUsPage() {
             Personalized Craftsmanship
           </h2>
           <p className="mt-1.5 text-[13px] leading-relaxed text-neutral-600">
-            Custom mugs, T-shirts, cushions, and LED frames are printed to order
-            with accurate colour reproduction and clean finishing.
+            Photo frames, coffee mugs, T-shirt prints, LED lighting, and PVC cards
+            are printed to order with accurate colour reproduction and clean finishing.
           </p>
         </div>
 
@@ -580,7 +580,7 @@ const POLICY_CONTENT: Record<PolicyType, PolicyDocument> = {
       },
       {
         heading: '2. Strict Non-Returnable Policy for Customized Products',
-        body: 'Because customized products—including Photo Mugs, Magic Photo Mugs, Custom Printed T-Shirts, Personalized Photo Frames, LED Photo Lamps, Photo Cushions, and Engraved Accessories—are uniquely crafted using your personal photo or text, they cannot be resold. Therefore, customized items are strictly not eligible for return, exchange, or refund due to change of mind, size preference, or customer-submitted spelling/image errors.',
+        body: 'Because customized products—including Photo Frames, Coffee Mugs, T-shirt Prints, LED Lighting, Hand Made keepsakes, KeyChains, and PVC Cards—are uniquely crafted using your personal photo or text, they cannot be resold. Therefore, customized items are strictly not eligible for return, exchange, or refund due to change of mind, size preference, or customer-submitted spelling/image errors.',
       },
       {
         heading: '3. Damaged, Defective, or Wrong Product Received',
@@ -712,7 +712,7 @@ const POLICY_CONTENT: Record<PolicyType, PolicyDocument> = {
       },
       {
         heading: '2. Strict Confidentiality of Uploaded Custom Photos',
-        body: 'Any photograph or custom artwork you upload for mugs, photo frames, T-shirts, cushions, or LED lamps is used strictly for printing and fulfilling your order. GiftKart does not sell, publish, or publicly share your personal images without your explicit consent.',
+        body: 'Any photograph or custom artwork you upload for photo frames, coffee mugs, T-shirt prints, keychains, LED lighting, or PVC cards is used strictly for printing and fulfilling your order. GiftKart does not sell, publish, or publicly share your personal images without your explicit consent.',
       },
       {
         heading: '3. How We Use Your Information',

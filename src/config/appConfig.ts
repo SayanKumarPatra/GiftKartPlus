@@ -37,6 +37,7 @@ export const STUDIO_MEDIA = {
   coupleFriendship: '/src/assets/images/category_couple_friendship_1795289468022.jpg',
   customizedPhotoGifts: '/src/assets/images/category_customized_photo_gifts_1795295079046.jpg',
   specialOccasionGifts: '/src/assets/images/category_special_occasion_gifts_1795295079395.jpg',
+  pvcCard: '/src/assets/images/category_pvc_card_1795608982570.jpg',
 } as const;
 
 export const APP_CONFIG = {

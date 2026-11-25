@@ -19,6 +19,7 @@ export const STORAGE_KEYS = {
   NEWSLETTER_SUBSCRIBERS: `${STORAGE_PREFIX}newsletter_subscribers`,
   PRODUCT_REVIEWS: `${STORAGE_PREFIX}product_reviews`,
   SEEDED_FLAG: `${STORAGE_PREFIX}seeded`,
+  CATEGORY_MIGRATION_V2: `${STORAGE_PREFIX}category_migration_v2`,
 } as const;
 
 export function readStorage<T>(key: string, fallback: T): T {

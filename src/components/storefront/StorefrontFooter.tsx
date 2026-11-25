@@ -20,10 +20,10 @@ import { useStoreSettings } from '../../hooks/useStoreData';
 
 const QUICK_LINKS = [
   { label: 'Home', to: '/' },
-  { label: 'Shop', to: '/shop' },
-  { label: 'Customize', to: '/customize' },
-  { label: 'Occasions', to: '/shop?occasion=Birthday' },
-  { label: 'Accessories', to: '/category/personalized-accessories' },
+  { label: 'All Gifts', to: '/shop' },
+  { label: 'Photo Frame', to: '/category/photo-frame' },
+  { label: 'Coffee Mugs', to: '/category/coffee-mugs' },
+  { label: 'LED Lighting', to: '/category/led-lighting' },
   { label: 'All Categories', to: '/categories' },
 ];
 

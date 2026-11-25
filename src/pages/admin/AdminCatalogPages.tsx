@@ -30,7 +30,7 @@ import {
   useStoreSettings,
 } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
-import { resetAllDemoSeedData } from '../../data/seedData';
+import { ALL_GIFTS_CATEGORY_ID, resetAllDemoSeedData } from '../../data/seedData';
 import { HERO_BANNERS, OFFICIAL_OCCASIONS, STUDIO_MEDIA } from '../../config/appConfig';
 import { useToast } from '../../context/ToastContext';
 import { formatDateTime, formatInr, slugify } from '../../utils/format';
@@ -50,21 +50,18 @@ const MEDIA_OPTIONS: { label: string; url: string }[] = [
   { label: 'Banner 2 — Find the Perfect Gift', url: HERO_BANNERS.perfectGift },
   { label: 'Banner 3 — Premium Birthday Gifts', url: HERO_BANNERS.birthdayCollection },
   { label: 'Banner 4 — Romantic & Couple Gifts', url: HERO_BANNERS.romanticShowcase },
-  { label: 'Coffee Mug Studio', url: STUDIO_MEDIA.coffeeMug },
-  { label: 'LED Lamp Studio', url: STUDIO_MEDIA.ledLamp },
   { label: 'Photo Frame Studio', url: STUDIO_MEDIA.photoFrame },
-  { label: 'T-shirt Print Studio', url: STUDIO_MEDIA.tshirtPrint },
-  { label: 'Gift Box Studio', url: STUDIO_MEDIA.giftBox },
-  { label: 'Gift Bag Studio', url: STUDIO_MEDIA.giftBag },
-  { label: 'Handmade Gift Studio', url: STUDIO_MEDIA.handmadeGift },
-  { label: 'Keychain Studio', url: STUDIO_MEDIA.keychain },
-  { label: 'Cushion Studio', url: STUDIO_MEDIA.cushionKeychain },
-  { label: 'Personalized Accessories Studio', url: STUDIO_MEDIA.personalizedAccessories },
+  { label: 'Coffee Mugs Studio', url: STUDIO_MEDIA.coffeeMug },
+  { label: 'T-shirt Prints Studio', url: STUDIO_MEDIA.tshirtPrint },
   { label: 'Home Decor Studio', url: STUDIO_MEDIA.homeDecor },
-  { label: 'Stationery Studio', url: STUDIO_MEDIA.stationeryDecor },
-  { label: 'Couple & Friendship Studio', url: STUDIO_MEDIA.coupleFriendship },
-  { label: 'Customized Photo Gifts Studio', url: STUDIO_MEDIA.customizedPhotoGifts },
-  { label: 'Special Occasion Gifts Studio', url: STUDIO_MEDIA.specialOccasionGifts },
+  { label: 'Hand Made Studio', url: STUDIO_MEDIA.handmadeGift },
+  { label: 'KeyChain Studio', url: STUDIO_MEDIA.keychain },
+  { label: 'Gifts Bag + Box Studio', url: STUDIO_MEDIA.giftBox },
+  { label: 'LED Lighting Studio', url: STUDIO_MEDIA.ledLamp },
+  { label: 'PVC Card Studio', url: STUDIO_MEDIA.pvcCard },
+  { label: 'Gift Bag Studio', url: STUDIO_MEDIA.giftBag },
+  { label: 'Decor & Cushion Studio', url: STUDIO_MEDIA.cushionKeychain },
+  { label: 'Desk & Diary Studio', url: STUDIO_MEDIA.stationeryDecor },
 ];
 
 /* ============================================================================
@@ -102,7 +99,7 @@ export function AdminDashboardPage() {
     pushToast({
       title: 'Demo seed data restored',
       description:
-        'All 15 official categories, exact subcategories, studio products, Jalchak delivery zone, and demo orders were restored.',
+        'All 10 official categories, studio products, Jalchak delivery zone, and demo orders were restored.',
       variant: 'info',
     });
   }
@@ -118,7 +115,7 @@ export function AdminDashboardPage() {
             GiftKart Store Operations
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-[#F4EBFF]">
-            Manage your 15 official gift categories, exact subcategories, personalized products, hero banners, gift wrapping, and Jalchak demo orders.
+            Manage your {categories.length} official gift categories, personalized products, hero banners, gift wrapping, and Jalchak orders.
           </p>
         </div>
 
@@ -353,7 +350,8 @@ interface ProductFormState {
 }
 
 function createEmptyProductForm(categories: Category[]): ProductFormState {
-  const firstCat = categories[0];
+  const firstCat =
+    categories.find((c) => c.id !== ALL_GIFTS_CATEGORY_ID) ?? categories[0];
   return {
     id: '',
     name: '',
@@ -361,11 +359,11 @@ function createEmptyProductForm(categories: Category[]): ProductFormState {
     priceInr: '499',
     compareAtPriceInr: '649',
     stockCount: '25',
-    categoryId: firstCat?.id ?? 'cat-coffee-mug',
+    categoryId: firstCat?.id ?? 'cat-photo-frame',
     subcategoryId: firstCat?.subcategories[0]?.id ?? '',
     shortDescription: '',
     description: '',
-    imageUrl: STUDIO_MEDIA.coffeeMug,
+    imageUrl: STUDIO_MEDIA.photoFrame,
     occasionTags: ['Birthday'],
     isBestSeller: false,
     isFeatured: false,
@@ -398,10 +396,15 @@ export function AdminProductsPage() {
     [products, productAuditMap]
   );
 
+  const assignableCategories = useMemo(
+    () => categories.filter((c) => c.id !== ALL_GIFTS_CATEGORY_ID),
+    [categories]
+  );
+
   const filteredProducts = useMemo(() => {
     const q = search.trim().toLowerCase();
     return products.filter((p) => {
-      if (filterCatId && p.categoryId !== filterCatId) {
+      if (filterCatId && filterCatId !== ALL_GIFTS_CATEGORY_ID && p.categoryId !== filterCatId) {
         return false;
       }
       if (statusFilter === 'ACTIVE' && (!p.isActive || p.isArchived)) {
@@ -652,7 +655,7 @@ export function AdminProductsPage() {
                 }}
                 className="mt-1 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-sm focus:border-[#6A11CB] focus:outline-none"
               >
-                {categories.map((cat) => (
+                {(assignableCategories.length > 0 ? assignableCategories : categories).map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.name}
                   </option>
@@ -1056,7 +1059,7 @@ export function AdminProductsPage() {
 }
 
 /* ============================================================================
- * 3. ADMIN CATEGORIES & SUBCATEGORIES MANAGEMENT (15 OFFICIAL + EXACT NAMES)
+ * 3. ADMIN CATEGORIES & SUBCATEGORIES MANAGEMENT (10 OFFICIAL CATEGORIES)
  * ========================================================================== */
 export function AdminCategoriesPage() {
   const { data: categories } = useCategories(true);
@@ -1069,7 +1072,7 @@ export function AdminCategoriesPage() {
   const [catName, setCatName] = useState('');
   const [catDesc, setCatDesc] = useState('');
   const [catImageUrl, setCatImageUrl] = useState<string>(STUDIO_MEDIA.giftBox);
-  const [catSortOrder, setCatSortOrder] = useState('16');
+  const [catSortOrder, setCatSortOrder] = useState('11');
   const [catActive, setCatActive] = useState(true);
   const [showCatForm, setShowCatForm] = useState(false);
 
@@ -1121,6 +1124,14 @@ export function AdminCategoriesPage() {
   }
 
   async function handleDeleteCategory(cat: Category) {
+    if (cat.id === ALL_GIFTS_CATEGORY_ID) {
+      pushToast({
+        title: 'Master category protected',
+        description: '"All Gifts" displays your full store catalog and cannot be deleted.',
+        variant: 'info',
+      });
+      return;
+    }
     const assignedCount = products.filter((p) => p.categoryId === cat.id).length;
     if (assignedCount > 0) {
       pushToast({
@@ -1289,11 +1300,16 @@ export function AdminCategoriesPage() {
                   />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-[11px] font-bold text-[#8C75A8]">
                       #{cat.sortOrder}
                     </span>
                     <h2 className="font-display text-base font-bold text-[#2A0E4D]">{cat.name}</h2>
+                    <span className="rounded-full bg-[#FAF5FF] px-2 py-0.5 text-[10.5px] font-semibold tabular-nums text-[#6A11CB]">
+                      {cat.id === ALL_GIFTS_CATEGORY_ID
+                        ? `${products.length} total`
+                        : `${products.filter((p) => p.categoryId === cat.id).length} items`}
+                    </span>
                   </div>
                   <p className="mt-0.5 text-xs text-[#5F4B78]">{cat.description}</p>
                 </div>

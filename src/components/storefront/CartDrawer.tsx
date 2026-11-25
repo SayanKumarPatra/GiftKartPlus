@@ -69,7 +69,7 @@ export function CartDrawer() {
                 Your gift bag is empty
               </p>
               <p className="mt-1 max-w-xs text-xs leading-relaxed text-[#5F4B78]">
-                Explore personalized mugs, photo frames, LED lamps, cushions, and curated gift hampers.
+                Explore Photo Frame, Coffee Mugs, T-shirt Prints, Home Decor, Hand Made, LED Lighting, and more.
               </p>
               <Link to="/shop" onClick={closeCartDrawer} className="mt-5">
                 <Button size="sm" variant="accent">
