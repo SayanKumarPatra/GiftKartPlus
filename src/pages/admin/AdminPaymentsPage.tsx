@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react';
-import { CreditCard, X } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import { useOrders } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
 import { formatDateTime, formatInr } from '../../utils/format';
 import type { DemoOrder, PaymentRecordStatus } from '../../types';
-import { AdminEmptyState, AdminToast } from '../../components/admin/AdminSharedUI';
+import {
+  AdminEmptyState,
+  AdminSheetModal,
+  AdminToast,
+} from '../../components/admin/AdminSharedUI';
 
 type PaymentTab = 'All' | 'Successful' | 'Pending' | 'Failed';
 const PAYMENT_TABS: PaymentTab[] = ['All', 'Successful', 'Pending', 'Failed'];
@@ -64,7 +68,7 @@ export function AdminPaymentsPage() {
 
   function showNotice(message: string, tone: 'success' | 'error' = 'success') {
     setToast({ message, tone });
-    window.setTimeout(() => setToast(null), 3200);
+    window.setTimeout(() => setToast(null), 3500);
   }
 
   async function handleMarkPayment(
@@ -83,7 +87,12 @@ export function AdminPaymentsPage() {
         `Updated payment for #${orderNumber} to ${getPaymentLabel(nextStatus)}`,
         'Payments Management'
       );
-      showNotice(`Payment for #${orderNumber} updated to ${getPaymentLabel(nextStatus)}.`);
+      showNotice(`Payment for #${orderNumber} saved as ${getPaymentLabel(nextStatus)}.`);
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Unable to update payment status.',
+        'error'
+      );
     } finally {
       setUpdating(false);
     }
@@ -169,29 +178,25 @@ export function AdminPaymentsPage() {
         </div>
       )}
 
-      {/* Transaction Details Sheet */}
-      {selectedTxn && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[95] flex items-end justify-center bg-[#1E1035]/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
-        >
-          <div className="w-full max-w-md rounded-t-[26px] border border-[#EBD8FF] bg-white p-4 shadow-2xl sm:rounded-2xl">
-            <div className="flex items-center justify-between border-b border-[#EFE3FF] pb-3">
-              <h3 className="text-[15.5px] font-extrabold text-[#1E1035]">
-                Transaction Details
-              </h3>
-              <button
-                type="button"
-                onClick={() => setSelectedOrderId(null)}
-                aria-label="Close transaction details"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-[#FAF6FF] text-[#594A6B]"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <dl className="mt-3 space-y-2 text-xs">
+      {/* Transaction Details Sheet Modal */}
+      <AdminSheetModal
+        open={Boolean(selectedTxn)}
+        title="Transaction Details"
+        subtitle={selectedTxn?.reference}
+        onClose={() => setSelectedOrderId(null)}
+        footer={
+          <button
+            type="button"
+            onClick={() => setSelectedOrderId(null)}
+            className="h-11 w-full cursor-pointer rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white"
+          >
+            Done
+          </button>
+        }
+      >
+        {selectedTxn && (
+          <div>
+            <dl className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <dt className="text-[#75648E]">Reference ID</dt>
                 <dd className="font-extrabold text-[#1E1035]">{selectedTxn.reference}</dd>
@@ -259,8 +264,8 @@ export function AdminPaymentsPage() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </AdminSheetModal>
     </div>
   );
 }

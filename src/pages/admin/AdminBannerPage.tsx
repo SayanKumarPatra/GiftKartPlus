@@ -2,14 +2,15 @@ import React, { useMemo, useRef, useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
+  Check,
   ChevronLeft,
   ChevronRight,
   Edit3,
   Image as ImageIcon,
   Plus,
+  Save,
   Trash2,
   Upload,
-  X,
 } from 'lucide-react';
 import { useStoreSettings } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
@@ -17,6 +18,7 @@ import type { HeroSlide } from '../../types';
 import {
   AdminConfirmDialog,
   AdminEmptyState,
+  AdminSheetModal,
   AdminToast,
   AdminToggleSwitch,
   readImageFileAsDataUrl,
@@ -72,17 +74,17 @@ export function AdminBannerPage() {
 
   function showNotice(message: string, tone: 'success' | 'error' = 'success') {
     setToast({ message, tone });
-    window.setTimeout(() => setToast(null), 3200);
+    window.setTimeout(() => setToast(null), 3500);
   }
 
   async function persistSlides(nextSlides: HeroSlide[], activityLabel: string) {
-    if (!settings) return;
+    const currentSettings = settings ?? (await services.settings.getSettings());
     const reindexed = nextSlides.map((s, idx) => ({
       ...s,
       sortOrder: idx + 1,
     }));
     await services.settings.updateSettings({
-      ...settings,
+      ...currentSettings,
       heroSlides: reindexed,
     });
     await services.adminAuth.logActivity(activityLabel, 'Banner Management');
@@ -112,8 +114,9 @@ export function AdminBannerPage() {
     if (!file) return;
     setUploading(true);
     try {
-      const dataUrl = await readImageFileAsDataUrl(file, 1400);
+      const dataUrl = await readImageFileAsDataUrl(file, 960, false);
       setDraft((prev) => ({ ...prev, imageUrl: dataUrl }));
+      showNotice('Banner photo ready! Tap "Save Banner" below.');
     } catch (err) {
       showNotice(
         err instanceof Error ? err.message : 'Unable to upload banner image.',
@@ -125,10 +128,10 @@ export function AdminBannerPage() {
     }
   }
 
-  async function handleSaveBanner(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSaveBanner(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     if (!draft.imageUrl.trim()) {
-      showNotice('Please upload a banner image or enter an image URL.', 'error');
+      showNotice('Please upload a banner photo or paste an image URL first.', 'error');
       return;
     }
     setSaving(true);
@@ -136,7 +139,7 @@ export function AdminBannerPage() {
       const exists = slides.some((s) => s.id === draft.id);
       const nextSlide: HeroSlide = {
         id: draft.id || `banner-${Date.now()}`,
-        titlePrefix: draft.titlePrefix.trim() || 'GiftKart',
+        titlePrefix: draft.titlePrefix.trim() || `Banner ${slides.length + 1}`,
         titleHighlight: draft.titleHighlight.trim(),
         subtitle: draft.subtitle.trim(),
         ctaLabel: draft.ctaLabel.trim() || 'Shop Now',
@@ -153,43 +156,77 @@ export function AdminBannerPage() {
 
       await persistSlides(
         nextSlides,
-        exists ? `Updated banner "${nextSlide.titlePrefix}"` : `Added banner "${nextSlide.titlePrefix}"`
+        exists
+          ? `Updated banner "${nextSlide.titlePrefix}"`
+          : `Added banner "${nextSlide.titlePrefix}"`
       );
       setEditorOpen(false);
-      showNotice(exists ? 'Banner updated on live storefront.' : 'New banner added to slider.');
+      showNotice(
+        exists
+          ? 'Banner updated & saved live!'
+          : 'New banner saved to homepage slider!'
+      );
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Could not save banner.',
+        'error'
+      );
     } finally {
       setSaving(false);
     }
   }
 
   async function handleToggleBanner(slide: HeroSlide, nextActive: boolean) {
-    const nextSlides = slides.map((s) =>
-      s.id === slide.id ? { ...s, isActive: nextActive } : s
-    );
-    await persistSlides(
-      nextSlides,
-      `${nextActive ? 'Enabled' : 'Disabled'} banner "${slide.titlePrefix}"`
-    );
-    showNotice(nextActive ? 'Banner activated.' : 'Banner hidden from storefront.');
+    try {
+      const nextSlides = slides.map((s) =>
+        s.id === slide.id ? { ...s, isActive: nextActive } : s
+      );
+      await persistSlides(
+        nextSlides,
+        `${nextActive ? 'Enabled' : 'Disabled'} banner "${slide.titlePrefix}"`
+      );
+      showNotice(nextActive ? 'Banner activated.' : 'Banner hidden from storefront.');
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Unable to update banner.',
+        'error'
+      );
+    }
   }
 
   async function handleMoveBanner(index: number, direction: -1 | 1) {
     const target = index + direction;
     if (target < 0 || target >= slides.length) return;
-    const reordered = [...slides];
-    const [moved] = reordered.splice(index, 1);
-    reordered.splice(target, 0, moved);
-    await persistSlides(reordered, 'Reordered storefront banners');
-    showNotice('Banner display order saved.');
+    try {
+      const reordered = [...slides];
+      const [moved] = reordered.splice(index, 1);
+      reordered.splice(target, 0, moved);
+      await persistSlides(reordered, 'Reordered storefront banners');
+      showNotice('Banner display order saved.');
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Unable to reorder banners.',
+        'error'
+      );
+    }
   }
 
   async function confirmDeleteBanner() {
     if (!deleteTarget) return;
-    const nextSlides = slides.filter((s) => s.id !== deleteTarget.id);
-    await persistSlides(nextSlides, `Deleted banner "${deleteTarget.titlePrefix}"`);
-    setDeleteTarget(null);
-    showNotice('Banner removed from storefront slider.');
+    try {
+      const nextSlides = slides.filter((s) => s.id !== deleteTarget.id);
+      await persistSlides(nextSlides, `Deleted banner "${deleteTarget.titlePrefix}"`);
+      setDeleteTarget(null);
+      showNotice('Banner removed from storefront slider.');
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Unable to delete banner.',
+        'error'
+      );
+    }
   }
+
+  const isEditingExisting = slides.some((s) => s.id === draft.id);
 
   return (
     <div className="space-y-3.5">
@@ -199,7 +236,7 @@ export function AdminBannerPage() {
         onClose={() => setToast(null)}
       />
 
-      {/* Live Storefront Slider Preview (Matches Mockup Screen 4) */}
+      {/* Live Storefront Slider Preview */}
       <div className="rounded-2xl border border-[#EBD8FF] bg-white p-3 shadow-[0_8px_20px_-14px_rgba(106,17,203,0.2)]">
         {activePreview ? (
           <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl bg-[#F4EAFF]">
@@ -263,7 +300,7 @@ export function AdminBannerPage() {
               Website Banner (Slider)
             </h2>
             <p className="text-[11.5px] text-[#75648E]">
-              Synced directly with live desktop &amp; mobile homepage slider
+              Auto-saved live to desktop &amp; mobile homepage
             </p>
           </div>
           <span className="shrink-0 rounded-full bg-[#F4EAFF] px-2.5 py-0.5 text-[11px] font-extrabold text-[#6A11CB]">
@@ -277,7 +314,7 @@ export function AdminBannerPage() {
         <AdminEmptyState
           icon={<ImageIcon className="h-5 w-5" />}
           title="No banners added yet."
-          description="Upload your first sliding promotional banner to display on the GiftKart homepage."
+          description="Tap Add New Banner below to upload a sliding banner for your homepage."
         />
       ) : (
         <div className="space-y-2.5">
@@ -354,7 +391,7 @@ export function AdminBannerPage() {
         </div>
       )}
 
-      {/* Primary Add New Banner CTA (Matches Mockup Screen 4) */}
+      {/* Primary Add New Banner CTA */}
       <button
         type="button"
         onClick={openNewBanner}
@@ -364,151 +401,155 @@ export function AdminBannerPage() {
         <span>Add New Banner</span>
       </button>
 
-      {/* Add / Edit Banner Sheet Modal */}
-      {editorOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[95] flex items-end justify-center bg-[#1E1035]/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
-        >
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-[26px] border border-[#EBD8FF] bg-white p-4 shadow-2xl sm:rounded-2xl">
-            <div className="flex items-center justify-between border-b border-[#EFE3FF] pb-3">
-              <h3 className="text-[15.5px] font-extrabold text-[#1E1035]">
-                {slides.some((s) => s.id === draft.id) ? 'Edit Banner' : 'Add New Banner'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setEditorOpen(false)}
-                aria-label="Close banner editor"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-[#FAF6FF] text-[#594A6B]"
-              >
-                <X className="h-4 w-4" />
-              </button>
+      {/* Sticky-Footer Add / Edit Banner Sheet */}
+      <AdminSheetModal
+        open={editorOpen}
+        title={isEditingExisting ? 'Edit Banner' : 'Add New Banner'}
+        subtitle="Upload photo and tap Save Banner below"
+        onClose={() => setEditorOpen(false)}
+        footer={
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setEditorOpen(false)}
+              className="h-11 flex-1 cursor-pointer rounded-xl border border-[#DFCEF7] bg-white text-xs font-bold text-[#4A3860]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={saving || uploading}
+              onClick={() => void handleSaveBanner()}
+              className="flex h-11 flex-[1.5] cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-sm disabled:opacity-60"
+            >
+              <Save className="h-4 w-4" />
+              <span>{saving ? 'Saving...' : 'Save Banner'}</span>
+            </button>
+          </div>
+        }
+      >
+        <form onSubmit={handleSaveBanner} noValidate className="space-y-3">
+          {/* Tappable Banner Image Picker */}
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="text-[11.5px] font-bold text-[#4A3860]">
+                Banner Photo (3:1 wide recommended) *
+              </label>
+              {draft.imageUrl && (
+                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-700">
+                  <Check className="h-3 w-3" />
+                  Photo ready
+                </span>
+              )}
             </div>
 
-            <form onSubmit={handleSaveBanner} className="mt-3.5 space-y-3">
-              {/* Image Preview + Gallery Upload */}
-              <div>
-                <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                  Banner Image (3:1 wide recommended)
-                </label>
-                {draft.imageUrl && (
-                  <div className="mb-2 aspect-[3/1] w-full overflow-hidden rounded-xl border border-[#EBD8FF] bg-[#FAF6FF]">
-                    <img
-                      src={draft.imageUrl}
-                      alt="Banner preview"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={uploading}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#6A11CB]/30 bg-[#F5ECFF] px-3 text-xs font-bold text-[#6A11CB]"
-                  >
-                    <Upload className="h-3.5 w-3.5" />
-                    <span>{uploading ? 'Uploading...' : 'Upload Photo'}</span>
-                  </button>
-                  <input
-                    type="url"
-                    value={draft.imageUrl.startsWith('data:') ? '' : draft.imageUrl}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, imageUrl: e.target.value }))
-                    }
-                    placeholder="Or paste image URL..."
-                    className="h-10 min-w-0 flex-1 rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="group relative flex aspect-[3/1] w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-[#D6C1F5] bg-[#FAF6FF] transition-colors hover:border-[#6A11CB]"
+            >
+              {draft.imageUrl ? (
+                <>
+                  <img
+                    src={draft.imageUrl}
+                    alt="Banner preview"
+                    className="h-full w-full object-cover"
                   />
+                  <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-[#1E1035]/75 px-2.5 py-1 text-[10.5px] font-bold text-white backdrop-blur-xs">
+                    <Upload className="h-3 w-3" />
+                    Change Photo
+                  </span>
+                </>
+              ) : (
+                <div className="flex flex-col items-center text-center">
+                  <Upload className="h-5 w-5 text-[#6A11CB]" />
+                  <span className="mt-1 text-xs font-bold text-[#6A11CB]">
+                    {uploading ? 'Compressing photo...' : 'Tap to Upload Banner Photo'}
+                  </span>
                 </div>
-              </div>
+              )}
+            </button>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                    Banner Title
-                  </label>
-                  <input
-                    type="text"
-                    value={draft.titlePrefix}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, titlePrefix: e.target.value }))
-                    }
-                    placeholder="e.g. Festive Gifts"
-                    className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                    Highlight Word
-                  </label>
-                  <input
-                    type="text"
-                    value={draft.titleHighlight}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, titleHighlight: e.target.value }))
-                    }
-                    placeholder="e.g. Up to 20% Off"
-                    className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                  Destination Link
-                </label>
-                <input
-                  type="text"
-                  value={draft.ctaHref}
-                  onChange={(e) =>
-                    setDraft((prev) => ({ ...prev, ctaHref: e.target.value }))
-                  }
-                  placeholder="/shop or /category/photo-frame"
-                  className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-between rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] px-3 py-2.5">
-                <span className="text-xs font-bold text-[#1E1035]">
-                  Active on Storefront Slider
-                </span>
-                <AdminToggleSwitch
-                  checked={draft.isActive}
-                  onChange={(next) =>
-                    setDraft((prev) => ({ ...prev, isActive: next }))
-                  }
-                  label="Toggle banner active status"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setEditorOpen(false)}
-                  className="h-10 flex-1 cursor-pointer rounded-xl border border-[#DFCEF7] bg-white text-xs font-bold text-[#4A3860]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="h-10 flex-1 cursor-pointer rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-xs disabled:opacity-60"
-                >
-                  {saving ? 'Saving...' : 'Save Banner'}
-                </button>
-              </div>
-            </form>
+            <input
+              type="text"
+              value={draft.imageUrl.startsWith('data:') ? '' : draft.imageUrl}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, imageUrl: e.target.value }))
+              }
+              placeholder="Or paste image URL (https://... or /assets/...)"
+              className="mt-2 h-9 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+            />
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Banner Title
+              </label>
+              <input
+                type="text"
+                value={draft.titlePrefix}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, titlePrefix: e.target.value }))
+                }
+                placeholder="e.g. Festive Gifts"
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Highlight Text
+              </label>
+              <input
+                type="text"
+                value={draft.titleHighlight}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, titleHighlight: e.target.value }))
+                }
+                placeholder="e.g. 20% Off"
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+              Banner Click Link
+            </label>
+            <input
+              type="text"
+              value={draft.ctaHref}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, ctaHref: e.target.value }))
+              }
+              placeholder="/shop or /category/photo-frame"
+              className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] px-3 py-2.5">
+            <span className="text-xs font-bold text-[#1E1035]">
+              Show on Live Storefront
+            </span>
+            <AdminToggleSwitch
+              checked={draft.isActive}
+              onChange={(next) =>
+                setDraft((prev) => ({ ...prev, isActive: next }))
+              }
+              label="Toggle banner active status"
+            />
+          </div>
+        </form>
+      </AdminSheetModal>
 
       <AdminConfirmDialog
         open={Boolean(deleteTarget)}

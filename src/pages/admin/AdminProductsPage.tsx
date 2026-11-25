@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
+  Check,
   Edit3,
   Package,
   Plus,
+  Save,
   Search,
   SlidersHorizontal,
   Trash2,
   Upload,
-  X,
 } from 'lucide-react';
 import { useCategories, useProducts } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
@@ -18,6 +19,7 @@ import type { Product } from '../../types';
 import {
   AdminConfirmDialog,
   AdminEmptyState,
+  AdminSheetModal,
   AdminToast,
   AdminToggleSwitch,
   readImageFileAsDataUrl,
@@ -88,7 +90,7 @@ export function AdminProductsPage() {
 
   function showNotice(message: string, tone: 'success' | 'error' = 'success') {
     setToast({ message, tone });
-    window.setTimeout(() => setToast(null), 3200);
+    window.setTimeout(() => setToast(null), 3500);
   }
 
   const categoryMap = useMemo(() => {
@@ -148,8 +150,9 @@ export function AdminProductsPage() {
     if (!file) return;
     setUploading(true);
     try {
-      const dataUrl = await readImageFileAsDataUrl(file, 1000);
+      const dataUrl = await readImageFileAsDataUrl(file, 760, false);
       setDraft((prev) => ({ ...prev, imageUrl: dataUrl }));
+      showNotice('Product photo uploaded! Fill details & tap Save Product.');
     } catch (err) {
       showNotice(
         err instanceof Error ? err.message : 'Unable to upload product image.',
@@ -161,8 +164,33 @@ export function AdminProductsPage() {
     }
   }
 
-  async function handleSaveProduct(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleQuickAvailabilityToggle(product: Product, nextAvailable: boolean) {
+    try {
+      await services.catalog.saveProduct({
+        ...product,
+        isActive: nextAvailable,
+        availability: nextAvailable ? 'IN_STOCK' : 'OUT_OF_STOCK',
+        stockCount: nextAvailable ? 99 : 0,
+      });
+      await services.adminAuth.logActivity(
+        `Marked "${product.name}" as ${nextAvailable ? 'Available' : 'Unavailable'}`,
+        'Products Management'
+      );
+      showNotice(
+        nextAvailable
+          ? `"${product.name}" is now live.`
+          : `"${product.name}" marked unavailable.`
+      );
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Unable to update availability.',
+        'error'
+      );
+    }
+  }
+
+  async function handleSaveProduct(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     const cleanName = draft.name.trim();
     const price = Number(draft.priceInr);
     const compareAt = draft.compareAtPriceInr.trim()
@@ -232,8 +260,13 @@ export function AdminProductsPage() {
       setEditorOpen(false);
       showNotice(
         existing
-          ? 'Product updated on live storefront.'
-          : 'Product added to live storefront.'
+          ? 'Product updated & saved live!'
+          : 'Product added & published to store!'
+      );
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Could not save product.',
+        'error'
       );
     } finally {
       setSaving(false);
@@ -242,13 +275,20 @@ export function AdminProductsPage() {
 
   async function confirmDeleteProduct() {
     if (!deleteTarget) return;
-    await services.catalog.deleteProduct(deleteTarget.id);
-    await services.adminAuth.logActivity(
-      `Deleted product "${deleteTarget.name}"`,
-      'Products Management'
-    );
-    setDeleteTarget(null);
-    showNotice('Product deleted.');
+    try {
+      await services.catalog.deleteProduct(deleteTarget.id);
+      await services.adminAuth.logActivity(
+        `Deleted product "${deleteTarget.name}"`,
+        'Products Management'
+      );
+      setDeleteTarget(null);
+      showNotice('Product deleted.');
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Unable to delete product.',
+        'error'
+      );
+    }
   }
 
   return (
@@ -259,7 +299,7 @@ export function AdminProductsPage() {
         onClose={() => setToast(null)}
       />
 
-      {/* Search + Category Filter Row (Matches Mockup Screen 5) */}
+      {/* Search + Category Filter Row */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7A6894]" />
@@ -361,35 +401,46 @@ export function AdminProductsPage() {
                         · {categoryMap.get(product.categoryId) || 'Uncategorized'}
                       </span>
                     </div>
-                    <span
-                      className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        isAvailable
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-neutral-100 text-neutral-600'
-                      }`}
-                    >
-                      {isAvailable ? 'Available' : 'Unavailable'}
-                    </span>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          isAvailable
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-neutral-100 text-neutral-600'
+                        }`}
+                      >
+                        {isAvailable ? 'Available' : 'Unavailable'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => openEditProduct(product)}
-                    aria-label={`Edit ${product.name}`}
-                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-[#E5D5FA] bg-[#FAF6FF] text-[#6A11CB] hover:bg-[#F3E8FF]"
-                  >
-                    <Edit3 className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(product)}
-                    aria-label={`Delete ${product.name}`}
-                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                <div className="flex shrink-0 flex-col items-end gap-1.5">
+                  <AdminToggleSwitch
+                    checked={isAvailable}
+                    onChange={(next) =>
+                      void handleQuickAvailabilityToggle(product, next)
+                    }
+                    label={`Toggle availability for ${product.name}`}
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => openEditProduct(product)}
+                      aria-label={`Edit ${product.name}`}
+                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[#E5D5FA] bg-[#FAF6FF] text-[#6A11CB] hover:bg-[#F3E8FF]"
+                    >
+                      <Edit3 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(product)}
+                      aria-label={`Delete ${product.name}`}
+                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -397,7 +448,7 @@ export function AdminProductsPage() {
         </div>
       )}
 
-      {/* Primary Add New Product Button (Matches Mockup Screen 5) */}
+      {/* Primary Add New Product Button */}
       <button
         type="button"
         onClick={openAddProduct}
@@ -407,214 +458,213 @@ export function AdminProductsPage() {
         <span>Add New Product</span>
       </button>
 
-      {/* Add / Edit Product Sheet */}
-      {editorOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[95] flex items-end justify-center bg-[#1E1035]/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
-        >
-          <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-[26px] border border-[#EBD8FF] bg-white p-4 shadow-2xl sm:rounded-2xl">
-            <div className="flex items-center justify-between border-b border-[#EFE3FF] pb-3">
-              <h3 className="text-[15.5px] font-extrabold text-[#1E1035]">
-                {draft.id ? 'Edit Product' : 'Add New Product'}
-              </h3>
+      {/* Always-Visible Sticky-Footer Add / Edit Product Sheet */}
+      <AdminSheetModal
+        open={editorOpen}
+        title={draft.id ? 'Edit Product' : 'Add New Product'}
+        subtitle="Changes publish live to the GiftKart store"
+        onClose={() => setEditorOpen(false)}
+        footer={
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setEditorOpen(false)}
+              className="h-11 flex-1 cursor-pointer rounded-xl border border-[#DFCEF7] bg-white text-xs font-bold text-[#4A3860]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={saving || uploading}
+              onClick={() => void handleSaveProduct()}
+              className="flex h-11 flex-[1.5] cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-sm disabled:opacity-60"
+            >
+              <Save className="h-4 w-4" />
+              <span>{saving ? 'Saving...' : 'Save Product'}</span>
+            </button>
+          </div>
+        }
+      >
+        <form onSubmit={handleSaveProduct} noValidate className="space-y-3">
+          {/* Product Image Upload */}
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="text-[11.5px] font-bold text-[#4A3860]">
+                Product Image
+              </label>
+              {draft.imageUrl && (
+                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-700">
+                  <Check className="h-3 w-3" />
+                  Photo ready
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2.5">
               <button
                 type="button"
-                onClick={() => setEditorOpen(false)}
-                aria-label="Close product editor"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-[#FAF6FF] text-[#594A6B]"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-[#D6C1F5] bg-[#FAF6FF]"
               >
-                <X className="h-4 w-4" />
+                {draft.imageUrl ? (
+                  <img
+                    src={draft.imageUrl}
+                    alt="Preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <Upload className="h-5 w-5 text-[#6A11CB]" />
+                )}
               </button>
-            </div>
-
-            <form onSubmit={handleSaveProduct} className="mt-3.5 space-y-3">
-              {/* Product Image Upload */}
-              <div>
-                <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                  Product Image
-                </label>
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#E5D5FA] bg-[#FAF6FF]">
-                    {draft.imageUrl ? (
-                      <img
-                        src={draft.imageUrl}
-                        alt="Preview"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <Package className="h-5 w-5 text-[#9B8AB4]" />
-                    )}
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      disabled={uploading}
-                      onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex h-8 w-fit cursor-pointer items-center gap-1.5 rounded-lg border border-[#6A11CB]/30 bg-[#F5ECFF] px-3 text-[11.5px] font-bold text-[#6A11CB]"
-                    >
-                      <Upload className="h-3.5 w-3.5" />
-                      <span>{uploading ? 'Uploading...' : 'Upload Image'}</span>
-                    </button>
-                    <input
-                      type="url"
-                      value={draft.imageUrl.startsWith('data:') ? '' : draft.imageUrl}
-                      onChange={(e) =>
-                        setDraft((prev) => ({ ...prev, imageUrl: e.target.value }))
-                      }
-                      placeholder="Or paste image URL..."
-                      className="h-8 w-full rounded-lg border border-[#DFCEF7] bg-[#FAF8FF] px-2.5 text-[11.5px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                  Product Name *
-                </label>
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <input
-                  type="text"
-                  required
-                  value={draft.name}
-                  onChange={(e) =>
-                    setDraft((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  placeholder="e.g. Custom Coffee Mug"
-                  className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-[13px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                    Price (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    required
-                    value={draft.priceInr}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, priceInr: e.target.value }))
-                    }
-                    placeholder="299"
-                    className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-[13px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                    MRP / Original (₹)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={draft.compareAtPriceInr}
-                    onChange={(e) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        compareAtPriceInr: e.target.value,
-                      }))
-                    }
-                    placeholder="Optional"
-                    className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-[13px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                  Category *
-                </label>
-                <select
-                  value={draft.categoryId}
-                  onChange={(e) =>
-                    setDraft((prev) => ({ ...prev, categoryId: e.target.value }))
-                  }
-                  className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-[13px] font-medium text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                >
-                  {assignableCategories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={draft.description}
-                  onChange={(e) =>
-                    setDraft((prev) => ({ ...prev, description: e.target.value }))
-                  }
-                  placeholder="Describe size, material, and customization details..."
-                  className="w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] p-3 text-[12.5px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-2 rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#1E1035]">
-                    Availability ({draft.isAvailable ? 'Available' : 'Unavailable'})
-                  </span>
-                  <AdminToggleSwitch
-                    checked={draft.isAvailable}
-                    onChange={(next) =>
-                      setDraft((prev) => ({ ...prev, isAvailable: next }))
-                    }
-                    label="Toggle product availability"
-                  />
-                </div>
-                <div className="flex items-center justify-between border-t border-[#EAE0FA] pt-2">
-                  <span className="text-xs font-semibold text-[#4A3860]">
-                    Allow Custom Name / Photo
-                  </span>
-                  <AdminToggleSwitch
-                    checked={draft.supportsPersonalization}
-                    onChange={(next) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        supportsPersonalization: next,
-                        supportsPhotoUpload: next,
-                      }))
-                    }
-                    label="Toggle customization support"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => setEditorOpen(false)}
-                  className="h-10 flex-1 cursor-pointer rounded-xl border border-[#DFCEF7] bg-white text-xs font-bold text-[#4A3860]"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex h-8 w-fit cursor-pointer items-center gap-1.5 rounded-lg border border-[#6A11CB]/30 bg-[#F5ECFF] px-3 text-[11.5px] font-bold text-[#6A11CB]"
                 >
-                  Cancel
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>{uploading ? 'Compressing...' : 'Upload Image'}</span>
                 </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="h-10 flex-1 cursor-pointer rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-xs disabled:opacity-60"
-                >
-                  {saving ? 'Saving...' : 'Save Product'}
-                </button>
+                <input
+                  type="text"
+                  value={draft.imageUrl.startsWith('data:') ? '' : draft.imageUrl}
+                  onChange={(e) =>
+                    setDraft((prev) => ({ ...prev, imageUrl: e.target.value }))
+                  }
+                  placeholder="Or paste image URL..."
+                  className="h-8 w-full rounded-lg border border-[#DFCEF7] bg-[#FAF8FF] px-2.5 text-[11.5px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+                />
               </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+
+          <div>
+            <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+              Product Name *
+            </label>
+            <input
+              type="text"
+              value={draft.name}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, name: e.target.value }))
+              }
+              placeholder="e.g. Custom Coffee Mug"
+              className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-[13px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Price (₹) *
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={draft.priceInr}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, priceInr: e.target.value }))
+                }
+                placeholder="299"
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-[13px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Original MRP (₹)
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={draft.compareAtPriceInr}
+                onChange={(e) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    compareAtPriceInr: e.target.value,
+                  }))
+                }
+                placeholder="Optional"
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-[13px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+              Category *
+            </label>
+            <select
+              value={draft.categoryId}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, categoryId: e.target.value }))
+              }
+              className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-[13px] font-medium text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+            >
+              {assignableCategories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+              Description
+            </label>
+            <textarea
+              rows={3}
+              value={draft.description}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, description: e.target.value }))
+              }
+              placeholder="Describe size, material, and customization details..."
+              className="w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] p-3 text-[12.5px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div className="space-y-2 rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#1E1035]">
+                Availability ({draft.isAvailable ? 'Available' : 'Unavailable'})
+              </span>
+              <AdminToggleSwitch
+                checked={draft.isAvailable}
+                onChange={(next) =>
+                  setDraft((prev) => ({ ...prev, isAvailable: next }))
+                }
+                label="Toggle product availability"
+              />
+            </div>
+            <div className="flex items-center justify-between border-t border-[#EAE0FA] pt-2">
+              <span className="text-xs font-semibold text-[#4A3860]">
+                Allow Custom Name / Photo
+              </span>
+              <AdminToggleSwitch
+                checked={draft.supportsPersonalization}
+                onChange={(next) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    supportsPersonalization: next,
+                    supportsPhotoUpload: next,
+                  }))
+                }
+                label="Toggle customization support"
+              />
+            </div>
+          </div>
+        </form>
+      </AdminSheetModal>
 
       <AdminConfirmDialog
         open={Boolean(deleteTarget)}

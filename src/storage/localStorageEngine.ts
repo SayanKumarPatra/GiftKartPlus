@@ -57,6 +57,17 @@ export function writeStorage<T>(
     }
   } catch (err) {
     console.error(`[GiftKart Storage] Failed to write "${key}".`, err);
+    if (
+      err instanceof DOMException &&
+      (err.name === 'QuotaExceededError' ||
+        err.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+        err.code === 22)
+    ) {
+      throw new Error(
+        'Browser storage is full. Please upload a smaller image or delete unused banners/products.'
+      );
+    }
+    throw err;
   }
 }
 

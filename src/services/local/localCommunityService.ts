@@ -3,6 +3,14 @@ import {
   readStorage,
   writeStorage,
 } from '../../storage/localStorageEngine';
+import {
+  apiRequest,
+  ensureServerHydrated,
+  getAdminBearerToken,
+  getLiveStore,
+  refreshStoreFromServer,
+  saveAdminCollection,
+} from '../../storage/serverSync';
 import type {
   NewsletterSubscriber,
   ProductReview,
@@ -24,6 +32,7 @@ export interface ICommunityDataService {
 }
 
 export class LocalCommunityDataService implements ICommunityDataService {
+  // Saved delivery addresses stay private per customer's own browser
   async listSavedAddresses(): Promise<SavedAddress[]> {
     return readStorage<SavedAddress[]>(STORAGE_KEYS.SAVED_ADDRESSES, []);
   }
@@ -59,29 +68,29 @@ export class LocalCommunityDataService implements ICommunityDataService {
   }
 
   async listNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
-    return readStorage<NewsletterSubscriber[]>(STORAGE_KEYS.NEWSLETTER_SUBSCRIBERS, []);
+    if (!getAdminBearerToken()) {
+      return [];
+    }
+    await ensureServerHydrated();
+    return getLiveStore().newsletterSubscribers;
   }
 
   async subscribeNewsletter(
     email: string
   ): Promise<{ added: boolean; subscriber: NewsletterSubscriber }> {
-    const clean = email.trim().toLowerCase();
-    const existing = readStorage<NewsletterSubscriber[]>(STORAGE_KEYS.NEWSLETTER_SUBSCRIBERS, []);
-    const found = existing.find((s) => s.email.toLowerCase() === clean);
-    if (found) {
-      return { added: false, subscriber: found };
-    }
-    const subscriber: NewsletterSubscriber = {
-      id: `sub-${Date.now()}`,
-      email: clean,
-      subscribedAt: new Date().toISOString(),
-    };
-    writeStorage(STORAGE_KEYS.NEWSLETTER_SUBSCRIBERS, [subscriber, ...existing], 'community');
-    return { added: true, subscriber };
+    const res = await apiRequest<{ added: boolean; subscriber: NewsletterSubscriber }>(
+      '/api/public/newsletter',
+      {
+        method: 'POST',
+        body: { email },
+      }
+    );
+    return res;
   }
 
   async listReviews(productId?: string): Promise<ProductReview[]> {
-    const all = readStorage<ProductReview[]>(STORAGE_KEYS.PRODUCT_REVIEWS, []);
+    await ensureServerHydrated();
+    const all = getLiveStore().productReviews;
     if (!productId) {
       return all;
     }
@@ -89,18 +98,18 @@ export class LocalCommunityDataService implements ICommunityDataService {
   }
 
   async upsertReview(review: ProductReview): Promise<ProductReview[]> {
-    const all = readStorage<ProductReview[]>(STORAGE_KEYS.PRODUCT_REVIEWS, []);
-    const next = all.some((r) => r.id === review.id)
-      ? all.map((r) => (r.id === review.id ? review : r))
-      : [review, ...all];
-    writeStorage(STORAGE_KEYS.PRODUCT_REVIEWS, next, 'community');
-    return next;
+    const res = await apiRequest<{ reviews: ProductReview[] }>('/api/public/reviews', {
+      method: 'POST',
+      body: review,
+    });
+    void refreshStoreFromServer(['community']);
+    return res.reviews;
   }
 
   async deleteReview(reviewId: string): Promise<ProductReview[]> {
-    const all = readStorage<ProductReview[]>(STORAGE_KEYS.PRODUCT_REVIEWS, []);
-    const next = all.filter((r) => r.id !== reviewId);
-    writeStorage(STORAGE_KEYS.PRODUCT_REVIEWS, next, 'community');
+    await ensureServerHydrated();
+    const next = getLiveStore().productReviews.filter((r) => r.id !== reviewId);
+    await saveAdminCollection('productReviews', next, 'community');
     return next;
   }
 }

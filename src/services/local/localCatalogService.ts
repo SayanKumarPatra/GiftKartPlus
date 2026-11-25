@@ -1,26 +1,26 @@
 import type { ICatalogService } from '../interfaces';
 import type { Category, Product, ProductFilterParams, Subcategory } from '../../types';
-import { STORAGE_KEYS, readStorage, writeStorage } from '../../storage/localStorageEngine';
 import {
-  ALL_GIFTS_CATEGORY_ID,
-  SEED_CATEGORIES,
-  ensureDemoSeedHydrated,
-} from '../../data/seedData';
+  ensureServerHydrated,
+  getLiveStore,
+  saveAdminCollection,
+} from '../../storage/serverSync';
+import { ALL_GIFTS_CATEGORY_ID } from '../../data/seedData';
 import { filterStorefrontProducts, getProductAvailability } from '../../utils/productCatalog';
 
 export class LocalCatalogService implements ICatalogService {
-  private readCategories(): Category[] {
-    ensureDemoSeedHydrated();
-    return readStorage<Category[]>(STORAGE_KEYS.CATEGORIES, SEED_CATEGORIES);
+  private async readCategories(): Promise<Category[]> {
+    await ensureServerHydrated();
+    return getLiveStore().categories;
   }
 
-  private readProducts(): Product[] {
-    ensureDemoSeedHydrated();
-    return readStorage<Product[]>(STORAGE_KEYS.PRODUCTS, []);
+  private async readProducts(): Promise<Product[]> {
+    await ensureServerHydrated();
+    return getLiveStore().products;
   }
 
   async getCategories(includeInactive = false): Promise<Category[]> {
-    const all = this.readCategories();
+    const all = await this.readCategories();
     const sorted = [...all].sort((a, b) => a.sortOrder - b.sortOrder);
     if (includeInactive) {
       return sorted;
@@ -41,7 +41,7 @@ export class LocalCatalogService implements ICatalogService {
   }
 
   async saveCategory(category: Category): Promise<Category> {
-    const all = this.readCategories();
+    const all = await this.readCategories();
     const normalizedSlug = category.slug.trim().toLowerCase();
     const normalizedName = category.name.trim().toLowerCase();
     const index = all.findIndex(
@@ -59,7 +59,7 @@ export class LocalCatalogService implements ICatalogService {
     } else {
       next.push(category);
     }
-    writeStorage(STORAGE_KEYS.CATEGORIES, next, 'catalog');
+    await saveAdminCollection('categories', next, 'catalog');
     return index >= 0 ? next[index] : category;
   }
 
@@ -67,13 +67,13 @@ export class LocalCatalogService implements ICatalogService {
     if (categoryId === ALL_GIFTS_CATEGORY_ID) {
       return;
     }
-    const all = this.readCategories();
+    const all = await this.readCategories();
     const next = all.filter((c) => c.id !== categoryId);
-    writeStorage(STORAGE_KEYS.CATEGORIES, next, 'catalog');
+    await saveAdminCollection('categories', next, 'catalog');
   }
 
   async saveSubcategory(categoryId: string, subcategory: Subcategory): Promise<Category> {
-    const all = this.readCategories();
+    const all = await this.readCategories();
     const index = all.findIndex((c) => c.id === categoryId);
     if (index < 0) {
       throw new Error(`Category not found: ${categoryId}`);
@@ -89,12 +89,12 @@ export class LocalCatalogService implements ICatalogService {
     const updated: Category = { ...target, subcategories: nextSubs };
     const nextAll = [...all];
     nextAll[index] = updated;
-    writeStorage(STORAGE_KEYS.CATEGORIES, nextAll, 'catalog');
+    await saveAdminCollection('categories', nextAll, 'catalog');
     return updated;
   }
 
   async deleteSubcategory(categoryId: string, subcategoryId: string): Promise<Category> {
-    const all = this.readCategories();
+    const all = await this.readCategories();
     const index = all.findIndex((c) => c.id === categoryId);
     if (index < 0) {
       throw new Error(`Category not found: ${categoryId}`);
@@ -106,15 +106,15 @@ export class LocalCatalogService implements ICatalogService {
     };
     const nextAll = [...all];
     nextAll[index] = updated;
-    writeStorage(STORAGE_KEYS.CATEGORIES, nextAll, 'catalog');
+    await saveAdminCollection('categories', nextAll, 'catalog');
     return updated;
   }
 
   async getProducts(filters?: ProductFilterParams): Promise<Product[]> {
-    let items = this.readProducts();
+    let items = await this.readProducts();
 
     if (!filters?.includeInactive) {
-      const categories = this.readCategories();
+      const categories = await this.readCategories();
       items = filterStorefrontProducts(items, categories);
     }
     if (filters?.categoryId && filters.categoryId !== ALL_GIFTS_CATEGORY_ID) {
@@ -167,12 +167,12 @@ export class LocalCatalogService implements ICatalogService {
   }
 
   async getProductBySlug(slug: string): Promise<Product | null> {
-    const items = this.readProducts();
+    const items = await this.readProducts();
     return items.find((p) => p.slug === slug) ?? null;
   }
 
   async getProductById(id: string): Promise<Product | null> {
-    const items = this.readProducts();
+    const items = await this.readProducts();
     return items.find((p) => p.id === id) ?? null;
   }
 
@@ -180,7 +180,7 @@ export class LocalCatalogService implements ICatalogService {
     product: Omit<Product, 'createdAt' | 'updatedAt'> &
       Partial<Pick<Product, 'createdAt' | 'updatedAt'>>
   ): Promise<Product> {
-    const all = this.readProducts();
+    const all = await this.readProducts();
     const now = new Date().toISOString();
     const index = all.findIndex((p) => p.id === product.id);
     const saved: Product = {
@@ -195,7 +195,7 @@ export class LocalCatalogService implements ICatalogService {
     } else {
       next.unshift(saved);
     }
-    writeStorage(STORAGE_KEYS.PRODUCTS, next, 'catalog');
+    await saveAdminCollection('products', next, 'catalog');
     return saved;
   }
 
@@ -204,7 +204,7 @@ export class LocalCatalogService implements ICatalogService {
       return;
     }
     const idSet = new Set(productIds);
-    const all = this.readProducts();
+    const all = await this.readProducts();
     const now = new Date().toISOString();
     let changed = false;
     const next = all.map((p) => {
@@ -220,13 +220,13 @@ export class LocalCatalogService implements ICatalogService {
       return p;
     });
     if (changed) {
-      writeStorage(STORAGE_KEYS.PRODUCTS, next, 'catalog');
+      await saveAdminCollection('products', next, 'catalog');
     }
   }
 
   async deleteProduct(productId: string): Promise<void> {
-    const all = this.readProducts();
+    const all = await this.readProducts();
     const next = all.filter((p) => p.id !== productId);
-    writeStorage(STORAGE_KEYS.PRODUCTS, next, 'catalog');
+    await saveAdminCollection('products', next, 'catalog');
   }
 }

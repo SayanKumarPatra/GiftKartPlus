@@ -80,6 +80,13 @@ const SETTINGS_GROUPS: {
   },
 ];
 
+function normalizeOptionalUrl(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export function AdminSettingsPage() {
   const { data: settings } = useStoreSettings();
   const logoInputRef = useRef<HTMLInputElement | null>(null);
@@ -96,37 +103,36 @@ export function AdminSettingsPage() {
     }
   }, [settings, draft]);
 
-  function openSection(id: SettingsSectionId) {
-    if (settings) {
-      setDraft({
-        ...settings,
-        socialLinks: {
-          instagram: settings.socialLinks?.instagram ?? '',
-          facebook: settings.socialLinks?.facebook ?? '',
-          whatsapp: settings.socialLinks?.whatsapp ?? '',
-          youtube: settings.socialLinks?.youtube ?? '',
-        },
-        seo: {
-          title: settings.seo?.title ?? '',
-          description: settings.seo?.description ?? '',
-        },
-        policies: {
-          privacyPolicy: settings.policies?.privacyPolicy ?? '',
-          termsAndConditions: settings.policies?.termsAndConditions ?? '',
-          refundPolicy: settings.policies?.refundPolicy ?? '',
-        },
-        footerContent: {
-          description: settings.footerContent?.description ?? '',
-          copyrightText: settings.footerContent?.copyrightText ?? '',
-        },
-      });
-    }
+  async function openSection(id: SettingsSectionId) {
+    const base = settings ?? (await services.settings.getSettings());
+    setDraft({
+      ...base,
+      socialLinks: {
+        instagram: base.socialLinks?.instagram ?? '',
+        facebook: base.socialLinks?.facebook ?? '',
+        whatsapp: base.socialLinks?.whatsapp ?? '',
+        youtube: base.socialLinks?.youtube ?? '',
+      },
+      seo: {
+        title: base.seo?.title ?? '',
+        description: base.seo?.description ?? '',
+      },
+      policies: {
+        privacyPolicy: base.policies?.privacyPolicy ?? '',
+        termsAndConditions: base.policies?.termsAndConditions ?? '',
+        refundPolicy: base.policies?.refundPolicy ?? '',
+      },
+      footerContent: {
+        description: base.footerContent?.description ?? '',
+        copyrightText: base.footerContent?.copyrightText ?? '',
+      },
+    });
     setActiveSection(id);
   }
 
   function showNotice(message: string, tone: 'success' | 'error' = 'success') {
     setToast({ message, tone });
-    window.setTimeout(() => setToast(null), 3200);
+    window.setTimeout(() => setToast(null), 3500);
   }
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -134,8 +140,9 @@ export function AdminSettingsPage() {
     if (!file || !draft) return;
     setUploadingLogo(true);
     try {
-      const dataUrl = await readImageFileAsDataUrl(file, 500);
+      const dataUrl = await readImageFileAsDataUrl(file, 420, true);
       setDraft({ ...draft, logoUrl: dataUrl });
+      showNotice('Logo ready! Tap "Save Changes" below.');
     } catch (err) {
       showNotice(
         err instanceof Error ? err.message : 'Unable to upload logo.',
@@ -152,13 +159,30 @@ export function AdminSettingsPage() {
     if (!draft) return;
     setSaving(true);
     try {
-      await services.settings.updateSettings(draft);
+      const sanitized: StoreSettings = {
+        ...draft,
+        storeName: draft.storeName.trim() || 'GiftKart',
+        socialLinks: draft.socialLinks
+          ? {
+              instagram: normalizeOptionalUrl(draft.socialLinks.instagram),
+              facebook: normalizeOptionalUrl(draft.socialLinks.facebook),
+              whatsapp: normalizeOptionalUrl(draft.socialLinks.whatsapp),
+              youtube: normalizeOptionalUrl(draft.socialLinks.youtube),
+            }
+          : draft.socialLinks,
+      };
+      await services.settings.updateSettings(sanitized);
       const sectionTitle =
         SETTINGS_GROUPS.find((g) => g.id === activeSection)?.title ||
         'Website Settings';
       await services.adminAuth.logActivity(`Updated ${sectionTitle}`, 'Website Settings');
-      showNotice(`${sectionTitle} saved to live storefront.`);
+      showNotice(`${sectionTitle} saved to live storefront!`);
       setActiveSection(null);
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Could not save settings.',
+        'error'
+      );
     } finally {
       setSaving(false);
     }
@@ -185,6 +209,7 @@ export function AdminSettingsPage() {
 
         <form
           onSubmit={handleSave}
+          noValidate
           className="space-y-3 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-[0_8px_20px_-14px_rgba(106,17,203,0.18)]"
         >
           <div className="border-b border-[#F2E9FF] pb-2.5">
@@ -334,10 +359,10 @@ export function AdminSettingsPage() {
             <>
               {(
                 [
-                  { key: 'instagram', label: 'Instagram URL', placeholder: 'https://instagram.com/...' },
-                  { key: 'facebook', label: 'Facebook URL', placeholder: 'https://facebook.com/...' },
-                  { key: 'whatsapp', label: 'WhatsApp URL', placeholder: 'https://wa.me/91...' },
-                  { key: 'youtube', label: 'YouTube URL', placeholder: 'https://youtube.com/...' },
+                  { key: 'instagram', label: 'Instagram Link', placeholder: 'instagram.com/yourpage' },
+                  { key: 'facebook', label: 'Facebook Link', placeholder: 'facebook.com/yourpage' },
+                  { key: 'whatsapp', label: 'WhatsApp Link', placeholder: 'wa.me/919382040746' },
+                  { key: 'youtube', label: 'YouTube Link', placeholder: 'youtube.com/@yourchannel' },
                 ] as const
               ).map(({ key, label, placeholder }) => (
                 <div key={key}>
@@ -345,7 +370,7 @@ export function AdminSettingsPage() {
                     {label}
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     value={draft.socialLinks?.[key] ?? ''}
                     onChange={(e) =>
                       setDraft({
@@ -561,14 +586,16 @@ export function AdminSettingsPage() {
             </>
           )}
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-xs disabled:opacity-60"
-          >
-            <Save className="h-4 w-4" />
-            <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-          </button>
+          <div className="sticky bottom-0 -mx-4 border-t border-[#EFE3FF] bg-white px-4 pt-3 pb-1">
+            <button
+              type="submit"
+              disabled={saving || uploadingLogo}
+              className="flex h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-sm disabled:opacity-60"
+            >
+              <Save className="h-4 w-4" />
+              <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+            </button>
+          </div>
         </form>
       </div>
     );
@@ -582,12 +609,11 @@ export function AdminSettingsPage() {
         onClose={() => setToast(null)}
       />
 
-      {/* Grouped Website Settings Menu Cards (Matches Mockup Screen 10) */}
       {SETTINGS_GROUPS.map(({ id, title, subtitle, Icon }) => (
         <button
           key={id}
           type="button"
-          onClick={() => openSection(id)}
+          onClick={() => void openSection(id)}
           className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[#EBD8FF]/90 bg-white px-3.5 py-3.5 text-left shadow-[0_6px_16px_-12px_rgba(106,17,203,0.18)] transition-all active:scale-[0.99] hover:border-[#6A11CB]/40"
         >
           <div className="flex min-w-0 items-center gap-3">

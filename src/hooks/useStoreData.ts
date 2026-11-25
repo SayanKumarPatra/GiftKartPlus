@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { services } from '../services/registry';
 import { storeEvents, type StoreEventTopic } from '../storage/storeEvents';
 import type {
@@ -31,9 +31,12 @@ function useAsyncStoreResource<T>(
   const [data, setData] = useState<T>(initialValue);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedOnceRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    setIsLoading(true);
+    if (!hasLoadedOnceRef.current) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const result = await fetcher();
@@ -41,6 +44,7 @@ function useAsyncStoreResource<T>(
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load store data.');
     } finally {
+      hasLoadedOnceRef.current = true;
       setIsLoading(false);
     }
   }, [fetcher]);

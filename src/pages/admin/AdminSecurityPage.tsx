@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Activity,
+  Eye,
+  EyeOff,
   KeyRound,
   LogOut,
+  Save,
   ShieldCheck,
   Trash2,
   UserCheck,
@@ -30,21 +33,26 @@ export function AdminSecurityPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPasswords, setShowPasswords] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [toast, setToast] = useState<{ message: string; tone?: 'success' | 'error' } | null>(null);
 
   function showNotice(message: string, tone: 'success' | 'error' = 'success') {
     setToast({ message, tone });
-    window.setTimeout(() => setToast(null), 3200);
+    window.setTimeout(() => setToast(null), 3500);
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
+    if (!displayName.trim()) {
+      showNotice('Display name cannot be empty.', 'error');
+      return;
+    }
     setSavingProfile(true);
     try {
       await updateAdminProfile(displayName);
-      showNotice('Admin profile updated.');
+      showNotice('Admin profile saved.');
     } catch (err) {
       showNotice(
         err instanceof Error ? err.message : 'Unable to update profile.',
@@ -76,7 +84,7 @@ export function AdminSecurityPage() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      showNotice('Admin password updated successfully.');
+      showNotice('Admin password updated successfully!');
     } catch (err) {
       showNotice(
         err instanceof Error ? err.message : 'Unable to change password.',
@@ -108,6 +116,7 @@ export function AdminSecurityPage() {
       {/* Admin Profile Card */}
       <form
         onSubmit={handleSaveProfile}
+        noValidate
         className="space-y-3 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-[0_6px_18px_-12px_rgba(106,17,203,0.18)]"
       >
         <div className="flex items-center gap-2.5">
@@ -130,7 +139,6 @@ export function AdminSecurityPage() {
           </label>
           <input
             type="text"
-            required
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-[13px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
@@ -140,33 +148,55 @@ export function AdminSecurityPage() {
         <button
           type="submit"
           disabled={savingProfile}
-          className="h-9.5 w-full cursor-pointer rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-xs disabled:opacity-60"
+          className="flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-xs disabled:opacity-60"
         >
-          {savingProfile ? 'Saving...' : 'Save Profile'}
+          <Save className="h-3.5 w-3.5" />
+          <span>{savingProfile ? 'Saving...' : 'Save Profile'}</span>
         </button>
       </form>
 
       {/* Change Password Card */}
       <form
         onSubmit={handleChangePassword}
+        noValidate
         className="space-y-2.5 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-[0_6px_18px_-12px_rgba(106,17,203,0.18)]"
       >
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFEAF2] text-[#FF4D8D]">
-            <KeyRound className="h-4.5 w-4.5" />
-          </span>
-          <div>
-            <h2 className="text-[14px] font-extrabold text-[#1E1035]">
-              Change Password
-            </h2>
-            <p className="text-[11.5px] text-[#75648E]">
-              Protected with salted SHA-256 verification
-            </p>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFEAF2] text-[#FF4D8D]">
+              <KeyRound className="h-4.5 w-4.5" />
+            </span>
+            <div>
+              <h2 className="text-[14px] font-extrabold text-[#1E1035]">
+                Change Password
+              </h2>
+              <p className="text-[11.5px] text-[#75648E]">
+                Salted SHA-256 verification
+              </p>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowPasswords((prev) => !prev)}
+            aria-label={showPasswords ? 'Hide passwords' : 'Show passwords'}
+            className="inline-flex h-8 cursor-pointer items-center gap-1 rounded-lg border border-[#E5D5FA] bg-[#FAF6FF] px-2.5 text-[11px] font-bold text-[#6A11CB]"
+          >
+            {showPasswords ? (
+              <>
+                <EyeOff className="h-3.5 w-3.5" />
+                <span>Hide</span>
+              </>
+            ) : (
+              <>
+                <Eye className="h-3.5 w-3.5" />
+                <span>Show</span>
+              </>
+            )}
+          </button>
         </div>
 
         <input
-          type="password"
+          type={showPasswords ? 'text' : 'password'}
           autoComplete="current-password"
           value={currentPassword}
           onChange={(e) => setCurrentPassword(e.target.value)}
@@ -174,7 +204,7 @@ export function AdminSecurityPage() {
           className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
         />
         <input
-          type="password"
+          type={showPasswords ? 'text' : 'password'}
           autoComplete="new-password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
@@ -182,7 +212,7 @@ export function AdminSecurityPage() {
           className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
         />
         <input
-          type="password"
+          type={showPasswords ? 'text' : 'password'}
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
@@ -193,9 +223,10 @@ export function AdminSecurityPage() {
         <button
           type="submit"
           disabled={savingPassword}
-          className="h-9.5 w-full cursor-pointer rounded-xl bg-[#1E1035] text-xs font-extrabold text-white transition-opacity hover:opacity-95 disabled:opacity-60"
+          className="flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-[#1E1035] text-xs font-extrabold text-white transition-opacity hover:opacity-95 disabled:opacity-60"
         >
-          {savingPassword ? 'Updating Password...' : 'Update Password'}
+          <Save className="h-3.5 w-3.5" />
+          <span>{savingPassword ? 'Updating...' : 'Save New Password'}</span>
         </button>
       </form>
 

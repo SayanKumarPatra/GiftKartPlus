@@ -5,9 +5,9 @@ import {
   Edit3,
   Percent,
   Plus,
+  Save,
   Tag,
   Trash2,
-  X,
 } from 'lucide-react';
 import { useCoupons, useStoreSettings } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
@@ -16,6 +16,7 @@ import type { Coupon, CouponDiscountType } from '../../types';
 import {
   AdminConfirmDialog,
   AdminEmptyState,
+  AdminSheetModal,
   AdminToast,
   AdminToggleSwitch,
 } from '../../components/admin/AdminSharedUI';
@@ -89,7 +90,7 @@ export function AdminOffersPage() {
 
   function showNotice(message: string, tone: 'success' | 'error' = 'success') {
     setToast({ message, tone });
-    window.setTimeout(() => setToast(null), 3200);
+    window.setTimeout(() => setToast(null), 3500);
   }
 
   function openNewOffer() {
@@ -115,8 +116,8 @@ export function AdminOffersPage() {
     setEditorOpen(true);
   }
 
-  async function handleSaveOffer(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSaveOffer(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     const cleanCode = draft.code.trim().toUpperCase().replace(/\s+/g, '');
     const numericValue = Number(draft.value);
     const minOrder = Math.max(0, Number(draft.minOrderInr) || 0);
@@ -172,8 +173,13 @@ export function AdminOffersPage() {
       setEditorOpen(false);
       showNotice(
         existing
-          ? `Offer ${cleanCode} updated.`
-          : `Offer ${cleanCode} is ready for checkout.`
+          ? `Offer ${cleanCode} saved!`
+          : `Offer ${cleanCode} saved & ready for checkout!`
+      );
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Could not save offer.',
+        'error'
       );
     } finally {
       setSaving(false);
@@ -181,23 +187,37 @@ export function AdminOffersPage() {
   }
 
   async function handleToggleActive(coupon: Coupon, nextActive: boolean) {
-    await services.promotions.upsertCoupon({ ...coupon, isActive: nextActive });
-    await services.adminAuth.logActivity(
-      `${nextActive ? 'Activated' : 'Deactivated'} offer ${coupon.code}`,
-      'Offers & Promotions'
-    );
-    showNotice(`Offer ${coupon.code} ${nextActive ? 'activated' : 'paused'}.`);
+    try {
+      await services.promotions.upsertCoupon({ ...coupon, isActive: nextActive });
+      await services.adminAuth.logActivity(
+        `${nextActive ? 'Activated' : 'Deactivated'} offer ${coupon.code}`,
+        'Offers & Promotions'
+      );
+      showNotice(`Offer ${coupon.code} ${nextActive ? 'activated' : 'paused'}.`);
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Unable to update offer.',
+        'error'
+      );
+    }
   }
 
   async function confirmDeleteOffer() {
     if (!deleteTarget) return;
-    await services.promotions.deleteCoupon(deleteTarget.id);
-    await services.adminAuth.logActivity(
-      `Deleted offer ${deleteTarget.code}`,
-      'Offers & Promotions'
-    );
-    setDeleteTarget(null);
-    showNotice('Offer deleted.');
+    try {
+      await services.promotions.deleteCoupon(deleteTarget.id);
+      await services.adminAuth.logActivity(
+        `Deleted offer ${deleteTarget.code}`,
+        'Offers & Promotions'
+      );
+      setDeleteTarget(null);
+      showNotice('Offer deleted.');
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Unable to delete offer.',
+        'error'
+      );
+    }
   }
 
   return (
@@ -208,24 +228,13 @@ export function AdminOffersPage() {
         onClose={() => setToast(null)}
       />
 
-      {/* Quick Summary & Create Offer Button */}
-      <div className="flex items-center justify-between gap-2 px-0.5">
-        <div>
-          <p className="text-[13px] font-extrabold text-[#1E1035]">
-            Active Coupons &amp; Deals
-          </p>
-          <p className="text-[11.5px] text-[#75648E]">
-            Automatically validated before checkout with expiry handling
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={openNewOffer}
-          className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1 rounded-full bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] px-3.5 text-xs font-extrabold text-white shadow-xs active:scale-95"
-        >
-          <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
-          <span>Create Offer</span>
-        </button>
+      <div className="px-0.5">
+        <p className="text-[13px] font-extrabold text-[#1E1035]">
+          Coupons &amp; Promotional Offers
+        </p>
+        <p className="text-[11.5px] text-[#75648E]">
+          Automatically validated before checkout with expiry handling
+        </p>
       </div>
 
       {/* Offers List */}
@@ -324,201 +333,197 @@ export function AdminOffersPage() {
         </div>
       )}
 
-      {/* Create / Edit Offer Modal */}
-      {editorOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[95] flex items-end justify-center bg-[#1E1035]/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
-        >
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-[26px] border border-[#EBD8FF] bg-white p-4 shadow-2xl sm:rounded-2xl">
-            <div className="flex items-center justify-between border-b border-[#EFE3FF] pb-3">
-              <h3 className="text-[15.5px] font-extrabold text-[#1E1035]">
-                {draft.id ? 'Edit Offer / Coupon' : 'Create Offer / Coupon'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setEditorOpen(false)}
-                aria-label="Close offer editor"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-[#FAF6FF] text-[#594A6B]"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+      {/* Primary Create Offer Button */}
+      <button
+        type="button"
+        onClick={openNewOffer}
+        className="flex h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#7E1DE0] to-[#A624C2] px-5 text-[13.5px] font-extrabold text-white shadow-[0_10px_22px_-8px_rgba(106,17,203,0.5)] transition-transform active:scale-[0.98]"
+      >
+        <Plus className="h-4.5 w-4.5 stroke-[2.5]" />
+        <span>Create New Offer</span>
+      </button>
 
-            <form onSubmit={handleSaveOffer} className="mt-3.5 space-y-3">
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                    Coupon Code *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={draft.code}
-                    onChange={(e) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        code: e.target.value.toUpperCase(),
-                      }))
-                    }
-                    placeholder="FESTIVE10"
-                    className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs font-extrabold uppercase text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                    Discount Type
-                  </label>
-                  <select
-                    value={draft.discountType}
-                    onChange={(e) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        discountType: e.target.value as CouponDiscountType,
-                      }))
-                    }
-                    className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs font-bold text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  >
-                    <option value="PERCENTAGE">Percentage (%)</option>
-                    <option value="FLAT_INR">Flat Amount (₹)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                    Discount Value ({draft.discountType === 'PERCENTAGE' ? '%' : '₹'}) *
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    required
-                    value={draft.value}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, value: e.target.value }))
-                    }
-                    placeholder={draft.discountType === 'PERCENTAGE' ? '10' : '100'}
-                    className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                    Min Order (₹)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={draft.minOrderInr}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, minOrderInr: e.target.value }))
-                    }
-                    placeholder="499"
-                    className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={draft.validFrom}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, validFrom: e.target.value }))
-                    }
-                    className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-2.5 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                    End Date (Auto Expiry)
-                  </label>
-                  <input
-                    type="date"
-                    value={draft.validUntil}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, validUntil: e.target.value }))
-                    }
-                    className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-2.5 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {banners.length > 0 && (
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                    Link to Sliding Banner (Optional)
-                  </label>
-                  <select
-                    value={draft.linkedBannerId}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, linkedBannerId: e.target.value }))
-                    }
-                    className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  >
-                    <option value="">None</option>
-                    {banners.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {`${b.titlePrefix} ${b.titleHighlight}`.trim() || b.id}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-                  Offer Description
-                </label>
-                <input
-                  type="text"
-                  value={draft.description}
-                  onChange={(e) =>
-                    setDraft((prev) => ({ ...prev, description: e.target.value }))
-                  }
-                  placeholder="Short note shown to customers..."
-                  className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-between rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] px-3 py-2.5">
-                <span className="text-xs font-bold text-[#1E1035]">
-                  Offer Active
-                </span>
-                <AdminToggleSwitch
-                  checked={draft.isActive}
-                  onChange={(next) =>
-                    setDraft((prev) => ({ ...prev, isActive: next }))
-                  }
-                  label="Toggle offer active status"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setEditorOpen(false)}
-                  className="h-10 flex-1 cursor-pointer rounded-xl border border-[#DFCEF7] bg-white text-xs font-bold text-[#4A3860]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="h-10 flex-1 cursor-pointer rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-xs disabled:opacity-60"
-                >
-                  {saving ? 'Saving...' : 'Save Offer'}
-                </button>
-              </div>
-            </form>
+      {/* Always-Visible Sticky-Footer Create / Edit Offer Modal */}
+      <AdminSheetModal
+        open={editorOpen}
+        title={draft.id ? 'Edit Offer / Coupon' : 'Create Offer / Coupon'}
+        subtitle="Applied live at GiftKart checkout"
+        onClose={() => setEditorOpen(false)}
+        footer={
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setEditorOpen(false)}
+              className="h-11 flex-1 cursor-pointer rounded-xl border border-[#DFCEF7] bg-white text-xs font-bold text-[#4A3860]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void handleSaveOffer()}
+              className="flex h-11 flex-[1.5] cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-sm disabled:opacity-60"
+            >
+              <Save className="h-4 w-4" />
+              <span>{saving ? 'Saving...' : 'Save Offer'}</span>
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form onSubmit={handleSaveOffer} noValidate className="space-y-3">
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Coupon Code *
+              </label>
+              <input
+                type="text"
+                value={draft.code}
+                onChange={(e) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    code: e.target.value.toUpperCase(),
+                  }))
+                }
+                placeholder="FESTIVE10"
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs font-extrabold uppercase text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Discount Type
+              </label>
+              <select
+                value={draft.discountType}
+                onChange={(e) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    discountType: e.target.value as CouponDiscountType,
+                  }))
+                }
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs font-bold text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              >
+                <option value="PERCENTAGE">Percentage (%)</option>
+                <option value="FLAT_INR">Flat Amount (₹)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Discount Value ({draft.discountType === 'PERCENTAGE' ? '%' : '₹'}) *
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={draft.value}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, value: e.target.value }))
+                }
+                placeholder={draft.discountType === 'PERCENTAGE' ? '10' : '100'}
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Min Order (₹)
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={draft.minOrderInr}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, minOrderInr: e.target.value }))
+                }
+                placeholder="499"
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={draft.validFrom}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, validFrom: e.target.value }))
+                }
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-2.5 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                End Date (Auto Expiry)
+              </label>
+              <input
+                type="date"
+                value={draft.validUntil}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, validUntil: e.target.value }))
+                }
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-2.5 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {banners.length > 0 && (
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Link to Sliding Banner (Optional)
+              </label>
+              <select
+                value={draft.linkedBannerId}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, linkedBannerId: e.target.value }))
+                }
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              >
+                <option value="">None</option>
+                {banners.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {`${b.titlePrefix} ${b.titleHighlight}`.trim() || b.id}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+              Offer Description
+            </label>
+            <input
+              type="text"
+              value={draft.description}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, description: e.target.value }))
+              }
+              placeholder="Short note shown to customers..."
+              className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] px-3 py-2.5">
+            <span className="text-xs font-bold text-[#1E1035]">
+              Offer Active
+            </span>
+            <AdminToggleSwitch
+              checked={draft.isActive}
+              onChange={(next) =>
+                setDraft((prev) => ({ ...prev, isActive: next }))
+              }
+              label="Toggle offer active status"
+            />
+          </div>
+        </form>
+      </AdminSheetModal>
 
       <AdminConfirmDialog
         open={Boolean(deleteTarget)}
