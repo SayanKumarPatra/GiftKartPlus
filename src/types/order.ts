@@ -1,16 +1,21 @@
 import type { GiftWrapSelection } from './giftWrap';
 
-export type OrderMode = 'DEMO_ORDER';
+export type OrderMode = 'LIVE_ORDER' | 'DEMO_ORDER';
 
-export type PaymentGatewayStatus = 'CASHFREE_NOT_CONNECTED';
+export type PaymentGatewayStatus = 'CASHFREE_NOT_CONNECTED' | 'CONNECTED';
+
+export type PaymentRecordStatus = 'SUCCESS' | 'PENDING' | 'FAILED';
 
 export type OrderFulfillmentStatus =
+  | 'New'
+  | 'Processing'
+  | 'Completed'
+  | 'Cancelled'
   | 'Demo Placed'
   | 'Confirmed'
   | 'Preparing'
   | 'Out for Delivery'
-  | 'Delivered'
-  | 'Cancelled';
+  | 'Delivered';
 
 export interface OrderItemSnapshot {
   productId: string;
@@ -29,7 +34,7 @@ export interface OrderStatusHistoryEntry {
   status: OrderFulfillmentStatus;
   timestamp: string;
   note?: string;
-  updatedBy: 'System (Demo Order)' | 'Admin' | 'Customer';
+  updatedBy: 'System' | 'System (Demo Order)' | 'Admin' | 'Customer';
 }
 
 export interface OrderCustomerDetails {
@@ -60,6 +65,8 @@ export interface DemoOrder {
   grandTotalInr: number;
   couponCode?: string;
   paymentMethod?: string;
+  paymentStatus?: PaymentRecordStatus;
+  paymentReference?: string;
   paymentGatewayStatus: PaymentGatewayStatus;
   fulfillmentStatus: OrderFulfillmentStatus;
   statusHistory: OrderStatusHistoryEntry[];
@@ -79,4 +86,5 @@ export interface CreateDemoOrderInput {
   grandTotalInr: number;
   couponCode?: string;
   paymentMethod?: string;
+  paymentStatus?: PaymentRecordStatus;
 }

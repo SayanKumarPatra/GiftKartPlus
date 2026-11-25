@@ -787,6 +787,14 @@ function getHighlightLabel(type: PolicyType, tone: PolicyHighlightItem['tone']) 
 export function PolicyPage({ type }: { type: PolicyType }) {
   const { data: settings } = useStoreSettings();
   const content = POLICY_CONTENT[type];
+  const customPolicyNote =
+    type === 'privacy'
+      ? settings?.policies?.privacyPolicy?.trim()
+      : type === 'terms'
+        ? settings?.policies?.termsAndConditions?.trim()
+        : type === 'return'
+          ? settings?.policies?.refundPolicy?.trim()
+          : '';
 
   return (
     <div className="mx-auto max-w-5xl pb-2">
@@ -898,13 +906,24 @@ export function PolicyPage({ type }: { type: PolicyType }) {
               {content.subtitle}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-neutral-500">
-              <span>GiftKart India</span>
+              <span>{settings?.storeName || 'GiftKart'} India</span>
               <span aria-hidden="true">·</span>
               <span>Last updated {content.lastUpdated}</span>
               <span aria-hidden="true">·</span>
               <span>Applicable to all GiftKart orders</span>
             </div>
           </header>
+
+          {customPolicyNote && (
+            <section className="mt-4 rounded border border-neutral-200 bg-neutral-50 px-3.5 py-3">
+              <p className="text-[11.5px] font-semibold text-neutral-700">
+                Store Policy Statement
+              </p>
+              <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-neutral-700">
+                {customPolicyNote}
+              </p>
+            </section>
+          )}
 
           {/* Neutral Structured Key Summary Table */}
           {content.highlights.length > 0 && (

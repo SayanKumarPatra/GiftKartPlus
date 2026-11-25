@@ -32,26 +32,18 @@ import {
 } from '../pages/storefront/InfoAndPolicyPages';
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage';
 import {
-  AdminBannersPage,
-  AdminCategoriesPage,
   AdminDashboardPage,
-  AdminGiftWrappingPage,
-  AdminInventoryPage,
-  AdminProductsPage,
-} from '../pages/admin/AdminCatalogPages';
-import {
-  AdminCouponsPage,
-  AdminCustomersPage,
-  AdminIntegrationsPage,
-  AdminOrdersPage,
-  AdminReportsPage,
-  AdminSettingsPage,
-} from '../pages/admin/AdminOperationsPages';
-import {
-  AdminCustomizationRequestsPage,
-  AdminReviewsPage,
-  AdminWebsitePagesPage,
-} from '../pages/admin/AdminExtraPages';
+  AdminMorePage,
+} from '../pages/admin/AdminDashboardAndMorePages';
+import { AdminBannerPage } from '../pages/admin/AdminBannerPage';
+import { AdminProductsPage } from '../pages/admin/AdminProductsPage';
+import { AdminCategoriesPage } from '../pages/admin/AdminCategoriesPage';
+import { AdminOrdersPage } from '../pages/admin/AdminOrdersPage';
+import { AdminOffersPage } from '../pages/admin/AdminOffersPage';
+import { AdminCustomersPage } from '../pages/admin/AdminCustomersPage';
+import { AdminPaymentsPage } from '../pages/admin/AdminPaymentsPage';
+import { AdminSettingsPage } from '../pages/admin/AdminSettingsPage';
+import { AdminSecurityPage } from '../pages/admin/AdminSecurityPage';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
 
@@ -77,7 +69,7 @@ export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Customer Storefront Shell — All 24 Customer Routes */}
+        {/* Public Customer Storefront Shell */}
         <Route path="/" element={<StorefrontLayout />}>
           <Route index element={<HomePage />} />
           <Route path="shop" element={<ShopPage />} />
@@ -123,7 +115,7 @@ export function AppRouter() {
           <Route path="*" element={<NotFoundView />} />
         </Route>
 
-        {/* Isolated Single Admin Web Panel (/admin) — All 15 Admin Routes */}
+        {/* Isolated Mobile-First GiftKart Admin Panel (10 Core Management Pages + More Menu + Login) */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route
           path="/admin"
@@ -134,23 +126,17 @@ export function AppRouter() {
           }
         >
           <Route index element={<AdminDashboardPage />} />
+          <Route path="more" element={<AdminMorePage />} />
+          <Route path="banners" element={<AdminBannerPage />} />
           <Route path="products" element={<AdminProductsPage />} />
           <Route path="categories" element={<AdminCategoriesPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
+          <Route path="offers" element={<AdminOffersPage />} />
           <Route path="customers" element={<AdminCustomersPage />} />
-          <Route path="inventory" element={<AdminInventoryPage />} />
-          <Route
-            path="customization-requests"
-            element={<AdminCustomizationRequestsPage />}
-          />
-          <Route path="gift-wrapping" element={<AdminGiftWrappingPage />} />
-          <Route path="banners" element={<AdminBannersPage />} />
-          <Route path="coupons" element={<AdminCouponsPage />} />
-          <Route path="reviews" element={<AdminReviewsPage />} />
-          <Route path="reports" element={<AdminReportsPage />} />
-          <Route path="pages" element={<AdminWebsitePagesPage />} />
+          <Route path="payments" element={<AdminPaymentsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
-          <Route path="integrations" element={<AdminIntegrationsPage />} />
+          <Route path="security" element={<AdminSecurityPage />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>

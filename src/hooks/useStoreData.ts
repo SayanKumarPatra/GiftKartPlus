@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { services } from '../services/registry';
 import { storeEvents, type StoreEventTopic } from '../storage/storeEvents';
 import type {
+  AdminActivityLog,
   Category,
   Coupon,
   DemoOrder,
@@ -10,6 +11,7 @@ import type {
   Product,
   ProductFilterParams,
   ProductReview,
+  RegisteredCustomer,
   SavedAddress,
   StoreSettings,
 } from '../types';
@@ -64,6 +66,8 @@ const SETTINGS_TOPICS: StoreEventTopic[] = ['settings'];
 const ORDER_TOPICS: StoreEventTopic[] = ['orders'];
 const COUPON_TOPICS: StoreEventTopic[] = ['coupons'];
 const COMMUNITY_TOPICS: StoreEventTopic[] = ['community'];
+const CUSTOMER_TOPICS: StoreEventTopic[] = ['customers', 'orders', 'auth'];
+const ACTIVITY_TOPICS: StoreEventTopic[] = ['activity', 'auth'];
 
 export function useCategories(includeInactive = false): AsyncState<Category[]> {
   const fetcher = useCallback(
@@ -100,6 +104,16 @@ export function useOrders(): AsyncState<DemoOrder[]> {
 export function useCoupons(): AsyncState<Coupon[]> {
   const fetcher = useCallback(() => services.promotions.listCoupons(), []);
   return useAsyncStoreResource(fetcher, [], COUPON_TOPICS);
+}
+
+export function useRegisteredCustomers(): AsyncState<RegisteredCustomer[]> {
+  const fetcher = useCallback(() => services.customers.listCustomers(), []);
+  return useAsyncStoreResource(fetcher, [], CUSTOMER_TOPICS);
+}
+
+export function useAdminActivityLogs(): AsyncState<AdminActivityLog[]> {
+  const fetcher = useCallback(() => services.adminAuth.getActivityLogs(), []);
+  return useAsyncStoreResource(fetcher, [], ACTIVITY_TOPICS);
 }
 
 export function useSavedAddresses(): AsyncState<SavedAddress[]> {

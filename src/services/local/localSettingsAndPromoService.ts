@@ -6,7 +6,6 @@ import type {
 import type { Coupon, DeliveryZone, StoreSettings } from '../../types';
 import { STORAGE_KEYS, readStorage, writeStorage } from '../../storage/localStorageEngine';
 import {
-  SEED_COUPONS,
   SEED_STORE_SETTINGS,
   ensureDemoSeedHydrated,
 } from '../../data/seedData';
@@ -14,7 +13,7 @@ import {
 export class LocalPromotionService implements IPromotionService {
   private readCoupons(): Coupon[] {
     ensureDemoSeedHydrated();
-    return readStorage<Coupon[]>(STORAGE_KEYS.COUPONS, SEED_COUPONS);
+    return readStorage<Coupon[]>(STORAGE_KEYS.COUPONS, []);
   }
 
   async listCoupons(): Promise<Coupon[]> {

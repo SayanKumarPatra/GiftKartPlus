@@ -310,13 +310,16 @@ export function getCustomerOrderStatusLabel(
   status: OrderFulfillmentStatus
 ): CustomerOrderDisplayStatus {
   switch (status) {
+    case 'New':
     case 'Demo Placed':
       return 'Order Placed';
+    case 'Processing':
     case 'Confirmed':
     case 'Preparing':
       return 'Processing';
     case 'Out for Delivery':
       return 'Shipped';
+    case 'Completed':
     case 'Delivered':
       return 'Delivered';
     case 'Cancelled':
@@ -328,18 +331,21 @@ export function getCustomerOrderStatusLabel(
 
 export function canCustomerCancelOrder(status: OrderFulfillmentStatus): boolean {
   // Strictly allowed ONLY before Processing starts
-  return status === 'Demo Placed';
+  return status === 'New' || status === 'Demo Placed';
 }
 
 export function getOrderTimelineStepIndex(status: OrderFulfillmentStatus): number {
   switch (status) {
+    case 'New':
     case 'Demo Placed':
       return 0;
+    case 'Processing':
     case 'Confirmed':
     case 'Preparing':
       return 1;
     case 'Out for Delivery':
       return 2;
+    case 'Completed':
     case 'Delivered':
       return 3;
     case 'Cancelled':

@@ -15,12 +15,25 @@ export interface CustomerSignInInput {
   defaultCity: string;
 }
 
+export type CustomerAccountStatus = 'ACTIVE' | 'BLOCKED';
+
+export interface RegisteredCustomer {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  defaultCity: string;
+  status: CustomerAccountStatus;
+  registeredAt: string;
+  updatedAt: string;
+}
+
 export interface AdminDemoSession {
   id: string;
   email: string;
   displayName: string;
   role: 'SINGLE_ADMIN';
-  isDemoMode: true;
+  isDemoMode?: boolean;
   securityDisclaimer: string;
   signedInAt: string;
 }
@@ -28,4 +41,20 @@ export interface AdminDemoSession {
 export interface AdminSignInInput {
   email: string;
   passcode: string;
+}
+
+export interface AdminCredentialRecord {
+  email: string;
+  displayName: string;
+  salt: string;
+  passcodeHash: string;
+  updatedAt: string;
+}
+
+export interface AdminActivityLog {
+  id: string;
+  action: string;
+  target: string;
+  actorEmail: string;
+  timestamp: string;
 }

@@ -10,7 +10,6 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
-import { SEED_HERO_SLIDES } from '../../data/seedData';
 import { buildStorefrontCategoryGroups } from '../../utils/storefrontHelpers';
 
 interface MobileHeroSlide {
@@ -36,18 +35,17 @@ export function MobileHomePage() {
   const touchStartY = useRef<number | null>(null);
 
   const heroEntries = useMemo<MobileHeroSlide[]>(() => {
-    const sourceSlides =
-      settings?.heroSlides && settings.heroSlides.length > 0
-        ? settings.heroSlides
-        : SEED_HERO_SLIDES;
+    const sourceSlides = Array.isArray(settings?.heroSlides)
+      ? settings.heroSlides
+      : [];
 
     return sourceSlides
-      .filter((s) => s.isActive)
+      .filter((s) => s.isActive && Boolean(s.imageUrl))
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((s) => ({
         id: s.id,
         imageUrl: s.imageUrl,
-        alt: `${s.titlePrefix} ${s.titleHighlight}`.trim(),
+        alt: `${s.titlePrefix} ${s.titleHighlight}`.trim() || 'GiftKart Banner',
         href: s.ctaHref || '/shop',
       }));
   }, [settings?.heroSlides]);
@@ -311,6 +309,15 @@ export function MobileHomePage() {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : trendingProducts.length === 0 ? (
+            <div className="mt-2 rounded-2xl border border-[#EBD8FF] bg-white px-4 py-8 text-center">
+              <p className="text-[13px] font-bold text-[#2B0B4E]">
+                No products available yet
+              </p>
+              <p className="mt-1 text-[11.5px] text-[#685782]">
+                New gifts will appear here as soon as they are published in the store.
+              </p>
             </div>
           ) : (
             <div className="mt-2 grid grid-cols-2 gap-2">

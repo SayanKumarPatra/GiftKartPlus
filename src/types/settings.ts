@@ -15,6 +15,7 @@ export type CouponDiscountType = 'PERCENTAGE' | 'FLAT_INR';
 export interface Coupon {
   id: string;
   code: string;
+  title?: string;
   description: string;
   discountType: CouponDiscountType;
   value: number;
@@ -22,6 +23,7 @@ export interface Coupon {
   maxDiscountInr?: number;
   validFrom?: string;
   validUntil?: string;
+  linkedBannerId?: string;
   isActive: boolean;
   createdAt: string;
 }
@@ -69,6 +71,29 @@ export interface PageContentConfig {
   customizationNote: string;
 }
 
+export interface StoreSocialLinks {
+  instagram: string;
+  facebook: string;
+  whatsapp: string;
+  youtube: string;
+}
+
+export interface StoreSeoConfig {
+  title: string;
+  description: string;
+}
+
+export interface StorePoliciesConfig {
+  privacyPolicy: string;
+  termsAndConditions: string;
+  refundPolicy: string;
+}
+
+export interface StoreFooterConfig {
+  description: string;
+  copyrightText: string;
+}
+
 export interface SavedAddress {
   id: string;
   label: string;
@@ -107,6 +132,8 @@ export interface NewsletterSubscriber {
 export interface StoreSettings {
   storeName: string;
   tagline: string;
+  logoUrl?: string;
+  maintenanceMode?: boolean;
   currencyCode: 'INR';
   currencySymbol: '₹';
   supportEmail: string;
@@ -118,4 +145,8 @@ export interface StoreSettings {
   announcement: AnnouncementBarConfig;
   newsletter: NewsletterConfig;
   pageContent: PageContentConfig;
+  socialLinks?: StoreSocialLinks;
+  seo?: StoreSeoConfig;
+  policies?: StorePoliciesConfig;
+  footerContent?: StoreFooterConfig;
 }

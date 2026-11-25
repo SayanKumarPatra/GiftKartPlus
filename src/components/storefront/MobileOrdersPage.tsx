@@ -101,30 +101,38 @@ function mapFulfillmentToDisplayStatus(
   status: OrderFulfillmentStatus
 ): DisplayOrderStatus {
   switch (status) {
+    case 'New':
     case 'Demo Placed':
       return 'Order Placed';
+    case 'Processing':
     case 'Confirmed':
     case 'Preparing':
       return 'Processing';
     case 'Out for Delivery':
       return 'Shipped';
+    case 'Completed':
     case 'Delivered':
       return 'Delivered';
     case 'Cancelled':
       return 'Cancelled';
+    default:
+      return 'Order Placed';
   }
 }
 
 function buildOrderTimeline(order: DemoOrder): TimelineStep[] {
-  const placedEntry = order.statusHistory.find((h) => h.status === 'Demo Placed');
+  const placedEntry = order.statusHistory.find(
+    (h) => h.status === 'New' || h.status === 'Demo Placed'
+  );
   const processingEntry =
+    order.statusHistory.find((h) => h.status === 'Processing') ??
     order.statusHistory.find((h) => h.status === 'Preparing') ??
     order.statusHistory.find((h) => h.status === 'Confirmed');
   const shippedEntry = order.statusHistory.find(
     (h) => h.status === 'Out for Delivery'
   );
   const deliveredEntry = order.statusHistory.find(
-    (h) => h.status === 'Delivered'
+    (h) => h.status === 'Completed' || h.status === 'Delivered'
   );
 
   const placedDate = formatShortDate(placedEntry?.timestamp ?? order.createdAt);
@@ -193,7 +201,9 @@ function getPaymentBadge(
   if (status === 'Cancelled') return 'Cancelled';
   const lower = paymentMethod.toLowerCase();
   if (lower.includes('cash on delivery') || lower.includes('cod')) {
-    return status === 'Delivered' ? 'Paid on Delivery' : 'Pay on Delivery';
+    return status === 'Completed' || status === 'Delivered'
+      ? 'Paid on Delivery'
+      : 'Pay on Delivery';
   }
   return 'Paid';
 }
@@ -203,7 +213,7 @@ function toMobileOrderViewModel(order: DemoOrder): MobileOrderViewModel {
   const firstItem = order.items[0];
   const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
   const deliveredEntry = order.statusHistory.find(
-    (h) => h.status === 'Delivered'
+    (h) => h.status === 'Completed' || h.status === 'Delivered'
   );
   const cancelledEntry = order.statusHistory.find(
     (h) => h.status === 'Cancelled'
@@ -230,8 +240,10 @@ function toMobileOrderViewModel(order: DemoOrder): MobileOrderViewModel {
     grandTotalInr: order.grandTotalInr,
     rawStatus: order.fulfillmentStatus,
     displayStatus,
-    // Strictly cancellable ONLY before Processing begins (i.e. while still 'Demo Placed' / 'Order Placed')
-    canCancel: order.fulfillmentStatus === 'Demo Placed',
+    // Strictly cancellable ONLY before Processing begins
+    canCancel:
+      order.fulfillmentStatus === 'New' ||
+      order.fulfillmentStatus === 'Demo Placed',
     paymentMethod,
     paymentBadge: getPaymentBadge(paymentMethod, order.fulfillmentStatus),
     deliveryAddress: {

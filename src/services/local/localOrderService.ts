@@ -4,22 +4,17 @@ import type {
   DemoOrder,
   OrderFulfillmentStatus,
   OrderStatusHistoryEntry,
+  PaymentRecordStatus,
 } from '../../types';
 import { STORAGE_KEYS, readStorage, writeStorage } from '../../storage/localStorageEngine';
-import { SEED_DEMO_ORDERS, ensureDemoSeedHydrated } from '../../data/seedData';
+import { ensureDemoSeedHydrated } from '../../data/seedData';
 import { generateOrderNumber } from '../../utils/format';
+import { sharedCustomerDirectory } from './localAuthServices';
 
-/**
- * LocalStorage Order Service enforcing:
- * 1. Demo Order Placement ONLY (no COD, no fake payments, Cashfree marked disconnected).
- * 2. Deep immutable snapshots of product name, SKU, unit price, variants, personalization,
- *    gift wrapping style/charge/recipient/message, and totals.
- * 3. Timestamped statusHistory entry recorded on placement and every Admin status update.
- */
 export class LocalOrderService implements IOrderService {
   private readOrders(): DemoOrder[] {
     ensureDemoSeedHydrated();
-    return readStorage<DemoOrder[]>(STORAGE_KEYS.ORDERS, SEED_DEMO_ORDERS);
+    return readStorage<DemoOrder[]>(STORAGE_KEYS.ORDERS, []);
   }
 
   async listOrders(): Promise<DemoOrder[]> {
@@ -42,12 +37,32 @@ export class LocalOrderService implements IOrderService {
   }
 
   async createDemoOrder(input: CreateDemoOrderInput): Promise<DemoOrder> {
+    // Reject blocked customers before placing an order
+    if (input.customer.email) {
+      const existingCustomer = await sharedCustomerDirectory.getCustomerByEmail(
+        input.customer.email
+      );
+      if (existingCustomer?.status === 'BLOCKED') {
+        throw new Error(
+          'Your account has been restricted by the administrator and cannot place new orders.'
+        );
+      }
+    }
+
+    // Automatically register/sync customer in the Customers directory without duplicates
+    const syncedCustomer = await sharedCustomerDirectory.upsertCustomer({
+      id: input.customerAccountId,
+      fullName: input.customer.fullName,
+      email: input.customer.email,
+      phone: input.customer.phone,
+      defaultCity: input.customer.city || 'Jalchak',
+    });
+
     const existing = this.readOrders();
     const now = new Date().toISOString();
     const sequence = existing.length + 1;
     const orderNumber = generateOrderNumber(sequence);
 
-    // Freeze deep copies so subsequent Admin catalog edits can NEVER alter historical orders
     const frozenItems = input.items.map((item) => ({
       productId: item.productId,
       productNameSnapshot: item.productNameSnapshot,
@@ -71,17 +86,20 @@ export class LocalOrderService implements IOrderService {
     };
 
     const initialHistoryEntry: OrderStatusHistoryEntry = {
-      status: 'Demo Placed',
+      status: 'New',
       timestamp: now,
-      note: 'Demo order placed locally (no real payment collected; Cashfree is Integration Ready — Not Connected).',
-      updatedBy: 'System (Demo Order)',
+      note: 'Order received and awaiting store review.',
+      updatedBy: 'System',
     };
+
+    const paymentStatus: PaymentRecordStatus = input.paymentStatus ?? 'PENDING';
+    const paymentReference = `TXN-${orderNumber.replace(/[^A-Z0-9]/g, '')}`;
 
     const newOrder: DemoOrder = {
       id: `ord-${Date.now()}-${sequence}`,
       orderNumber,
-      mode: 'DEMO_ORDER',
-      customerAccountId: input.customerAccountId,
+      mode: 'LIVE_ORDER',
+      customerAccountId: syncedCustomer.id,
       customer: { ...input.customer },
       items: frozenItems,
       giftWrap: frozenGiftWrap,
@@ -92,8 +110,10 @@ export class LocalOrderService implements IOrderService {
       grandTotalInr: input.grandTotalInr,
       couponCode: input.couponCode,
       paymentMethod: input.paymentMethod ?? 'Cash on Delivery (COD)',
+      paymentStatus,
+      paymentReference,
       paymentGatewayStatus: 'CASHFREE_NOT_CONNECTED',
-      fulfillmentStatus: 'Demo Placed',
+      fulfillmentStatus: 'New',
       statusHistory: [initialHistoryEntry],
       createdAt: now,
       updatedAt: now,
@@ -136,6 +156,40 @@ export class LocalOrderService implements IOrderService {
     return updated;
   }
 
+  async updatePaymentStatus(
+    orderId: string,
+    paymentStatus: PaymentRecordStatus,
+    note?: string
+  ): Promise<DemoOrder> {
+    const existing = this.readOrders();
+    const index = existing.findIndex((o) => o.id === orderId);
+    if (index < 0) {
+      throw new Error(`Order not found: ${orderId}`);
+    }
+    const target = existing[index];
+    const now = new Date().toISOString();
+    const updated: DemoOrder = {
+      ...target,
+      paymentStatus,
+      statusHistory: note
+        ? [
+            ...target.statusHistory,
+            {
+              status: target.fulfillmentStatus,
+              timestamp: now,
+              note,
+              updatedBy: 'Admin',
+            },
+          ]
+        : target.statusHistory,
+      updatedAt: now,
+    };
+    const nextAll = [...existing];
+    nextAll[index] = updated;
+    writeStorage(STORAGE_KEYS.ORDERS, nextAll, 'orders');
+    return updated;
+  }
+
   async cancelOrderByCustomer(orderId: string, reason?: string): Promise<DemoOrder> {
     const existing = this.readOrders();
     const index = existing.findIndex((o) => o.id === orderId);
@@ -143,10 +197,8 @@ export class LocalOrderService implements IOrderService {
       throw new Error(`Order not found: ${orderId}`);
     }
     const target = existing[index];
-    if (target.fulfillmentStatus !== 'Demo Placed') {
-      throw new Error(
-        'Order cannot be cancelled once processing has started.'
-      );
+    if (target.fulfillmentStatus !== 'New' && target.fulfillmentStatus !== 'Demo Placed') {
+      throw new Error('Order cannot be cancelled once processing has started.');
     }
 
     const now = new Date().toISOString();

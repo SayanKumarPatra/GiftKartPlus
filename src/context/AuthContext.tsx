@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { services } from '../services/registry';
+import { storeEvents } from '../storage/storeEvents';
 import type {
   AdminDemoSession,
   AdminSignInInput,
@@ -11,12 +12,19 @@ interface AuthContextValue {
   customerAccount: CustomerDemoAccount | null;
   adminSession: AdminDemoSession | null;
   isAuthReady: boolean;
+  isAdminPasscodeConfigured: boolean;
+  authorizedAdminEmail: string;
   customerAuthProviderLabel: string;
   adminAuthProviderLabel: string;
   adminSecurityDisclaimer: string;
   signInCustomerDemo: (input: CustomerSignInInput) => Promise<CustomerDemoAccount>;
   signOutCustomer: () => Promise<void>;
+  setupAdminPasscode: (
+    input: AdminSignInInput & { displayName?: string }
+  ) => Promise<AdminDemoSession>;
   signInAdminDemo: (input: AdminSignInInput) => Promise<AdminDemoSession>;
+  changeAdminPasscode: (currentPasscode: string, nextPasscode: string) => Promise<void>;
+  updateAdminProfile: (displayName: string) => Promise<AdminDemoSession>;
   signOutAdmin: () => Promise<void>;
 }
 
@@ -25,31 +33,32 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [customerAccount, setCustomerAccount] = useState<CustomerDemoAccount | null>(null);
   const [adminSession, setAdminSession] = useState<AdminDemoSession | null>(null);
+  const [isAdminPasscodeConfigured, setIsAdminPasscodeConfigured] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    async function hydrate() {
-      try {
-        const [cust, admin] = await Promise.all([
-          services.customerAuth.getCurrentAccount(),
-          services.adminAuth.getSession(),
-        ]);
-        if (active) {
-          setCustomerAccount(cust);
-          setAdminSession(admin);
-        }
-      } finally {
-        if (active) {
-          setIsAuthReady(true);
-        }
-      }
+  const hydrate = useCallback(async () => {
+    try {
+      const [cust, admin, configured] = await Promise.all([
+        services.customerAuth.getCurrentAccount(),
+        services.adminAuth.getSession(),
+        services.adminAuth.isPasscodeConfigured(),
+      ]);
+      setCustomerAccount(cust);
+      setAdminSession(admin);
+      setIsAdminPasscodeConfigured(configured);
+    } finally {
+      setIsAuthReady(true);
     }
-    void hydrate();
-    return () => {
-      active = false;
-    };
   }, []);
+
+  useEffect(() => {
+    void hydrate();
+    return storeEvents.subscribe((topic) => {
+      if (topic === 'auth' || topic === 'customers' || topic === 'all') {
+        void hydrate();
+      }
+    });
+  }, [hydrate]);
 
   const signInCustomerDemo = useCallback(async (input: CustomerSignInInput) => {
     const account = await services.customerAuth.signInDemo(input);
@@ -62,10 +71,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCustomerAccount(null);
   }, []);
 
+  const setupAdminPasscode = useCallback(
+    async (input: AdminSignInInput & { displayName?: string }) => {
+      const session = await services.adminAuth.setupPasscode(input);
+      setAdminSession(session);
+      setIsAdminPasscodeConfigured(true);
+      return session;
+    },
+    []
+  );
+
   const signInAdminDemo = useCallback(async (input: AdminSignInInput) => {
     const session = await services.adminAuth.signIn(input);
     setAdminSession(session);
     return session;
+  }, []);
+
+  const changeAdminPasscode = useCallback(
+    async (currentPasscode: string, nextPasscode: string) => {
+      await services.adminAuth.changePasscode(currentPasscode, nextPasscode);
+    },
+    []
+  );
+
+  const updateAdminProfile = useCallback(async (displayName: string) => {
+    const updated = await services.adminAuth.updateProfile(displayName);
+    setAdminSession(updated);
+    return updated;
   }, []);
 
   const signOutAdmin = useCallback(async () => {
@@ -79,12 +111,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         customerAccount,
         adminSession,
         isAuthReady,
+        isAdminPasscodeConfigured,
+        authorizedAdminEmail: services.adminAuth.authorizedEmail,
         customerAuthProviderLabel: services.customerAuth.providerLabel,
         adminAuthProviderLabel: services.adminAuth.providerLabel,
         adminSecurityDisclaimer: services.adminAuth.securityDisclaimer,
         signInCustomerDemo,
         signOutCustomer,
+        setupAdminPasscode,
         signInAdminDemo,
+        changeAdminPasscode,
+        updateAdminProfile,
         signOutAdmin,
       }}
     >

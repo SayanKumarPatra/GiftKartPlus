@@ -1,9 +1,11 @@
 import type {
+  AdminActivityLog,
   AdminDemoSession,
   AdminSignInInput,
   Category,
   Coupon,
   CreateDemoOrderInput,
+  CustomerAccountStatus,
   CustomerDemoAccount,
   CustomerSignInInput,
   DeliveryZone,
@@ -11,8 +13,10 @@ import type {
   GiftWrapConfig,
   GiftWrapStyle,
   OrderFulfillmentStatus,
+  PaymentRecordStatus,
   Product,
   ProductFilterParams,
+  RegisteredCustomer,
   StoreSettings,
   Subcategory,
 } from '../../types';
@@ -28,7 +32,11 @@ export interface ICatalogService {
   getProducts(filters?: ProductFilterParams): Promise<Product[]>;
   getProductBySlug(slug: string): Promise<Product | null>;
   getProductById(id: string): Promise<Product | null>;
-  saveProduct(product: Omit<Product, 'createdAt' | 'updatedAt'> & Partial<Pick<Product, 'createdAt' | 'updatedAt'>>): Promise<Product>;
+  saveProduct(
+    product: Omit<Product, 'createdAt' | 'updatedAt'> &
+      Partial<Pick<Product, 'createdAt' | 'updatedAt'>>
+  ): Promise<Product>;
+  assignProductsToCategory(categoryId: string, productIds: string[]): Promise<void>;
   deleteProduct(productId: string): Promise<void>;
 }
 
@@ -47,6 +55,11 @@ export interface IOrderService {
   updateOrderStatus(
     orderId: string,
     nextStatus: OrderFulfillmentStatus,
+    note?: string
+  ): Promise<DemoOrder>;
+  updatePaymentStatus(
+    orderId: string,
+    paymentStatus: PaymentRecordStatus,
     note?: string
   ): Promise<DemoOrder>;
   cancelOrderByCustomer(orderId: string, reason?: string): Promise<DemoOrder>;
@@ -74,8 +87,27 @@ export interface IStoreSettingsService {
 }
 
 /**
+ * Replaceable Customer Directory interface ready for future Supabase wiring.
+ */
+export interface ICustomerDirectoryService {
+  listCustomers(): Promise<RegisteredCustomer[]>;
+  getCustomerById(customerId: string): Promise<RegisteredCustomer | null>;
+  getCustomerByEmail(email: string): Promise<RegisteredCustomer | null>;
+  upsertCustomer(input: {
+    id?: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    defaultCity?: string;
+  }): Promise<RegisteredCustomer>;
+  setCustomerStatus(
+    customerId: string,
+    status: CustomerAccountStatus
+  ): Promise<RegisteredCustomer>;
+}
+
+/**
  * Replaceable Customer Authentication interface.
- * Current implementation uses LocalStorage demo sessions only (NOT production secure).
  * Future phase will swap in SupabaseAuthCustomerAdapter without UI changes.
  */
 export interface ICustomerAuthService {
@@ -88,15 +120,22 @@ export interface ICustomerAuthService {
 
 /**
  * Replaceable Single Admin Authentication interface.
- * Current implementation uses LocalStorage demo sessions only (NOT production secure).
- * Future phase will swap in SupabaseAuthAdminAdapter without UI changes.
+ * Never hardcodes credentials; verifies salted SHA-256 hash locally and is ready for Supabase Auth.
  */
 export interface IAdminAuthService {
   readonly isDemoImplementation: boolean;
   readonly providerLabel: string;
   readonly securityDisclaimer: string;
+  readonly authorizedEmail: string;
+  isPasscodeConfigured(): Promise<boolean>;
+  setupPasscode(input: AdminSignInInput & { displayName?: string }): Promise<AdminDemoSession>;
   getSession(): Promise<AdminDemoSession | null>;
   signIn(input: AdminSignInInput): Promise<AdminDemoSession>;
+  changePasscode(currentPasscode: string, nextPasscode: string): Promise<void>;
+  updateProfile(displayName: string): Promise<AdminDemoSession>;
+  getActivityLogs(): Promise<AdminActivityLog[]>;
+  logActivity(action: string, target: string): Promise<void>;
+  clearActivityLogs(): Promise<void>;
   signOut(): Promise<void>;
 }
 
@@ -121,10 +160,6 @@ export interface CashfreeSessionResponse {
   cfOrderId: string;
 }
 
-/**
- * Payment Gateway service contract prepared for future Cashfree integration.
- * Never fakes payments; throws CashfreeNotConnectedError until connected.
- */
 export interface IPaymentGatewayService {
   getDescriptor(): PaymentGatewayDescriptor;
   createPaymentSession(request: CashfreeSessionRequest): Promise<CashfreeSessionResponse>;

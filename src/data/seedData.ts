@@ -9,16 +9,14 @@ import type {
   SavedAddress,
   StoreSettings,
 } from '../types';
-import { HERO_BANNERS, STUDIO_MEDIA } from '../config/appConfig';
+import { STUDIO_MEDIA } from '../config/appConfig';
 import { STORAGE_KEYS, readStorage, writeStorage } from '../storage/localStorageEngine';
-
-const SEED_TIMESTAMP = '2026-11-15T10:00:00.000Z';
 
 export const ALL_GIFTS_CATEGORY_ID = 'cat-all-gifts';
 
 /**
  * Exact 10 official GiftKart categories in mandated display order.
- * Single centralized seed source synchronized across Storefront & Admin Panel.
+ * Single centralized source synchronized across Storefront & Admin Panel.
  */
 export const SEED_CATEGORIES: Category[] = [
   {
@@ -148,10 +146,6 @@ export const SEED_CATEGORIES: Category[] = [
 
 export const OFFICIAL_CATEGORY_IDS = new Set(SEED_CATEGORIES.map((c) => c.id));
 
-/**
- * Maps obsolete legacy category IDs safely onto the new 10 official categories
- * so no existing or admin-created product is ever lost or orphaned.
- */
 export const LEGACY_CATEGORY_ID_MAP: Record<string, string> = {
   'cat-all-gifts': ALL_GIFTS_CATEGORY_ID,
   'cat-photo-frame': 'cat-photo-frame',
@@ -184,380 +178,13 @@ export function remapLegacyCategoryId(categoryId: string): string {
   return LEGACY_CATEGORY_ID_MAP[categoryId] ?? 'cat-hand-made';
 }
 
-export const SEED_PRODUCTS: Product[] = [
-  {
-    id: 'prod-magic-mug-01',
-    slug: 'personalized-photo-magic-mug',
-    sku: 'GK-MUG-MG01',
-    name: 'Personalized Photo Magic Mug',
-    shortDescription: 'Heat-reactive ceramic mug that reveals your hidden photo & quote with warm coffee or tea.',
-    description: 'Crafted from 330ml AAA-grade glossy ceramic, our Personalized Photo Magic Mug unveils your cherished photograph and custom message cleanly when filled with a hot beverage.',
-    priceInr: 349,
-    compareAtPriceInr: 499,
-    categoryId: 'cat-coffee-mugs',
-    subcategoryId: 'sub-mug-magic',
-    occasionTags: ['Birthday', 'Anniversary', 'Friendship', 'Special Occasion'],
-    images: [STUDIO_MEDIA.coffeeMug, STUDIO_MEDIA.heroPersonalized],
-    variants: [
-      { name: 'Capacity', options: ['330 ml Standard', '400 ml Tall'] },
-      { name: 'Handle Style', options: ['Classic C-Handle', 'Heart Handle'] },
-    ],
-    stockCount: 42,
-    isBestSeller: true,
-    isFeatured: true,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: true,
-    personalizationPrompt: 'Enter custom name or quote printed on the mug',
-    sampleRating: 4.8,
-    sampleReviewCount: 36,
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'prod-led-lamp-07',
-    slug: '3d-led-heart-photo-lamp',
-    sku: 'GK-LED-MN07',
-    name: '3D LED Heart Photo Lamp',
-    shortDescription: 'Warm glowing engraved acrylic heart lamp resting on a handcrafted wooden base.',
-    description: 'Turn your favorite couple or family portrait into a luminous evening centerpiece. Precision laser-engraved on crystal-clear acrylic with an oak wood USB LED base.',
-    priceInr: 999,
-    compareAtPriceInr: 1399,
-    categoryId: 'cat-led-lighting',
-    occasionTags: ['Anniversary', 'Couple', 'Birthday', 'Special Occasion'],
-    images: [STUDIO_MEDIA.ledLamp, STUDIO_MEDIA.heroPersonalized],
-    variants: [
-      { name: 'Size', options: ['7 inch Standard', '9 inch Grand'] },
-      { name: 'Light Mode', options: ['Warm White', 'Multi-Color Touch'] },
-    ],
-    stockCount: 18,
-    isBestSeller: true,
-    isFeatured: true,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: true,
-    personalizationPrompt: 'Add couple names & milestone date to engrave',
-    sampleRating: 4.9,
-    sampleReviewCount: 28,
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'prod-frame-collage-05',
-    slug: 'custom-collage-photo-frame',
-    sku: 'GK-FRM-CL05',
-    name: 'Custom Collage Photo Frame',
-    shortDescription: 'Multi-opening black & natural wood collage frame curated to showcase four memories.',
-    description: 'Hand-assembled matte architectural collage frame with warm oak inner mats and glare-resistant acrylic glass. Ready for tabletop or wall mounting.',
-    priceInr: 599,
-    compareAtPriceInr: 799,
-    categoryId: 'cat-photo-frame',
-    subcategoryId: 'sub-frame-collage',
-    occasionTags: ['Birthday', 'Anniversary', 'Festival', 'Special Occasion'],
-    images: [STUDIO_MEDIA.photoFrame, STUDIO_MEDIA.heroPersonalized],
-    variants: [
-      { name: 'Frame Size', options: ['10 x 12 inch', '12 x 16 inch'] },
-      { name: 'Finish', options: ['Black & Oak', 'Walnut Wood'] },
-    ],
-    stockCount: 24,
-    isBestSeller: true,
-    isFeatured: true,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: true,
-    personalizationPrompt: 'Enter optional title strip caption for the collage',
-    sampleRating: 4.8,
-    sampleReviewCount: 21,
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'prod-tshirt-couple-03',
-    slug: 'couple-printed-tshirt-set',
-    sku: 'GK-TSH-CP03',
-    name: 'Couple T-Shirt Print (Set of 2)',
-    shortDescription: 'Matching 220 GSM bio-washed white cotton couple T-shirts with custom chest print.',
-    description: 'Soft, breathable combed cotton couple T-shirt pair finished with vibrant wash-resistant DTF artwork. Tailored comfortably for Jalchak weather.',
-    priceInr: 799,
-    compareAtPriceInr: 1199,
-    categoryId: 'cat-tshirt-prints',
-    subcategoryId: 'sub-tshirt-couple',
-    occasionTags: ['Couple', 'Anniversary', 'Friendship'],
-    images: [STUDIO_MEDIA.tshirtPrint],
-    variants: [
-      { name: 'His Size', options: ['M', 'L', 'XL', 'XXL'] },
-      { name: 'Her Size', options: ['S', 'M', 'L', 'XL'] },
-    ],
-    stockCount: 34,
-    isBestSeller: true,
-    isFeatured: true,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: true,
-    personalizationPrompt: 'Enter custom text or initials for both T-shirts',
-    sampleRating: 4.7,
-    sampleReviewCount: 19,
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'prod-giftbox-hamper-09',
-    slug: 'royal-lavender-keepsake-gift-box',
-    sku: 'GK-BOX-RL09',
-    name: 'Royal Lavender Keepsake Gift Box',
-    shortDescription: 'Signature royal purple & rose satin keepsake box with handmade note cards & trinkets.',
-    description: 'Lovingly curated rigid keepsake box lined in blush satin with hand-calligraphed note cards, wooden love charm, and dried lavender accents.',
-    priceInr: 1499,
-    compareAtPriceInr: 1999,
-    categoryId: 'cat-gifts-bag-box',
-    occasionTags: ['Birthday', 'Anniversary', 'Festival', 'Special Occasion', 'Return Gifts'],
-    images: [STUDIO_MEDIA.giftBox, STUDIO_MEDIA.heroPersonalized],
-    variants: [
-      { name: 'Box Edition', options: ['Classic Lavender', 'Rose Ribbon Deluxe'] },
-    ],
-    stockCount: 14,
-    isBestSeller: true,
-    isFeatured: true,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: false,
-    personalizationPrompt: 'Enter name for lid foil tag & keepsake card greeting',
-    sampleRating: 4.9,
-    sampleReviewCount: 16,
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'prod-couple-mug-02',
-    slug: 'ek-kahani-couple-mug-set',
-    sku: 'GK-MUG-CP02',
-    name: 'Ek Kahani Name Printed Couple Mugs',
-    shortDescription: 'Paired 330ml glossy ceramic mugs customized with couple names and floral heart art.',
-    description: 'Celebrate morning chai and coffee together with matching ceramic mugs featuring crisp dishwasher-safe sublimation prints.',
-    priceInr: 599,
-    compareAtPriceInr: 799,
-    categoryId: 'cat-coffee-mugs',
-    subcategoryId: 'sub-mug-couple',
-    occasionTags: ['Couple', 'Anniversary', 'Wedding'],
-    images: [STUDIO_MEDIA.coffeeMug],
-    variants: [
-      { name: 'Inner Rim', options: ['Soft Pink', 'Lavender', 'White'] },
-    ],
-    stockCount: 28,
-    isBestSeller: false,
-    isFeatured: true,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: true,
-    personalizationPrompt: 'Enter both names & date (e.g., Aarav & Meera)',
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'prod-tshirt-oversized-04',
-    slug: 'signature-oversized-custom-tee',
-    sku: 'GK-TSH-OV04',
-    name: 'Signature 240 GSM Oversized Print Tee',
-    shortDescription: 'Heavyweight dropped-shoulder cotton tee with crisp personalized typography or graphic.',
-    description: 'Relaxed modern oversized silhouette crafted in 240 GSM French terry cotton with ultra-crisp custom front & back printing.',
-    priceInr: 699,
-    compareAtPriceInr: 899,
-    categoryId: 'cat-tshirt-prints',
-    subcategoryId: 'sub-tshirt-oversized',
-    occasionTags: ['Birthday', 'Friendship'],
-    images: [STUDIO_MEDIA.tshirtPrint],
-    variants: [
-      { name: 'Size', options: ['S', 'M', 'L', 'XL', 'XXL'] },
-      { name: 'Color', options: ['Pure White', 'Soft Lavender'] },
-    ],
-    stockCount: 40,
-    isBestSeller: false,
-    isFeatured: false,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: true,
-    personalizationPrompt: 'Enter custom chest name or back artwork text',
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'prod-frame-led-06',
-    slug: 'aurora-led-lighting-photo-frame',
-    sku: 'GK-FRM-LD06',
-    name: 'Aurora LED Lighting Photo Frame',
-    shortDescription: 'Illuminated tabletop photo frame bathing your cherished portrait in soft evening light.',
-    description: 'Built with a smooth light-diffusing acrylic panel and energy-efficient warm LED array powered by USB.',
-    priceInr: 1149,
-    compareAtPriceInr: 1499,
-    categoryId: 'cat-photo-frame',
-    subcategoryId: 'sub-frame-led',
-    occasionTags: ['Anniversary', 'Birthday', 'Couple'],
-    images: [STUDIO_MEDIA.ledLamp, STUDIO_MEDIA.photoFrame],
-    variants: [
-      { name: 'Size', options: ['8 x 10 inch', '10 x 12 inch'] },
-    ],
-    stockCount: 15,
-    isBestSeller: false,
-    isFeatured: true,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: true,
-    personalizationPrompt: 'Enter caption engraved beneath photo',
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'prod-cushion-08',
-    slug: 'lavender-velvet-photo-cushion',
-    sku: 'GK-CSH-LV08',
-    name: 'Lavender Velvet Personalized Cushion',
-    shortDescription: 'Plush 16x16 inch pastel lavender velvet cushion customized with photo or monogram.',
-    description: 'Supremely soft velvet finish with concealed zip and resilient microfiber filler included.',
-    priceInr: 549,
-    compareAtPriceInr: 749,
-    categoryId: 'cat-home-decor',
-    occasionTags: ['Birthday', 'Friendship', 'Couple'],
-    images: [STUDIO_MEDIA.cushionKeychain],
-    variants: [
-      { name: 'Shade', options: ['Soft Lavender', 'Blush Pink'] },
-    ],
-    stockCount: 27,
-    isBestSeller: false,
-    isFeatured: true,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: true,
-    personalizationPrompt: 'Enter name or short greeting to print',
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'prod-keychain-11',
-    slug: 'engraved-steel-heart-keychain',
-    sku: 'GK-KEY-HT11',
-    name: 'Engraved Polished Heart Keychain',
-    shortDescription: 'Mirror-polished stainless steel heart keychain laser-engraved with initials or date.',
-    description: 'Scratch-resistant polished steel keepsake presented inside a soft lavender gift pouch.',
-    priceInr: 299,
-    compareAtPriceInr: 399,
-    categoryId: 'cat-keychain',
-    occasionTags: ['Friendship', 'Couple', 'Return Gifts'],
-    images: [STUDIO_MEDIA.keychain, STUDIO_MEDIA.cushionKeychain],
-    variants: [
-      { name: 'Finish', options: ['Mirror Silver', 'Rose Tone'] },
-    ],
-    stockCount: 55,
-    isBestSeller: false,
-    isFeatured: false,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: false,
-    personalizationPrompt: 'Enter initials or date (up to 16 chars)',
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'prod-stationery-10',
-    slug: 'monogram-atelier-diary-pen-set',
-    sku: 'GK-STN-DP10',
-    name: 'Monogram Diary & Rose Pen Gift Set',
-    shortDescription: 'Royal plum hardbound diary with gold-foil initials paired with a metallic rose pen.',
-    description: 'Designed for executives, writers, and corporate celebrations with 192 ivory fountain-friendly pages and crisp name engraving.',
-    priceInr: 899,
-    compareAtPriceInr: 1149,
-    categoryId: 'cat-home-decor',
-    occasionTags: ['Corporate', 'Return Gifts', 'Birthday'],
-    images: [STUDIO_MEDIA.stationeryDecor],
-    variants: [
-      { name: 'Cover Color', options: ['Royal Plum', 'Blush Rose'] },
-    ],
-    stockCount: 26,
-    isBestSeller: false,
-    isFeatured: true,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: false,
-    personalizationPrompt: 'Enter exact name/initials for gold foil embossing',
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'prod-accessories-12',
-    slug: 'executive-personalized-desk-combo',
-    sku: 'GK-ACC-DK12',
-    name: 'Personalized Desk & Accessory Organizer',
-    shortDescription: 'Rose-gold metallic pen stand and monogrammed accessory valet for desks & studios.',
-    description: 'Clean metallic desk set crafted for corporate gifting, graduations, and new job milestones.',
-    priceInr: 749,
-    compareAtPriceInr: 949,
-    categoryId: 'cat-home-decor',
-    occasionTags: ['Corporate', 'Special Occasion'],
-    images: [STUDIO_MEDIA.stationeryDecor],
-    variants: [
-      { name: 'Finish', options: ['Rose Gold', 'Brushed Lavender'] },
-    ],
-    stockCount: 19,
-    isBestSeller: false,
-    isFeatured: false,
-    isActive: true,
-    supportsPersonalization: true,
-    supportsPhotoUpload: false,
-    personalizationPrompt: 'Enter name or company mark for engraving',
-    createdAt: SEED_TIMESTAMP,
-    updatedAt: SEED_TIMESTAMP,
-  },
-];
-
-export const SEED_HERO_SLIDES: HeroSlide[] = [
-  {
-    id: 'slide-welcome',
-    titlePrefix: 'Welcome to',
-    titleHighlight: 'GiftKart',
-    subtitle: 'Har Gift Mein Ek Kahani — Personalized & Unique Gifts for Every Occasion',
-    ctaLabel: 'Shop Now',
-    ctaHref: '/shop',
-    imageUrl: HERO_BANNERS.welcome,
-    occasionTag: 'Special Occasion',
-    isActive: true,
-    sortOrder: 1,
-  },
-  {
-    id: 'slide-perfect-gift',
-    titlePrefix: 'Find the',
-    titleHighlight: 'Perfect Gift',
-    subtitle: 'Curated Gift Boxes, Roses, Teddy Bears, Photo Mugs & LED Keepsakes',
-    ctaLabel: 'Explore Gifts',
-    ctaHref: '/shop',
-    imageUrl: HERO_BANNERS.perfectGift,
-    occasionTag: 'Special Occasion',
-    isActive: true,
-    sortOrder: 2,
-  },
-  {
-    id: 'slide-birthday-collection',
-    titlePrefix: 'Premium',
-    titleHighlight: 'Birthday Gifts',
-    subtitle: 'LED Photo Frames, Custom Birthday T-Shirts, Mugs, Wallets & Keychains',
-    ctaLabel: 'Shop Birthday Gifts',
-    ctaHref: '/shop?occasion=Birthday',
-    imageUrl: HERO_BANNERS.birthdayCollection,
-    occasionTag: 'Birthday',
-    isActive: true,
-    sortOrder: 3,
-  },
-  {
-    id: 'slide-romantic-showcase',
-    titlePrefix: 'Romantic &',
-    titleHighlight: 'Couple Gifts',
-    subtitle: 'Glowing Photo Frames, Heart Lamps, Magic Mugs, Rose Domes & Moon Lamps',
-    ctaLabel: 'Shop Couple Gifts',
-    ctaHref: '/shop?occasion=Couple',
-    imageUrl: HERO_BANNERS.romanticShowcase,
-    occasionTag: 'Couple',
-    isActive: true,
-    sortOrder: 4,
-  },
-];
+// Strictly empty by default — real data only (no demo products, orders, banners, coupons, addresses, or reviews).
+export const SEED_PRODUCTS: Product[] = [];
+export const SEED_HERO_SLIDES: HeroSlide[] = [];
+export const SEED_COUPONS: Coupon[] = [];
+export const SEED_DEMO_ORDERS: DemoOrder[] = [];
+export const SEED_SAVED_ADDRESSES: SavedAddress[] = [];
+export const SEED_REVIEWS: ProductReview[] = [];
 
 export const SEED_GIFT_WRAP_CONFIG: GiftWrapConfig = {
   globallyEnabled: true,
@@ -603,16 +230,14 @@ export const SEED_GIFT_WRAP_CONFIG: GiftWrapConfig = {
   ],
 };
 
-/**
- * Initial launch delivery zone strictly limited to Jalchak ONLY.
- * Admin-editable in Store Settings.
- */
 export const SEED_STORE_SETTINGS: StoreSettings = {
   storeName: 'GiftKart',
   tagline: 'Har Gift Mein Ek Kahani.',
+  logoUrl: '',
+  maintenanceMode: false,
   currencyCode: 'INR',
   currencySymbol: '₹',
-  supportEmail: 'demo@giftkart.in',
+  supportEmail: 'admin.giftkart@gmail.com',
   supportPhone: '+91 9382040746',
   serviceCitiesSummary: 'Jalchak, West Bengal',
   deliveryZones: [
@@ -633,12 +258,11 @@ export const SEED_STORE_SETTINGS: StoreSettings = {
     ctaLabel: 'Shop Now',
     ctaHref: '/shop',
   },
-  heroSlides: SEED_HERO_SLIDES,
+  heroSlides: [],
   announcement: {
     enabled: true,
-    desktopText:
-      'Delivery in Jalchak • Customization Available • Demo Orders Only (No COD)',
-    mobileText: 'Serving Jalchak | Demo Orders Only',
+    desktopText: 'Delivery in Jalchak • Custom Photo & Name Gifts Available',
+    mobileText: 'Serving Jalchak • Personalized Gifts',
     showSupportLink: true,
     showTrackOrderLink: true,
   },
@@ -657,231 +281,56 @@ export const SEED_STORE_SETTINGS: StoreSettings = {
     customizationNote:
       'Select your preferred product variant, add your custom name, date, or dedication note, and attach a clear photo preview. Optional boutique gift wrapping and personal message cards can be configured directly in your Gift Bag.',
   },
+  socialLinks: {
+    instagram: '',
+    facebook: '',
+    whatsapp: 'https://wa.me/919382040746',
+    youtube: '',
+  },
+  seo: {
+    title: 'GiftKart — Har Gift Mein Ek Kahani | Personalized Gift Store',
+    description:
+      'Shop personalized photo frames, custom coffee mugs, T-shirt prints, LED lighting, handmade gifts, and gift hampers in Jalchak, West Bengal.',
+  },
+  policies: {
+    privacyPolicy:
+      'GiftKart collects only the information required to process, personalize, and deliver your orders (such as your name, contact number, email address, delivery address, and uploaded customization photos). Your data is never sold to third parties.',
+    termsAndConditions:
+      'All customized gift items are produced specifically according to the text, photos, and options submitted at checkout. Please review spelling and image clarity carefully before placing your order.',
+    refundPolicy:
+      'Non-customized, unused products in original packaging are eligible for return or refund within 7 days of delivery. Personalized or customized items containing customer-uploaded photos, names, or custom text are strictly non-returnable and non-refundable unless damaged on arrival.',
+  },
+  footerContent: {
+    description:
+      'Personalized photo frames, custom coffee mugs, printed T-shirts, handmade keepsakes, and curated gift boxes delivered across Jalchak.',
+    copyrightText: '© 2026 GiftKart. All rights reserved.',
+  },
 };
 
-export const SEED_COUPONS: Coupon[] = [
-  {
-    id: 'cpn-kahani10',
-    code: 'KAHANI10',
-    description: '10% off on personalized orders above ₹799 (up to ₹250)',
-    discountType: 'PERCENTAGE',
-    value: 10,
-    minOrderInr: 799,
-    maxDiscountInr: 250,
-    isActive: true,
-    createdAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'cpn-gift100',
-    code: 'GIFT100',
-    description: 'Flat ₹100 off on orders above ₹1,200',
-    discountType: 'FLAT_INR',
-    value: 100,
-    minOrderInr: 1200,
-    isActive: true,
-    createdAt: SEED_TIMESTAMP,
-  },
-];
+const LEGACY_DEMO_PRODUCT_IDS = new Set<string>([
+  'prod-magic-mug-01',
+  'prod-led-lamp-07',
+  'prod-frame-collage-05',
+  'prod-tshirt-couple-03',
+  'prod-giftbox-hamper-09',
+  'prod-couple-mug-02',
+  'prod-tshirt-oversized-04',
+  'prod-frame-led-06',
+  'prod-cushion-08',
+  'prod-keychain-11',
+  'prod-stationery-10',
+  'prod-accessories-12',
+]);
 
-export const SEED_DEMO_ORDERS: DemoOrder[] = [
-  {
-    id: 'ord-demo-1001',
-    orderNumber: 'GK-2026-1001',
-    mode: 'DEMO_ORDER',
-    customer: {
-      fullName: 'Ananya Chatterjee',
-      phone: '+91 9382040746',
-      email: 'demo@giftkart.in',
-      addressLine1: 'Main Road, Near Jalchak Bazar',
-      addressLine2: 'Jalchak',
-      deliveryZoneId: 'zone-jalchak',
-      deliveryZoneNameSnapshot: 'Jalchak',
-      city: 'Jalchak',
-      state: 'West Bengal',
-      pincode: '721155',
-    },
-    items: [
-      {
-        productId: 'prod-led-lamp-07',
-        productNameSnapshot: '3D LED Heart Photo Lamp',
-        productSkuSnapshot: 'GK-LED-MN07',
-        unitPriceInrSnapshot: 999,
-        quantity: 1,
-        lineTotalInr: 999,
-        selectedVariants: {
-          Size: '7 inch Standard',
-          'Light Mode': 'Warm White',
-        },
-        personalizationDetails: 'Engrave: "Together Always — Ritam & Ananya"',
-        imageSnapshot: STUDIO_MEDIA.ledLamp,
-      },
-    ],
-    giftWrap: {
-      enabled: true,
-      styleId: 'wrap-lavender-silk',
-      styleNameSnapshot: 'Royal Lavender Silk',
-      chargeInrSnapshot: 79,
-      recipientName: 'Ritam Sen',
-      giftMessage: 'Five years of laughter, coffee, and endless stories. Happy Anniversary!',
-    },
-    subtotalInr: 999,
-    giftWrapChargeInr: 79,
-    discountInr: 100,
-    deliveryChargeInr: 0,
-    grandTotalInr: 978,
-    couponCode: 'KAHANI10',
-    paymentMethod: 'Cash on Delivery (COD)',
-    paymentGatewayStatus: 'CASHFREE_NOT_CONNECTED',
-    fulfillmentStatus: 'Preparing',
-    statusHistory: [
-      {
-        status: 'Demo Placed',
-        timestamp: '2026-11-18T09:15:00.000Z',
-        note: 'Demo order placed locally (no real payment collected; Cashfree not connected).',
-        updatedBy: 'System (Demo Order)',
-      },
-      {
-        status: 'Confirmed',
-        timestamp: '2026-11-18T11:30:00.000Z',
-        note: 'Order verified and acrylic laser engraving queued.',
-        updatedBy: 'Admin',
-      },
-      {
-        status: 'Preparing',
-        timestamp: '2026-11-19T08:45:00.000Z',
-        note: 'LED lamp assembled and being wrapped in Royal Lavender Silk.',
-        updatedBy: 'Admin',
-      },
-    ],
-    createdAt: '2026-11-18T09:15:00.000Z',
-    updatedAt: '2026-11-19T08:45:00.000Z',
-  },
-  {
-    id: 'ord-demo-1002',
-    orderNumber: 'GK-2026-1002',
-    mode: 'DEMO_ORDER',
-    customer: {
-      fullName: 'Debanjan Mukherjee',
-      phone: '+91 9382040746',
-      email: 'demo@giftkart.in',
-      addressLine1: 'Station Para, Jalchak Market',
-      deliveryZoneId: 'zone-jalchak',
-      deliveryZoneNameSnapshot: 'Jalchak',
-      city: 'Jalchak',
-      state: 'West Bengal',
-      pincode: '721155',
-    },
-    items: [
-      {
-        productId: 'prod-magic-mug-01',
-        productNameSnapshot: 'Personalized Photo Magic Mug',
-        productSkuSnapshot: 'GK-MUG-MG01',
-        unitPriceInrSnapshot: 349,
-        quantity: 2,
-        lineTotalInr: 698,
-        selectedVariants: {
-          Capacity: '330 ml Standard',
-          'Handle Style': 'Heart Handle',
-        },
-        personalizationDetails: 'Print: "Best Sister Ever — Jalchak 2026"',
-        imageSnapshot: STUDIO_MEDIA.coffeeMug,
-      },
-    ],
-    giftWrap: {
-      enabled: true,
-      styleId: 'wrap-rose-ribbon',
-      styleNameSnapshot: 'Rose Pink Celebration',
-      chargeInrSnapshot: 99,
-      recipientName: 'Sohini Mukherjee',
-      giftMessage: 'Pour hot chai to reveal our favorite Puja memory!',
-    },
-    subtotalInr: 698,
-    giftWrapChargeInr: 99,
-    discountInr: 0,
-    deliveryChargeInr: 69,
-    grandTotalInr: 866,
-    paymentMethod: 'Cash on Delivery (COD)',
-    paymentGatewayStatus: 'CASHFREE_NOT_CONNECTED',
-    fulfillmentStatus: 'Demo Placed',
-    statusHistory: [
-      {
-        status: 'Demo Placed',
-        timestamp: '2026-11-20T14:20:00.000Z',
-        note: 'Demo order placed locally (no payment collected; Cashfree not connected).',
-        updatedBy: 'System (Demo Order)',
-      },
-    ],
-    createdAt: '2026-11-20T14:20:00.000Z',
-    updatedAt: '2026-11-20T14:20:00.000Z',
-  },
-];
-
-export const SEED_SAVED_ADDRESSES: SavedAddress[] = [
-  {
-    id: 'addr-jalchak-1',
-    label: 'Home — Jalchak',
-    fullName: 'Ananya Chatterjee',
-    phone: '+91 9382040746',
-    email: 'demo@giftkart.in',
-    addressLine1: 'Main Road, Near Jalchak Bazar',
-    area: 'Jalchak Bazar',
-    deliveryZoneId: 'zone-jalchak',
-    city: 'Jalchak',
-    state: 'West Bengal',
-    pincode: '721155',
-    isDefault: true,
-    createdAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'addr-jalchak-2',
-    label: 'Office — Jalchak',
-    fullName: 'Rohan Sen',
-    phone: '+91 9382040746',
-    email: 'demo@giftkart.in',
-    addressLine1: 'Station Para, Near Jalchak High School',
-    area: 'Station Para',
-    deliveryZoneId: 'zone-jalchak',
-    city: 'Jalchak',
-    state: 'West Bengal',
-    pincode: '721155',
-    isDefault: false,
-    createdAt: SEED_TIMESTAMP,
-  },
-];
-
-export const SEED_REVIEWS: ProductReview[] = [
-  {
-    id: 'rev-sample-1',
-    productId: 'prod-magic-mug-01',
-    productName: 'Personalized Photo Magic Mug',
-    authorName: 'Sample Reviewer (Jalchak)',
-    rating: 5,
-    comment:
-      'Sample preview entry: Illustrates how verified customer reviews will appear once live store orders and review submissions are connected.',
-    isSampleData: true,
-    isApproved: true,
-    createdAt: SEED_TIMESTAMP,
-  },
-  {
-    id: 'rev-sample-2',
-    productId: 'prod-led-lamp-07',
-    productName: '3D LED Heart Photo Lamp',
-    authorName: 'Sample Reviewer (Jalchak)',
-    rating: 5,
-    comment:
-      'Sample preview entry: Demonstrates warm LED lamp feedback layout and star rating display.',
-    isSampleData: true,
-    isApproved: true,
-    createdAt: SEED_TIMESTAMP,
-  },
-];
-
-const LEGACY_HERO_BANNER_PATHS = new Set<string>([
-  '/assets/aistudio/Make_Every_Gift_Special_9ee4a9d3.png',
-  '/assets/aistudio/GiftKart_Birthday_Gifting_Celebration_0fecf298.png',
-  '/assets/aistudio/Make_Your_Anniversary_Special_5496186d.png',
-  '/assets/aistudio/Customized_Photo_Gifts_for_Every_Memory_2fc1ffab.png',
-  '/assets/aistudio/GiftKart_Special_Occasion_Gifts_032e3256.png',
+const LEGACY_DEMO_ORDER_IDS = new Set<string>(['ord-demo-1001', 'ord-demo-1002']);
+const LEGACY_DEMO_COUPON_IDS = new Set<string>(['cpn-kahani10', 'cpn-gift100']);
+const LEGACY_DEMO_ADDRESS_IDS = new Set<string>(['addr-jalchak-1', 'addr-jalchak-2']);
+const LEGACY_DEMO_REVIEW_IDS = new Set<string>(['rev-sample-1', 'rev-sample-2']);
+const LEGACY_DEMO_SLIDE_IDS = new Set<string>([
+  'slide-welcome',
+  'slide-perfect-gift',
+  'slide-birthday-collection',
+  'slide-romantic-showcase',
 ]);
 
 const OBSOLETE_LEGACY_CATEGORY_IDS = new Set<string>([
@@ -909,15 +358,13 @@ function runCategoryMigrationV2IfNeeded(): void {
     OBSOLETE_LEGACY_CATEGORY_IDS.has(c.id)
   );
 
-  if (alreadyMigrated && !hasObsoleteCategories && storedCategories.length > 0) {
+  if (alreadyMigrated && !hasObsoleteCategories && storedCategories.length === SEED_CATEGORIES.length) {
     return;
   }
 
-  // 1. Replace cached categories safely with the exact 10 official GiftKart categories
   writeStorage(STORAGE_KEYS.CATEGORIES, SEED_CATEGORIES);
 
-  // 2. Preserve 100% of existing products while safely remapping obsolete categoryId references
-  const storedProducts = readStorage<Product[]>(STORAGE_KEYS.PRODUCTS, SEED_PRODUCTS);
+  const storedProducts = readStorage<Product[]>(STORAGE_KEYS.PRODUCTS, []);
   let productsChanged = false;
   const migratedProducts = storedProducts.map((product) => {
     const mappedCategoryId = remapLegacyCategoryId(product.categoryId);
@@ -935,55 +382,125 @@ function runCategoryMigrationV2IfNeeded(): void {
     writeStorage(STORAGE_KEYS.PRODUCTS, migratedProducts);
   }
 
-  writeStorage(STORAGE_KEYS.CATEGORY_MIGRATION_V2, true, 'catalog');
+  writeStorage(STORAGE_KEYS.CATEGORY_MIGRATION_V2, true);
+}
+
+/**
+ * One-time migration that removes ONLY legacy hardcoded demo records
+ * while preserving 100% of real admin/customer created data and the 10 official categories.
+ */
+function runRealDataCleanupV3IfNeeded(): void {
+  const alreadyCleaned = readStorage<boolean>(STORAGE_KEYS.REAL_DATA_CLEANUP_V3, false);
+  if (alreadyCleaned) {
+    return;
+  }
+
+  const products = readStorage<Product[]>(STORAGE_KEYS.PRODUCTS, []);
+  writeStorage(
+    STORAGE_KEYS.PRODUCTS,
+    products.filter((p) => !LEGACY_DEMO_PRODUCT_IDS.has(p.id))
+  );
+
+  const orders = readStorage<DemoOrder[]>(STORAGE_KEYS.ORDERS, []);
+  writeStorage(
+    STORAGE_KEYS.ORDERS,
+    orders.filter((o) => !LEGACY_DEMO_ORDER_IDS.has(o.id))
+  );
+
+  const coupons = readStorage<Coupon[]>(STORAGE_KEYS.COUPONS, []);
+  writeStorage(
+    STORAGE_KEYS.COUPONS,
+    coupons.filter((c) => !LEGACY_DEMO_COUPON_IDS.has(c.id))
+  );
+
+  const addresses = readStorage<SavedAddress[]>(STORAGE_KEYS.SAVED_ADDRESSES, []);
+  writeStorage(
+    STORAGE_KEYS.SAVED_ADDRESSES,
+    addresses.filter((a) => !LEGACY_DEMO_ADDRESS_IDS.has(a.id))
+  );
+
+  const reviews = readStorage<ProductReview[]>(STORAGE_KEYS.PRODUCT_REVIEWS, []);
+  writeStorage(
+    STORAGE_KEYS.PRODUCT_REVIEWS,
+    reviews.filter((r) => !LEGACY_DEMO_REVIEW_IDS.has(r.id) && !r.isSampleData)
+  );
+
+  const storedSettings = readStorage<StoreSettings | null>(
+    STORAGE_KEYS.STORE_SETTINGS,
+    null
+  );
+  if (storedSettings) {
+    const cleanedSlides = Array.isArray(storedSettings.heroSlides)
+      ? storedSettings.heroSlides.filter((s) => !LEGACY_DEMO_SLIDE_IDS.has(s.id))
+      : [];
+
+    writeStorage(STORAGE_KEYS.STORE_SETTINGS, {
+      ...SEED_STORE_SETTINGS,
+      ...storedSettings,
+      supportEmail:
+        storedSettings.supportEmail === 'demo@giftkart.in'
+          ? SEED_STORE_SETTINGS.supportEmail
+          : storedSettings.supportEmail,
+      heroSlides: cleanedSlides,
+      socialLinks: {
+        ...SEED_STORE_SETTINGS.socialLinks!,
+        ...(storedSettings.socialLinks ?? {}),
+      },
+      seo: {
+        ...SEED_STORE_SETTINGS.seo!,
+        ...(storedSettings.seo ?? {}),
+      },
+      policies: {
+        ...SEED_STORE_SETTINGS.policies!,
+        ...(storedSettings.policies ?? {}),
+      },
+      footerContent: {
+        ...SEED_STORE_SETTINGS.footerContent!,
+        ...(storedSettings.footerContent ?? {}),
+      },
+    });
+  } else {
+    writeStorage(STORAGE_KEYS.STORE_SETTINGS, SEED_STORE_SETTINGS);
+  }
+
+  writeStorage(STORAGE_KEYS.REAL_DATA_CLEANUP_V3, true, 'all');
 }
 
 export function ensureDemoSeedHydrated(): void {
   const alreadySeeded = readStorage<boolean>(STORAGE_KEYS.SEEDED_FLAG, false);
   if (alreadySeeded) {
-    // Seamlessly upgrade legacy default hero banners while preserving all other user/store data
-    const storedSettings = readStorage<StoreSettings | null>(
-      STORAGE_KEYS.STORE_SETTINGS,
-      null
-    );
-    if (
-      storedSettings &&
-      Array.isArray(storedSettings.heroSlides) &&
-      storedSettings.heroSlides.some((s) => LEGACY_HERO_BANNER_PATHS.has(s.imageUrl))
-    ) {
-      writeStorage(STORAGE_KEYS.STORE_SETTINGS, {
-        ...storedSettings,
-        heroSlides: SEED_HERO_SLIDES,
-      });
-    }
-
-    // Safely migrate cached legacy categories -> exact 10 official categories without losing products or orders
     runCategoryMigrationV2IfNeeded();
+    runRealDataCleanupV3IfNeeded();
     return;
   }
+
   writeStorage(STORAGE_KEYS.CATEGORIES, SEED_CATEGORIES);
-  writeStorage(STORAGE_KEYS.PRODUCTS, SEED_PRODUCTS);
+  writeStorage(STORAGE_KEYS.PRODUCTS, []);
   writeStorage(STORAGE_KEYS.GIFT_WRAP_CONFIG, SEED_GIFT_WRAP_CONFIG);
   writeStorage(STORAGE_KEYS.STORE_SETTINGS, SEED_STORE_SETTINGS);
-  writeStorage(STORAGE_KEYS.COUPONS, SEED_COUPONS);
-  writeStorage(STORAGE_KEYS.ORDERS, SEED_DEMO_ORDERS);
-  writeStorage(STORAGE_KEYS.SAVED_ADDRESSES, SEED_SAVED_ADDRESSES);
-  writeStorage(STORAGE_KEYS.PRODUCT_REVIEWS, SEED_REVIEWS);
+  writeStorage(STORAGE_KEYS.COUPONS, []);
+  writeStorage(STORAGE_KEYS.ORDERS, []);
+  writeStorage(STORAGE_KEYS.SAVED_ADDRESSES, []);
+  writeStorage(STORAGE_KEYS.PRODUCT_REVIEWS, []);
   writeStorage(STORAGE_KEYS.NEWSLETTER_SUBSCRIBERS, []);
+  writeStorage(STORAGE_KEYS.REGISTERED_CUSTOMERS, []);
   writeStorage(STORAGE_KEYS.CATEGORY_MIGRATION_V2, true);
+  writeStorage(STORAGE_KEYS.REAL_DATA_CLEANUP_V3, true);
   writeStorage(STORAGE_KEYS.SEEDED_FLAG, true);
 }
 
 export function resetAllDemoSeedData(): void {
   writeStorage(STORAGE_KEYS.CATEGORIES, SEED_CATEGORIES, 'catalog');
-  writeStorage(STORAGE_KEYS.PRODUCTS, SEED_PRODUCTS, 'catalog');
+  writeStorage(STORAGE_KEYS.PRODUCTS, [], 'catalog');
   writeStorage(STORAGE_KEYS.GIFT_WRAP_CONFIG, SEED_GIFT_WRAP_CONFIG, 'giftWrap');
   writeStorage(STORAGE_KEYS.STORE_SETTINGS, SEED_STORE_SETTINGS, 'settings');
-  writeStorage(STORAGE_KEYS.COUPONS, SEED_COUPONS, 'coupons');
-  writeStorage(STORAGE_KEYS.ORDERS, SEED_DEMO_ORDERS, 'orders');
-  writeStorage(STORAGE_KEYS.SAVED_ADDRESSES, SEED_SAVED_ADDRESSES, 'community');
-  writeStorage(STORAGE_KEYS.PRODUCT_REVIEWS, SEED_REVIEWS, 'community');
+  writeStorage(STORAGE_KEYS.COUPONS, [], 'coupons');
+  writeStorage(STORAGE_KEYS.ORDERS, [], 'orders');
+  writeStorage(STORAGE_KEYS.SAVED_ADDRESSES, [], 'community');
+  writeStorage(STORAGE_KEYS.PRODUCT_REVIEWS, [], 'community');
   writeStorage(STORAGE_KEYS.NEWSLETTER_SUBSCRIBERS, [], 'community');
+  writeStorage(STORAGE_KEYS.REGISTERED_CUSTOMERS, [], 'customers');
   writeStorage(STORAGE_KEYS.CATEGORY_MIGRATION_V2, true);
+  writeStorage(STORAGE_KEYS.REAL_DATA_CLEANUP_V3, true);
   writeStorage(STORAGE_KEYS.SEEDED_FLAG, true, 'all');
 }

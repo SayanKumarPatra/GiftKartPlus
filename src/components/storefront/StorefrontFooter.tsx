@@ -55,18 +55,29 @@ export function StorefrontFooter() {
       'Jalchak',
     ];
 
+  const socialLinks = settings?.socialLinks;
+  const footerDesc =
+    settings?.footerContent?.description?.trim() ||
+    'Har Gift Mein Ek Kahani. Personalized mugs, T-shirts, photo frames, and boutique gift wrapping for Jalchak.';
+  const copyrightText =
+    settings?.footerContent?.copyrightText?.trim() ||
+    '© 2026 GiftKart. All Rights Reserved.';
+  const footerLogoSrc = settings?.logoUrl?.trim() || BRAND_ASSETS.logo;
+
   const socialButtons = (
     <div className="flex items-center gap-2">
       {[
-        { label: 'YouTube', Icon: Youtube, bg: 'bg-[#FF4D8D]/12 text-[#FF4D8D]' },
-        { label: 'Instagram', Icon: Instagram, bg: 'bg-[#6A11CB]/10 text-[#6A11CB]' },
-        { label: 'Facebook', Icon: Facebook, bg: 'bg-[#6A11CB]/10 text-[#6A11CB]' },
-        { label: 'WhatsApp', Icon: MessageCircle, bg: 'bg-[#FF4D8D]/12 text-[#FF4D8D]' },
-      ].map(({ label, Icon, bg }) => (
+        { label: 'YouTube', href: socialLinks?.youtube, Icon: Youtube, bg: 'bg-[#FF4D8D]/12 text-[#FF4D8D]' },
+        { label: 'Instagram', href: socialLinks?.instagram, Icon: Instagram, bg: 'bg-[#6A11CB]/10 text-[#6A11CB]' },
+        { label: 'Facebook', href: socialLinks?.facebook, Icon: Facebook, bg: 'bg-[#6A11CB]/10 text-[#6A11CB]' },
+        { label: 'WhatsApp', href: socialLinks?.whatsapp, Icon: MessageCircle, bg: 'bg-[#FF4D8D]/12 text-[#FF4D8D]' },
+      ].map(({ label, href, Icon, bg }) => (
         <a
           key={label}
-          href="#social"
-          onClick={(e) => e.preventDefault()}
+          href={href || '#social'}
+          target={href ? '_blank' : undefined}
+          rel={href ? 'noopener noreferrer' : undefined}
+          onClick={!href ? (e) => e.preventDefault() : undefined}
           aria-label={`GiftKart on ${label}`}
           className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:opacity-80 ${bg}`}
         >
@@ -102,7 +113,7 @@ export function StorefrontFooter() {
               <BrandLogo size="sm" showTagline />
             </Link>
             <p className="mt-2 text-xs leading-relaxed text-[#594A6B]">
-              Har Gift Mein Ek Kahani. Personalized mugs, T-shirts, photo frames, and boutique gift wrapping for Jalchak.
+              {footerDesc}
             </p>
             <div className="mt-3">{socialButtons}</div>
           </div>
@@ -195,8 +206,8 @@ export function StorefrontFooter() {
               className="inline-flex items-center justify-center"
             >
               <img
-                src={BRAND_ASSETS.logo}
-                alt="GiftKart — Har Gift Mein Ek Kahani."
+                src={footerLogoSrc}
+                alt={`${settings?.storeName || 'GiftKart'} — ${settings?.tagline || 'Har Gift Mein Ek Kahani.'}`}
                 referrerPolicy="no-referrer"
                 className="h-auto w-full max-w-[132px] object-contain select-none min-[390px]:max-w-[146px]"
               />
@@ -204,24 +215,30 @@ export function StorefrontFooter() {
 
             <div className="mt-2.5 flex items-center justify-center gap-2 min-[390px]:gap-2.5">
               <a
-                href="#instagram"
-                onClick={(e) => e.preventDefault()}
+                href={socialLinks?.instagram || '#instagram'}
+                target={socialLinks?.instagram ? '_blank' : undefined}
+                rel={socialLinks?.instagram ? 'noopener noreferrer' : undefined}
+                onClick={!socialLinks?.instagram ? (e) => e.preventDefault() : undefined}
                 aria-label="GiftKart on Instagram"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white shadow-xs transition-transform active:scale-95 min-[390px]:h-9 min-[390px]:w-9"
               >
                 <Instagram className="h-4 w-4 stroke-[2.2]" />
               </a>
               <a
-                href="#facebook"
-                onClick={(e) => e.preventDefault()}
+                href={socialLinks?.facebook || '#facebook'}
+                target={socialLinks?.facebook ? '_blank' : undefined}
+                rel={socialLinks?.facebook ? 'noopener noreferrer' : undefined}
+                onClick={!socialLinks?.facebook ? (e) => e.preventDefault() : undefined}
                 aria-label="GiftKart on Facebook"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1877F2] text-white shadow-xs transition-transform active:scale-95 min-[390px]:h-9 min-[390px]:w-9"
               >
                 <Facebook className="h-4 w-4 fill-white stroke-white stroke-[1.5]" />
               </a>
               <a
-                href="#whatsapp"
-                onClick={(e) => e.preventDefault()}
+                href={socialLinks?.whatsapp || '#whatsapp'}
+                target={socialLinks?.whatsapp ? '_blank' : undefined}
+                rel={socialLinks?.whatsapp ? 'noopener noreferrer' : undefined}
+                onClick={!socialLinks?.whatsapp ? (e) => e.preventDefault() : undefined}
                 aria-label="GiftKart on WhatsApp"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-[#25D366] text-white shadow-xs transition-transform active:scale-95 min-[390px]:h-9 min-[390px]:w-9"
               >
@@ -339,7 +356,7 @@ export function StorefrontFooter() {
       {/* Compact Single-Line Purple Copyright Bar — Mobile Only (< 900px, Home Page Only) */}
       <div className="bg-[#6A11CB] px-2 py-2 text-center text-[9.5px] font-medium text-white min-[390px]:text-[10.5px] min-[410px]:text-[11px] lg:hidden">
         <p className="whitespace-nowrap">
-          © 2026 GiftKart. All Rights Reserved.{' '}
+          {copyrightText}{' '}
           <span className="mx-1 text-white/55">|</span> Made in India 🇮🇳
         </p>
       </div>
@@ -349,7 +366,7 @@ export function StorefrontFooter() {
       {/* Compact Solid Royal Purple Bottom Bar — Desktop Only (>= 900px, Unchanged) */}
       <div className="hidden bg-[#6A11CB] px-4 py-2 text-center text-[11px] font-medium text-white lg:block">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-0.5 sm:flex-row sm:gap-2.5">
-          <span>© 2026 GiftKart. All Rights Reserved.</span>
+          <span>{copyrightText}</span>
           <span className="hidden text-white/40 sm:inline">|</span>
           <span>Made with ♥ in Bengal</span>
           <span className="hidden text-white/40 sm:inline">|</span>

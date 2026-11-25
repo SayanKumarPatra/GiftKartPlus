@@ -4,7 +4,6 @@ import { STORAGE_KEYS, readStorage, writeStorage } from '../../storage/localStor
 import {
   ALL_GIFTS_CATEGORY_ID,
   SEED_CATEGORIES,
-  SEED_PRODUCTS,
   ensureDemoSeedHydrated,
 } from '../../data/seedData';
 import { filterStorefrontProducts, getProductAvailability } from '../../utils/productCatalog';
@@ -17,7 +16,7 @@ export class LocalCatalogService implements ICatalogService {
 
   private readProducts(): Product[] {
     ensureDemoSeedHydrated();
-    return readStorage<Product[]>(STORAGE_KEYS.PRODUCTS, SEED_PRODUCTS);
+    return readStorage<Product[]>(STORAGE_KEYS.PRODUCTS, []);
   }
 
   async getCategories(includeInactive = false): Promise<Category[]> {
@@ -198,6 +197,31 @@ export class LocalCatalogService implements ICatalogService {
     }
     writeStorage(STORAGE_KEYS.PRODUCTS, next, 'catalog');
     return saved;
+  }
+
+  async assignProductsToCategory(categoryId: string, productIds: string[]): Promise<void> {
+    if (categoryId === ALL_GIFTS_CATEGORY_ID) {
+      return;
+    }
+    const idSet = new Set(productIds);
+    const all = this.readProducts();
+    const now = new Date().toISOString();
+    let changed = false;
+    const next = all.map((p) => {
+      if (idSet.has(p.id) && p.categoryId !== categoryId) {
+        changed = true;
+        return {
+          ...p,
+          categoryId,
+          subcategoryId: undefined,
+          updatedAt: now,
+        };
+      }
+      return p;
+    });
+    if (changed) {
+      writeStorage(STORAGE_KEYS.PRODUCTS, next, 'catalog');
+    }
   }
 
   async deleteProduct(productId: string): Promise<void> {

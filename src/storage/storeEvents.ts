@@ -5,6 +5,8 @@ export type StoreEventTopic =
   | 'settings'
   | 'coupons'
   | 'auth'
+  | 'customers'
+  | 'activity'
   | 'community'
   | 'all';
 

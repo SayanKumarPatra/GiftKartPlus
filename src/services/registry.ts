@@ -2,6 +2,7 @@ import type {
   IAdminAuthService,
   ICatalogService,
   ICustomerAuthService,
+  ICustomerDirectoryService,
   IGiftWrapService,
   IOrderService,
   IPaymentGatewayService,
@@ -18,6 +19,7 @@ import {
 import {
   LocalAdminAuthService,
   LocalCustomerAuthService,
+  sharedCustomerDirectory,
 } from './local/localAuthServices';
 import {
   LocalCommunityDataService,
@@ -44,6 +46,7 @@ export interface GiftKartServices {
   orders: IOrderService;
   promotions: IPromotionService;
   settings: IStoreSettingsService;
+  customers: ICustomerDirectoryService;
   customerAuth: ICustomerAuthService;
   adminAuth: IAdminAuthService;
   paymentGateway: IPaymentGatewayService;
@@ -60,6 +63,7 @@ export const services: GiftKartServices = {
   orders: new LocalOrderService(),
   promotions: new LocalPromotionService(),
   settings: new LocalStoreSettingsService(),
+  customers: sharedCustomerDirectory,
   customerAuth: new LocalCustomerAuthService(),
   adminAuth: new LocalAdminAuthService(),
   paymentGateway: new CashfreePlaceholderAdapter(),

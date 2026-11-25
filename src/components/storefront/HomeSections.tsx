@@ -8,7 +8,6 @@ import {
   useProducts,
   useStoreSettings,
 } from '../../hooks/useStoreData';
-import { SEED_HERO_SLIDES } from '../../data/seedData';
 import {
   buildPopulatedCategoryGroups,
   getAvailableStorefrontProducts,
@@ -20,12 +19,9 @@ import {
 export function HeroSliderSection() {
   const { data: settings } = useStoreSettings();
   const slides = useMemo(() => {
-    const source =
-      settings?.heroSlides && settings.heroSlides.length > 0
-        ? settings.heroSlides
-        : SEED_HERO_SLIDES;
+    const source = Array.isArray(settings?.heroSlides) ? settings.heroSlides : [];
     return source
-      .filter((s) => s.isActive)
+      .filter((s) => s.isActive && Boolean(s.imageUrl))
       .sort((a, b) => a.sortOrder - b.sortOrder);
   }, [settings?.heroSlides]);
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Gift } from 'lucide-react';
 import { BRAND_ASSETS } from '../../config/appConfig';
+import { useStoreSettings } from '../../hooks/useStoreData';
 
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -8,7 +9,12 @@ interface BrandLogoProps {
 }
 
 export function BrandLogo({ size = 'md', showTagline = false }: BrandLogoProps) {
+  const { data: settings } = useStoreSettings();
   const [imgFailed, setImgFailed] = useState(false);
+
+  const logoSrc = settings?.logoUrl?.trim() || BRAND_ASSETS.logo;
+  const storeName = settings?.storeName?.trim() || 'GiftKart';
+  const tagline = settings?.tagline?.trim() || 'Har Gift Mein Ek Kahani.';
 
   const heightClass =
     size === 'sm' ? 'h-9 sm:h-10' : size === 'lg' ? 'h-14' : 'h-11 sm:h-12';
@@ -17,8 +23,8 @@ export function BrandLogo({ size = 'md', showTagline = false }: BrandLogoProps) 
     <span className="inline-flex flex-col items-start whitespace-nowrap shrink-0">
       {!imgFailed ? (
         <img
-          src={BRAND_ASSETS.logo}
-          alt="GiftKart — Har Gift Mein Ek Kahani."
+          src={logoSrc}
+          alt={`${storeName} — ${tagline}`}
           referrerPolicy="no-referrer"
           onError={() => setImgFailed(true)}
           className={`${heightClass} w-auto max-w-[200px] object-contain select-none`}
@@ -33,11 +39,11 @@ export function BrandLogo({ size = 'md', showTagline = false }: BrandLogoProps) 
           </span>
           <span className="flex flex-col">
             <span className="text-xl font-extrabold leading-none tracking-tight text-[#6A11CB]">
-              Gift<span className="text-[#FF4D8D]">Kart</span>
+              {storeName}
             </span>
             {showTagline && (
               <span className="mt-0.5 text-[10px] font-semibold tracking-wide text-[#6A11CB]/80">
-                Har Gift Mein Ek Kahani.
+                {tagline}
               </span>
             )}
           </span>
