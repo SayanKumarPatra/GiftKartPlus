@@ -236,8 +236,8 @@ const DEFAULT_STORE_SETTINGS = {
   maintenanceMode: false,
   currencyCode: 'INR',
   currencySymbol: '₹',
-  supportEmail: 'admin.giftkart@gmail.com',
-  supportPhone: '+91 9382040746',
+  supportEmail: 'hello.giftkart@gmail.com',
+  supportPhone: '+91 9239505791',
   serviceCitiesSummary: 'Jalchak, West Bengal',
   deliveryZones: [
     {
@@ -281,9 +281,9 @@ const DEFAULT_STORE_SETTINGS = {
       'Select your preferred product variant, add your custom name, date, or dedication note, and attach a clear photo preview. Optional boutique gift wrapping and personal message cards can be configured directly in your Gift Bag.',
   },
   socialLinks: {
-    instagram: '',
-    facebook: '',
-    whatsapp: 'https://wa.me/919382040746',
+    instagram: 'https://www.instagram.com/giftkart.online',
+    facebook: 'https://www.facebook.com/share/18v7Ev2crP/',
+    whatsapp: 'https://wa.me/919239505791',
     youtube: '',
   },
   seo: {
@@ -657,7 +657,7 @@ const COLLECTION_TOPICS: Record<string, { topic: string; expectArray: boolean }>
 async function startServer(): Promise<void> {
   const app = express();
   app.disable('x-powered-by');
-  app.use(express.json({ limit: '15mb' }));
+  app.use(express.json({ limit: '50mb' }));
 
   // Prevent browser/proxy caching of dynamic API responses
   app.use('/api', (_req, res, next) => {

@@ -127,13 +127,13 @@ export function AboutUsPage() {
           <div>
             <dt className="text-[11.5px] text-neutral-500">Support Phone</dt>
             <dd className="mt-0.5 text-[13px] font-medium text-neutral-900 tabular-nums">
-              {settings?.supportPhone ?? '+91 9382040746'}
+              {settings?.supportPhone ?? '+91 9239505791'}
             </dd>
           </div>
           <div>
             <dt className="text-[11.5px] text-neutral-500">Support Email</dt>
             <dd className="mt-0.5 truncate text-[13px] font-medium text-neutral-900">
-              {settings?.supportEmail ?? 'support@giftkart.in'}
+              {settings?.supportEmail ?? 'hello.giftkart@gmail.com'}
             </dd>
           </div>
         </dl>
@@ -265,11 +265,11 @@ export function ContactUsPage() {
                 <div className="mt-4 flex flex-wrap items-center gap-5 text-xs font-semibold text-[#594A6B]">
                   <span className="inline-flex items-center gap-1.5">
                     <Phone className="h-3.5 w-3.5 text-[#6A11CB]" />
-                    {settings?.supportPhone ?? '+91 9382040746'}
+                    {settings?.supportPhone ?? '+91 9239505791'}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <Mail className="h-3.5 w-3.5 text-[#6A11CB]" />
-                    {settings?.supportEmail ?? 'support@giftkart.in'}
+                    {settings?.supportEmail ?? 'hello.giftkart@gmail.com'}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5 text-[#FF4D8D]" />
@@ -996,12 +996,12 @@ export function PolicyPage({ type }: { type: PolicyType }) {
               <span className="font-semibold text-neutral-900">
                 Customer Support:
               </span>{' '}
-              <span>{settings?.supportEmail ?? 'support@giftkart.in'}</span>
+              <span>{settings?.supportEmail ?? 'hello.giftkart@gmail.com'}</span>
               <span className="mx-1.5 text-neutral-400" aria-hidden="true">
                 ·
               </span>
               <span className="tabular-nums">
-                {settings?.supportPhone ?? '+91 9382040746'}
+                {settings?.supportPhone ?? '+91 9239505791'}
               </span>
             </div>
             <div className="flex items-center gap-4">

@@ -52,7 +52,7 @@ export function readImageFileAsDataUrl(
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-          const qualities = [0.78, 0.64, 0.5];
+          const qualities = [0.76, 0.62, 0.48, 0.36];
           for (const q of qualities) {
             const candidate = preferWebp
               ? canvas.toDataURL('image/webp', q)
@@ -60,7 +60,7 @@ export function readImageFileAsDataUrl(
             output = candidate.startsWith('data:image/webp')
               ? candidate
               : canvas.toDataURL('image/jpeg', q);
-            if (output.length <= 260_000) {
+            if (output.length <= 180_000) {
               break;
             }
           }

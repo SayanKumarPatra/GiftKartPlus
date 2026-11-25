@@ -12,17 +12,13 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useStoreSettings } from '../../hooks/useStoreData';
+import { cleanWhatsAppDigits } from '../../utils/storefrontHelpers';
 
 const LOGGED_OUT_HELP_ILLUSTRATION =
   '/assets/aistudio/3D_Headset_Support_Illustration_e1278b5b.png';
 const SUPPORT_GIRL_ILLUSTRATION =
   '/assets/aistudio/Cheerful_Customer_Support_Agent_with_Laptop_b3ec24dc.png';
-
-/**
- * Placeholder for GiftKart Official WhatsApp Support number (digits with country code, e.g. "91XXXXXXXXXX").
- * Kept intentionally blank until the official support number is configured.
- */
-const GIFTKART_WHATSAPP_SUPPORT_NUMBER = '';
 
 const WHATSAPP_PREFILLED_MESSAGE =
   'Hello GiftKart Support, I need help with an issue.';
@@ -81,6 +77,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 export function MobileHelpSupportPage() {
   const { customerAccount, isAuthReady } = useAuth();
+  const { data: settings } = useStoreSettings();
   const [searchParams] = useSearchParams();
 
   const previewParam = searchParams.get('view'); // optional preview override: logged-out | logged-in
@@ -93,10 +90,8 @@ export function MobileHelpSupportPage() {
         : Boolean(customerAccount);
 
   const encodedMessage = encodeURIComponent(WHATSAPP_PREFILLED_MESSAGE);
-  const cleanPhone = GIFTKART_WHATSAPP_SUPPORT_NUMBER.replace(/[^\d]/g, '');
-  const whatsappHref = cleanPhone
-    ? `https://wa.me/${cleanPhone}?text=${encodedMessage}`
-    : `https://api.whatsapp.com/send?text=${encodedMessage}`;
+  const cleanPhone = cleanWhatsAppDigits(settings?.supportPhone);
+  const whatsappHref = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
 
   return (
     <div className="min-h-[calc(100dvh-132px)] w-full overflow-x-clip bg-gradient-to-b from-[#FCE9F6] via-[#FAF0FF] to-[#F6EEFF] pt-1.5">

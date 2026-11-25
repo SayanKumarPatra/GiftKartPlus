@@ -224,7 +224,7 @@ export function CustomerAccountPage() {
     await completeAuth({
       fullName: inferredName || 'GiftKart Member',
       email: cleanEmail,
-      phone: '9382040746',
+      phone: '',
     });
   }
 
@@ -250,7 +250,7 @@ export function CustomerAccountPage() {
     await completeAuth({
       fullName: signupName.trim(),
       email: signupEmail.trim().toLowerCase(),
-      phone: signupPhone.replace(/\D/g, '').slice(-10) || '9382040746',
+      phone: signupPhone.replace(/\D/g, '').slice(-10),
     });
   }
 
@@ -258,7 +258,7 @@ export function CustomerAccountPage() {
     await completeAuth({
       fullName: 'Sayan Kumar',
       email: 'sayan.kumar@gmail.com',
-      phone: '9382040746',
+      phone: '',
     });
   }
 
@@ -278,7 +278,7 @@ export function CustomerAccountPage() {
     await signInCustomerDemo({
       fullName: editName.trim(),
       email: editEmail.trim().toLowerCase(),
-      phone: editPhone.replace(/\D/g, '').slice(-10) || '9382040746',
+      phone: editPhone.replace(/\D/g, '').slice(-10),
       defaultCity: customerAccount?.defaultCity || 'Jalchak',
     });
     setProfileSavedNotice(true);

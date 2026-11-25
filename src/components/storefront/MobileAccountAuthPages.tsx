@@ -165,7 +165,7 @@ export function MobileAccountAuthPages() {
     customerAccount?.email ?? 'sayan.kumar@gmail.com'
   );
   const [editPhone, setEditPhone] = useState(
-    customerAccount?.phone ?? '9382040746'
+    customerAccount?.phone ?? ''
   );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -194,7 +194,7 @@ export function MobileAccountAuthPages() {
   const activeProfile = customerAccount ?? {
     fullName: editName || 'Sayan Kumar',
     email: editEmail || 'sayan.kumar@gmail.com',
-    phone: editPhone || '9382040746',
+    phone: editPhone || 'Not added',
     defaultCity: 'Jalchak',
   };
 
@@ -296,7 +296,7 @@ export function MobileAccountAuthPages() {
     await completeAuthSession({
       fullName: derivedName || 'GiftKart Member',
       email: loginEmail.trim(),
-      phone: '9382040746',
+      phone: '',
       toastTitle: 'Welcome Back!',
       toastDescription: 'You have logged in to your GiftKart account.',
     });
@@ -306,7 +306,7 @@ export function MobileAccountAuthPages() {
     await completeAuthSession({
       fullName: 'Sayan Kumar',
       email: 'sayan.kumar@gmail.com',
-      phone: '9382040746',
+      phone: '',
       toastTitle: 'Signed In with Google',
       toastDescription: 'Welcome to GiftKart! Showing your account.',
     });

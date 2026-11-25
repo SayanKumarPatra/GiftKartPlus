@@ -182,11 +182,11 @@ export function StorefrontFooter() {
             <div className="mt-3 space-y-1.5 text-xs text-[#594A6B]">
               <p className="flex items-center gap-1.5">
                 <Mail className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
-                <span>{settings?.supportEmail ?? 'support@giftkart.in'}</span>
+                <span>{settings?.supportEmail ?? 'hello.giftkart@gmail.com'}</span>
               </p>
               <p className="flex items-center gap-1.5">
                 <Phone className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
-                <span>{settings?.supportPhone ?? '+91 9382040746'}</span>
+                <span>{settings?.supportPhone ?? '+91 9239505791'}</span>
               </p>
             </div>
           </div>
@@ -341,10 +341,10 @@ export function StorefrontFooter() {
                     </p>
                   ))}
                   <p className="text-[10.5px] leading-snug text-[#594A6B]">
-                    {settings?.supportEmail ?? 'support@giftkart.in'}
+                    {settings?.supportEmail ?? 'hello.giftkart@gmail.com'}
                   </p>
                   <p className="text-[10.5px] leading-snug text-[#594A6B]">
-                    {settings?.supportPhone ?? '+91 9382040746'}
+                    {settings?.supportPhone ?? '+91 9239505791'}
                   </p>
                 </div>
               )}

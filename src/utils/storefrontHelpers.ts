@@ -249,8 +249,8 @@ export function isProductPersonalized(product: Product): boolean {
 }
 
 export function cleanWhatsAppDigits(rawPhone?: string): string {
-  const digits = (rawPhone ?? '919382040746').replace(/\D/g, '');
-  if (!digits) return '919382040746';
+  const digits = (rawPhone ?? '919239505791').replace(/\D/g, '');
+  if (!digits) return '919239505791';
   return digits.length === 10 ? `91${digits}` : digits;
 }
 

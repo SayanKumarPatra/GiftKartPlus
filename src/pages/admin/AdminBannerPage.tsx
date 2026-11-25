@@ -46,6 +46,10 @@ const EMPTY_BANNER: BannerDraft = {
   isActive: true,
 };
 
+function createUniqueBannerId(): string {
+  return `banner-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
 export function AdminBannerPage() {
   const { data: settings } = useStoreSettings();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -78,7 +82,8 @@ export function AdminBannerPage() {
   }
 
   async function persistSlides(nextSlides: HeroSlide[], activityLabel: string) {
-    const currentSettings = settings ?? (await services.settings.getSettings());
+    // Always fetch latest settings before writing so rapid back-to-back banner additions never overwrite each other
+    const currentSettings = await services.settings.getSettings();
     const reindexed = nextSlides.map((s, idx) => ({
       ...s,
       sortOrder: idx + 1,
@@ -91,7 +96,7 @@ export function AdminBannerPage() {
   }
 
   function openNewBanner() {
-    setDraft({ ...EMPTY_BANNER, id: `banner-${Date.now()}` });
+    setDraft({ ...EMPTY_BANNER, id: createUniqueBannerId() });
     setEditorOpen(true);
   }
 
@@ -128,7 +133,7 @@ export function AdminBannerPage() {
     }
   }
 
-  async function handleSaveBanner(e?: React.FormEvent) {
+  async function handleSaveBanner(e?: React.FormEvent, keepOpenForAnother = false) {
     if (e) e.preventDefault();
     if (!draft.imageUrl.trim()) {
       showNotice('Please upload a banner photo or paste an image URL first.', 'error');
@@ -136,10 +141,15 @@ export function AdminBannerPage() {
     }
     setSaving(true);
     try {
-      const exists = slides.some((s) => s.id === draft.id);
+      const latestSettings = await services.settings.getSettings();
+      const latestSlides = Array.isArray(latestSettings.heroSlides)
+        ? [...latestSettings.heroSlides].sort((a, b) => a.sortOrder - b.sortOrder)
+        : [];
+
+      const exists = latestSlides.some((s) => s.id === draft.id);
       const nextSlide: HeroSlide = {
-        id: draft.id || `banner-${Date.now()}`,
-        titlePrefix: draft.titlePrefix.trim() || `Banner ${slides.length + 1}`,
+        id: draft.id || createUniqueBannerId(),
+        titlePrefix: draft.titlePrefix.trim() || `Banner ${latestSlides.length + 1}`,
         titleHighlight: draft.titleHighlight.trim(),
         subtitle: draft.subtitle.trim(),
         ctaLabel: draft.ctaLabel.trim() || 'Shop Now',
@@ -147,12 +157,12 @@ export function AdminBannerPage() {
         imageUrl: draft.imageUrl.trim(),
         isActive: draft.isActive,
         sortOrder: exists
-          ? slides.find((s) => s.id === draft.id)?.sortOrder ?? slides.length + 1
-          : slides.length + 1,
+          ? latestSlides.find((s) => s.id === draft.id)?.sortOrder ?? latestSlides.length + 1
+          : latestSlides.length + 1,
       };
       const nextSlides = exists
-        ? slides.map((s) => (s.id === nextSlide.id ? nextSlide : s))
-        : [...slides, nextSlide];
+        ? latestSlides.map((s) => (s.id === nextSlide.id ? nextSlide : s))
+        : [...latestSlides, nextSlide];
 
       await persistSlides(
         nextSlides,
@@ -160,12 +170,18 @@ export function AdminBannerPage() {
           ? `Updated banner "${nextSlide.titlePrefix}"`
           : `Added banner "${nextSlide.titlePrefix}"`
       );
-      setEditorOpen(false);
-      showNotice(
-        exists
-          ? 'Banner updated & saved live!'
-          : 'New banner saved to homepage slider!'
-      );
+
+      if (keepOpenForAnother && !exists) {
+        setDraft({ ...EMPTY_BANNER, id: createUniqueBannerId() });
+        showNotice(`Banner #${nextSlides.length} saved! Ready to add another.`);
+      } else {
+        setEditorOpen(false);
+        showNotice(
+          exists
+            ? 'Banner updated & saved live!'
+            : `Banner #${nextSlides.length} saved to homepage slider!`
+        );
+      }
     } catch (err) {
       showNotice(
         err instanceof Error ? err.message : 'Could not save banner.',
@@ -178,7 +194,11 @@ export function AdminBannerPage() {
 
   async function handleToggleBanner(slide: HeroSlide, nextActive: boolean) {
     try {
-      const nextSlides = slides.map((s) =>
+      const latestSettings = await services.settings.getSettings();
+      const latestSlides = Array.isArray(latestSettings.heroSlides)
+        ? [...latestSettings.heroSlides].sort((a, b) => a.sortOrder - b.sortOrder)
+        : slides;
+      const nextSlides = latestSlides.map((s) =>
         s.id === slide.id ? { ...s, isActive: nextActive } : s
       );
       await persistSlides(
@@ -214,7 +234,11 @@ export function AdminBannerPage() {
   async function confirmDeleteBanner() {
     if (!deleteTarget) return;
     try {
-      const nextSlides = slides.filter((s) => s.id !== deleteTarget.id);
+      const latestSettings = await services.settings.getSettings();
+      const latestSlides = Array.isArray(latestSettings.heroSlides)
+        ? latestSettings.heroSlides
+        : slides;
+      const nextSlides = latestSlides.filter((s) => s.id !== deleteTarget.id);
       await persistSlides(nextSlides, `Deleted banner "${deleteTarget.titlePrefix}"`);
       setDeleteTarget(null);
       showNotice('Banner removed from storefront slider.');
@@ -294,27 +318,37 @@ export function AdminBannerPage() {
           </div>
         )}
 
-        <div className="mt-2.5 flex items-center justify-between gap-2 px-0.5">
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 px-0.5">
           <div>
             <h2 className="text-[14.5px] font-extrabold text-[#1E1035]">
               Website Banner (Slider)
             </h2>
             <p className="text-[11.5px] text-[#75648E]">
-              Auto-saved live to desktop &amp; mobile homepage
+              Unlimited banners · Live synced to mobile &amp; desktop
             </p>
           </div>
-          <span className="shrink-0 rounded-full bg-[#F4EAFF] px-2.5 py-0.5 text-[11px] font-extrabold text-[#6A11CB]">
-            {activeSlides.length}/{slides.length} Active
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="shrink-0 rounded-full bg-[#F4EAFF] px-2.5 py-1 text-[11px] font-extrabold text-[#6A11CB]">
+              {activeSlides.length}/{slides.length} Active
+            </span>
+            <button
+              type="button"
+              onClick={openNewBanner}
+              className="inline-flex h-8 cursor-pointer items-center gap-1 rounded-full bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] px-3 text-[11.5px] font-extrabold text-white shadow-xs transition-transform active:scale-95"
+            >
+              <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+              <span>Add</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Banners List */}
+      {/* Banners List (No limit — displays every added banner) */}
       {slides.length === 0 ? (
         <AdminEmptyState
           icon={<ImageIcon className="h-5 w-5" />}
           title="No banners added yet."
-          description="Tap Add New Banner below to upload a sliding banner for your homepage."
+          description="Tap Add New Banner below to upload sliding banners for your homepage."
         />
       ) : (
         <div className="space-y-2.5">
@@ -408,27 +442,40 @@ export function AdminBannerPage() {
         subtitle="Upload photo and tap Save Banner below"
         onClose={() => setEditorOpen(false)}
         footer={
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setEditorOpen(false)}
-              className="h-11 flex-1 cursor-pointer rounded-xl border border-[#DFCEF7] bg-white text-xs font-bold text-[#4A3860]"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={saving || uploading}
-              onClick={() => void handleSaveBanner()}
-              className="flex h-11 flex-[1.5] cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-sm disabled:opacity-60"
-            >
-              <Save className="h-4 w-4" />
-              <span>{saving ? 'Saving...' : 'Save Banner'}</span>
-            </button>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setEditorOpen(false)}
+                className="h-11 flex-1 cursor-pointer rounded-xl border border-[#DFCEF7] bg-white text-xs font-bold text-[#4A3860]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={saving || uploading}
+                onClick={() => void handleSaveBanner(undefined, false)}
+                className="flex h-11 flex-[1.5] cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-sm disabled:opacity-60"
+              >
+                <Save className="h-4 w-4" />
+                <span>{saving ? 'Saving...' : 'Save Banner'}</span>
+              </button>
+            </div>
+            {!isEditingExisting && (
+              <button
+                type="button"
+                disabled={saving || uploading}
+                onClick={() => void handleSaveBanner(undefined, true)}
+                className="flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[#6A11CB]/25 bg-[#F7F0FF] text-[11.5px] font-extrabold text-[#6A11CB] disabled:opacity-60"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Save &amp; Add Another Banner</span>
+              </button>
+            )}
           </div>
         }
       >
-        <form onSubmit={handleSaveBanner} noValidate className="space-y-3">
+        <form onSubmit={(e) => void handleSaveBanner(e, false)} noValidate className="space-y-3">
           {/* Tappable Banner Image Picker */}
           <div>
             <div className="mb-1 flex items-center justify-between">

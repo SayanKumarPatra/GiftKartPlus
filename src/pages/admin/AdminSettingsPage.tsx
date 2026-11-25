@@ -359,9 +359,9 @@ export function AdminSettingsPage() {
             <>
               {(
                 [
-                  { key: 'instagram', label: 'Instagram Link', placeholder: 'instagram.com/yourpage' },
-                  { key: 'facebook', label: 'Facebook Link', placeholder: 'facebook.com/yourpage' },
-                  { key: 'whatsapp', label: 'WhatsApp Link', placeholder: 'wa.me/919382040746' },
+                  { key: 'instagram', label: 'Instagram Link', placeholder: 'https://www.instagram.com/giftkart.online' },
+                  { key: 'facebook', label: 'Facebook Link', placeholder: 'https://www.facebook.com/share/18v7Ev2crP/' },
+                  { key: 'whatsapp', label: 'WhatsApp Link', placeholder: 'https://wa.me/919239505791' },
                   { key: 'youtube', label: 'YouTube Link', placeholder: 'youtube.com/@yourchannel' },
                 ] as const
               ).map(({ key, label, placeholder }) => (
