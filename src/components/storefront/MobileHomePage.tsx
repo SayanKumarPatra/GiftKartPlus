@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
 import { SEED_HERO_SLIDES } from '../../data/seedData';
+import { STUDIO_MEDIA } from '../../config/appConfig';
 
 interface MobileCategoryItem {
   id: string;
@@ -91,11 +92,18 @@ const HOME_MOBILE_CATEGORIES: MobileCategoryItem[] = [
     isPng: true,
   },
   {
-    id: 'unique-chocolates',
-    label: 'Unique Chocolates',
-    to: '/category/unique-chocolates',
-    imageUrl: '/assets/aistudio/Luxury_Chocolate_Gift_Pack_Display_eebbbf98.png',
-    isPng: true,
+    id: 'handmade-gift',
+    label: 'Handmade Gifts',
+    to: '/category/handmade-gift',
+    imageUrl: STUDIO_MEDIA.handmadeGift,
+    isPng: false,
+  },
+  {
+    id: 'customized-photo-gifts',
+    label: 'Photo Gifts',
+    to: '/category/customized-photo-gifts',
+    imageUrl: STUDIO_MEDIA.customizedPhotoGifts,
+    isPng: false,
   },
 ];
 
@@ -218,15 +226,15 @@ export function MobileHomePage() {
   }
 
   return (
-    <div className="min-h-screen w-full overflow-x-clip bg-gradient-to-b from-[#FDE4EC] via-[#F9ECFF] to-[#F5ECFF] pb-4">
+    <div className="min-h-screen w-full overflow-x-clip bg-gradient-to-b from-[#FDE4EC] via-[#F9ECFF] to-[#F5ECFF] pb-2">
       {/* UPPER WARM PINK ZONE: Search Bar + Flatter Hero Slider with Subtle Margin & Light Radius */}
-      <div className="bg-[#FDE4EC] pb-2">
+      <div className="bg-[#FDE4EC] pb-1.5">
         {/* STEP 02 – PILL SEARCH BAR (Search Icon Only) */}
-        <section aria-label="Search gifts" className="px-2.5 pt-1 pb-2">
+        <section aria-label="Search gifts" className="px-2.5 pt-1 pb-1.5">
           <form
             onSubmit={handleSearchSubmit}
             role="search"
-            className="flex h-[40px] w-full items-center gap-2 rounded-full bg-white px-3.5 shadow-[0_4px_14px_-8px_rgba(106,17,203,0.18)] ring-1 ring-[#EBD8FF]/90 transition-shadow focus-within:ring-2 focus-within:ring-[#6A11CB]/45"
+            className="flex h-[38px] w-full items-center gap-2 rounded-full bg-white px-3.5 shadow-[0_4px_14px_-8px_rgba(106,17,203,0.18)] ring-1 ring-[#EBD8FF]/90 transition-shadow focus-within:ring-2 focus-within:ring-[#6A11CB]/45"
           >
             <button
               type="submit"
@@ -306,27 +314,27 @@ export function MobileHomePage() {
       </div>
 
       {/* LOWER SOFT LAVENDER ZONE: Cardless 2-Row Categories (4 Visible per Row) + 2-Column Trending Gifts */}
-      <div className="bg-gradient-to-b from-[#F9EEFF] via-[#F6EBFF] to-[#FBF7FF] pt-2.5">
+      <div className="bg-gradient-to-b from-[#F9EEFF] via-[#F6EBFF] to-[#FBF7FF] pt-2">
         {/* STEP 04 – CARDLESS 2-ROW CATEGORY GRID (4 Per Row Visible, Slightly Larger Natural Size, Swipe for More) */}
         <section aria-label="Gift categories" className="w-full">
-          <div className="no-scrollbar grid grid-flow-col grid-rows-2 auto-cols-[calc((100%-24px)/4)] gap-x-2 gap-y-2.5 overflow-x-auto px-2.5 py-0.5">
+          <div className="no-scrollbar grid grid-flow-col grid-rows-2 auto-cols-[calc((100%-24px)/4)] gap-x-2 gap-y-2 overflow-x-auto px-2.5 py-0.5">
             {allMobileCategories.map((cat) => (
               <Link
                 key={cat.id}
                 to={cat.to}
                 className="group flex flex-col items-center text-center transition-transform duration-150 active:scale-95"
               >
-                <div className="flex h-[62px] w-full items-center justify-center min-[400px]:h-[66px]">
+                <div className="flex h-[58px] w-full items-center justify-center min-[400px]:h-[62px]">
                   {cat.isPng ? (
                     <img
                       src={cat.imageUrl}
                       alt={cat.label}
                       loading="eager"
                       referrerPolicy="no-referrer"
-                      className="h-full w-auto max-w-[70px] object-contain drop-shadow-[0_4px_8px_rgba(43,11,78,0.14)] min-[400px]:max-w-[74px]"
+                      className="h-full w-auto max-w-[66px] object-contain drop-shadow-[0_4px_8px_rgba(43,11,78,0.14)] min-[400px]:max-w-[70px]"
                     />
                   ) : (
-                    <div className="h-[56px] w-[56px] overflow-hidden rounded-xl bg-[#F3E8FF] min-[400px]:h-[60px] min-[400px]:w-[60px]">
+                    <div className="h-[52px] w-[52px] overflow-hidden rounded-xl bg-[#F3E8FF] shadow-[0_3px_8px_rgba(43,11,78,0.1)] min-[400px]:h-[56px] min-[400px]:w-[56px]">
                       <img
                         src={cat.imageUrl}
                         alt={cat.label}
@@ -348,7 +356,7 @@ export function MobileHomePage() {
         {/* STEP 05 – TRENDING GIFTS SECTION HEADER */}
         <section
           aria-labelledby="mobile-trending-heading"
-          className="mt-3 px-2.5"
+          className="mt-2.5 px-2.5"
         >
           <div className="flex items-center justify-between gap-2 px-0.5">
             <h2
@@ -373,14 +381,14 @@ export function MobileHomePage() {
 
           {/* STEP 06 – TRENDING GIFTS PRODUCT GRID (Clean 2-Column Mobile Grid) */}
           {productsLoading ? (
-            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+            <div className="mt-2 grid grid-cols-2 gap-2">
               {Array.from({ length: 6 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="overflow-hidden rounded-[16px] border border-[#EBD8FF]/80 bg-white p-2"
+                  className="overflow-hidden rounded-[14px] border border-[#EBD8FF]/80 bg-white p-1.5"
                 >
-                  <div className="aspect-square animate-pulse rounded-[12px] bg-[#F4EBFF]" />
-                  <div className="mt-2 space-y-1.5">
+                  <div className="aspect-square animate-pulse rounded-[10px] bg-[#F4EBFF]" />
+                  <div className="mt-1.5 space-y-1.5">
                     <div className="h-3.5 w-4/5 animate-pulse rounded bg-[#F4EBFF]" />
                     <div className="h-3.5 w-2/3 animate-pulse rounded bg-[#F4EBFF]" />
                   </div>
@@ -388,7 +396,7 @@ export function MobileHomePage() {
               ))}
             </div>
           ) : (
-            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+            <div className="mt-2 grid grid-cols-2 gap-2">
               {trendingProducts.map((product) => {
                 const saved = isWishlisted(product.id);
                 const compareAt = product.compareAtPriceInr ?? 0;
@@ -400,7 +408,7 @@ export function MobileHomePage() {
                 return (
                   <article
                     key={product.id}
-                    className="group flex flex-col overflow-hidden rounded-[16px] border border-[#EBD8FF]/90 bg-white p-2 shadow-[0_6px_16px_-8px_rgba(106,17,203,0.16)]"
+                    className="group flex flex-col overflow-hidden rounded-[14px] border border-[#EBD8FF]/90 bg-white p-1.5 shadow-[0_6px_16px_-8px_rgba(106,17,203,0.16)]"
                   >
                     <div className="relative overflow-hidden rounded-[12px] bg-[#FAF6FF]">
                       <Link to={`/product/${product.slug}`} className="block">

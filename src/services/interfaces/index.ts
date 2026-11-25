@@ -21,6 +21,7 @@ export interface ICatalogService {
   getCategories(includeInactive?: boolean): Promise<Category[]>;
   getCategoryBySlug(slug: string): Promise<Category | null>;
   saveCategory(category: Category): Promise<Category>;
+  deleteCategory(categoryId: string): Promise<void>;
   saveSubcategory(categoryId: string, subcategory: Subcategory): Promise<Category>;
   deleteSubcategory(categoryId: string, subcategoryId: string): Promise<Category>;
 

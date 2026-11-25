@@ -820,70 +820,70 @@ export function MobileOrdersPage() {
       {!isLoggedInView ? (
         <section
           aria-label="Login Required to View Orders"
-          className="flex flex-col items-center px-4 pb-8 pt-3 text-center"
+          className="flex flex-col items-center px-4 pb-4 pt-1.5 text-center"
         >
-          <div className="flex w-full items-center justify-center py-2">
+          <div className="flex w-full items-center justify-center py-1">
             <img
               src={VIEW_ORDERS_ILLUSTRATION}
               alt="View Your Orders Illustration"
-              className="mx-auto h-auto w-full max-w-[235px] object-contain drop-shadow-[0_10px_22px_rgba(106,17,203,0.12)] min-[390px]:max-w-[258px]"
+              className="mx-auto h-auto w-full max-w-[172px] object-contain drop-shadow-[0_10px_22px_rgba(106,17,203,0.12)] min-[390px]:max-w-[192px]"
             />
           </div>
 
-          <h1 className="mt-2 text-[25px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[27px]">
+          <h1 className="mt-1.5 text-[21px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[23px]">
             View Your Orders
           </h1>
 
-          <p className="mt-2 max-w-[300px] text-[13.5px] leading-[1.48] text-[#523D6D]">
+          <p className="mt-1.5 max-w-[295px] text-[12.5px] leading-[1.45] text-[#523D6D]">
             Please <span className="font-bold text-[#2B0B4E]">log in</span> to
             see your order history, live progress and order details.
           </p>
 
-          <div className="mt-5 w-full max-w-[348px] space-y-3">
+          <div className="mt-3.5 w-full max-w-[348px] space-y-2">
             <Link
               to="/account"
               state={{ from: '/my-orders' }}
-              className="relative flex min-h-[50px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[15px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985]"
+              className="relative flex min-h-[46px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[14.5px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985]"
             >
-              <span className="flex items-center gap-3">
-                <User className="h-[20px] w-[20px] shrink-0 stroke-[2]" />
+              <span className="flex items-center gap-2.5">
+                <User className="h-[19px] w-[19px] shrink-0 stroke-[2]" />
                 <span>Login / Sign In</span>
               </span>
-              <ChevronRight className="h-[20px] w-[20px] shrink-0 stroke-[2.2]" />
+              <ChevronRight className="h-[19px] w-[19px] shrink-0 stroke-[2.2]" />
             </Link>
 
             <Link
               to="/account"
               state={{ from: '/my-orders', mode: 'signup' }}
-              className="flex min-h-[48px] w-full items-center justify-start gap-3 rounded-full border border-[#EBD8FF] bg-white px-5 text-[14.5px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
+              className="flex min-h-[44px] w-full items-center justify-start gap-2.5 rounded-full border border-[#EBD8FF] bg-white px-5 text-[14px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
             >
-              <UserPlus className="h-[20px] w-[20px] shrink-0 text-[#6A11CB] stroke-[2]" />
+              <UserPlus className="h-[19px] w-[19px] shrink-0 text-[#6A11CB] stroke-[2]" />
               <span>Create New Account</span>
             </Link>
           </div>
 
-          <div className="mt-5 grid w-full max-w-[360px] grid-cols-3 gap-2.5">
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-[#EFE2FF] bg-[#FAF4FF]/90 px-2 py-3 text-center shadow-[0_3px_12px_rgba(106,17,203,0.06)]">
-              <Package className="h-[22px] w-[22px] text-[#3B1764] stroke-[1.9]" />
-              <span className="mt-1.5 text-[11.5px] font-bold leading-[1.25] text-[#2B0B4E] min-[390px]:text-[12px]">
+          <div className="mt-3.5 grid w-full max-w-[360px] grid-cols-3 gap-2">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-[#EFE2FF] bg-[#FAF4FF]/90 px-2 py-2.5 text-center shadow-[0_3px_10px_rgba(106,17,203,0.05)]">
+              <Package className="h-[19px] w-[19px] text-[#3B1764] stroke-[1.9]" />
+              <span className="mt-1 text-[11px] font-bold leading-[1.2] text-[#2B0B4E] min-[390px]:text-[11.5px]">
                 Live
                 <br />
                 Status
               </span>
             </div>
 
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-[#EFE2FF] bg-[#FAF4FF]/90 px-2 py-3 text-center shadow-[0_3px_12px_rgba(106,17,203,0.06)]">
-              <RotateCcw className="h-[22px] w-[22px] text-[#3B1764] stroke-[1.9]" />
-              <span className="mt-1.5 text-[11.5px] font-bold leading-[1.25] text-[#2B0B4E] min-[390px]:text-[12px]">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-[#EFE2FF] bg-[#FAF4FF]/90 px-2 py-2.5 text-center shadow-[0_3px_10px_rgba(106,17,203,0.05)]">
+              <RotateCcw className="h-[19px] w-[19px] text-[#3B1764] stroke-[1.9]" />
+              <span className="mt-1 text-[11px] font-bold leading-[1.2] text-[#2B0B4E] min-[390px]:text-[11.5px]">
                 Easy
                 <br />
                 Returns
               </span>
             </div>
 
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-[#EFE2FF] bg-[#FAF4FF]/90 px-2 py-3 text-center shadow-[0_3px_12px_rgba(106,17,203,0.06)]">
-              <ShieldCheck className="h-[22px] w-[22px] text-[#3B1764] stroke-[1.9]" />
-              <span className="mt-1.5 text-[11.5px] font-bold leading-[1.25] text-[#2B0B4E] min-[390px]:text-[12px]">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-[#EFE2FF] bg-[#FAF4FF]/90 px-2 py-2.5 text-center shadow-[0_3px_10px_rgba(106,17,203,0.05)]">
+              <ShieldCheck className="h-[19px] w-[19px] text-[#3B1764] stroke-[1.9]" />
+              <span className="mt-1 text-[11px] font-bold leading-[1.2] text-[#2B0B4E] min-[390px]:text-[11.5px]">
                 Order
                 <br />
                 Support
@@ -905,17 +905,17 @@ export function MobileOrdersPage() {
         /* MY ORDERS DASHBOARD */
         <section
           aria-label="My Orders Dashboard"
-          className="px-3.5 pb-8 pt-2.5"
+          className="px-3.5 pb-5 pt-2"
         >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/85 text-[#2B0B4E] shadow-[0_3px_10px_rgba(106,17,203,0.08)]">
-              <Package className="h-6 w-6 stroke-[2]" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/85 text-[#2B0B4E] shadow-[0_3px_10px_rgba(106,17,203,0.08)]">
+              <Package className="h-5 w-5 stroke-[2]" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-[20px] font-extrabold leading-tight tracking-[-0.015em] text-[#2B0B4E] min-[390px]:text-[22px]">
+              <h1 className="text-[18.5px] font-extrabold leading-tight tracking-[-0.015em] text-[#2B0B4E] min-[390px]:text-[20px]">
                 My Orders
               </h1>
-              <p className="mt-0.5 text-[12px] font-medium text-[#5A4476] min-[390px]:text-[12.5px]">
+              <p className="text-[11.5px] font-medium text-[#5A4476]">
                 Manage and view all your orders in one place.
               </p>
             </div>
@@ -925,7 +925,7 @@ export function MobileOrdersPage() {
           <div
             role="tablist"
             aria-label="Filter orders by status"
-            className="mt-4 flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar"
+            className="mt-2.5 flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar"
           >
             {filterTabs.map((tab) => {
               const isActive = activeFilter === tab.key;
@@ -936,7 +936,7 @@ export function MobileOrdersPage() {
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => setActiveFilter(tab.key)}
-                  className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-[12px] transition-all duration-150 ${
+                  className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] transition-all duration-150 ${
                     isActive
                       ? 'bg-gradient-to-r from-[#6A11CB] to-[#8E24AA] font-bold text-white shadow-[0_4px_12px_rgba(106,17,203,0.28)]'
                       : 'border border-[#EFE2FF] bg-white font-semibold text-[#2B0B4E] shadow-[0_2px_8px_rgba(106,17,203,0.05)] active:bg-[#F5ECFF]'
@@ -950,20 +950,20 @@ export function MobileOrdersPage() {
 
           {/* Order Cards Stack */}
           {filteredOrders.length === 0 ? (
-            <div className="mt-4 rounded-[22px] border border-[#EFE2FF] bg-white p-6 text-center shadow-[0_6px_18px_rgba(106,17,203,0.06)]">
-              <p className="text-[14px] font-bold text-[#2B0B4E]">
+            <div className="mt-3 rounded-[20px] border border-[#EFE2FF] bg-white p-5 text-center shadow-[0_6px_18px_rgba(106,17,203,0.06)]">
+              <p className="text-[13.5px] font-bold text-[#2B0B4E]">
                 No orders in {activeFilter}
               </p>
               <button
                 type="button"
                 onClick={() => setActiveFilter('all')}
-                className="mt-3 rounded-full bg-[#F5ECFF] px-4 py-2 text-[12px] font-bold text-[#6A11CB]"
+                className="mt-2.5 rounded-full bg-[#F5ECFF] px-4 py-1.5 text-[12px] font-bold text-[#6A11CB]"
               >
                 Show All Orders
               </button>
             </div>
           ) : (
-            <div className="mt-3.5 space-y-3">
+            <div className="mt-2.5 space-y-2.5">
               {filteredOrders.map((order) => (
                 <article
                   key={order.id}
@@ -977,10 +977,10 @@ export function MobileOrdersPage() {
                     }
                   }}
                   aria-label={`View details for ${order.orderIdLabel}`}
-                  className="cursor-pointer rounded-[22px] border border-[#EFE2FF] bg-white p-3.5 shadow-[0_6px_20px_rgba(106,17,203,0.07)] transition-transform duration-150 active:scale-[0.99]"
+                  className="cursor-pointer rounded-[18px] border border-[#EFE2FF] bg-white p-3 shadow-[0_5px_16px_rgba(106,17,203,0.07)] transition-transform duration-150 active:scale-[0.99]"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl border border-[#F2E7FF] bg-[#FAF6FF] min-[390px]:h-[76px] min-[390px]:w-[76px]">
+                  <div className="flex items-start gap-2.5">
+                    <div className="h-[64px] w-[64px] shrink-0 overflow-hidden rounded-xl border border-[#F2E7FF] bg-[#FAF6FF] min-[390px]:h-[68px] min-[390px]:w-[68px]">
                       <ProductImage
                         src={order.productImage}
                         alt={order.primaryProductName}

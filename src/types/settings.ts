@@ -20,6 +20,8 @@ export interface Coupon {
   value: number;
   minOrderInr: number;
   maxDiscountInr?: number;
+  validFrom?: string;
+  validUntil?: string;
   isActive: boolean;
   createdAt: string;
 }

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   CheckCircle2,
   Clock,
+  Edit3,
   Gift,
   MapPin,
   Plug,
@@ -151,7 +152,7 @@ export function AdminOrdersPage() {
                   </p>
                   <div className="mt-1 flex items-center justify-between text-xs text-[#5F4B78]">
                     <span>
-                      {order.customer.deliveryZoneNameSnapshot} · {order.items.length} item(s)
+                      {order.customer.deliveryZoneNameSnapshot} · {order.paymentMethod || 'Cash on Delivery (COD)'}
                     </span>
                     <span className="font-mono font-bold text-[#2A0E4D]">
                       {formatInr(order.grandTotalInr)}
@@ -167,20 +168,21 @@ export function AdminOrdersPage() {
         <div className="lg:col-span-7">
           {!selectedOrder ? (
             <div className="rounded-2xl border border-[#EBD8FF] bg-white p-8 text-center text-sm text-[#5F4B78]">
-              Select a demo order to inspect its immutable snapshot and status history.
+              Select an order to inspect its immutable snapshot and status history.
             </div>
           ) : (
             <div className="rounded-2xl border border-[#EBD8FF] bg-white p-6 shadow-xs space-y-5">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#F0E4FF] pb-4">
                 <div>
-                  <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#FF4D8D]">
-                    Demo Order · Cashfree Not Connected
+                  <span className="rounded-full bg-[#F4EBFF] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#6A11CB]">
+                    {selectedOrder.paymentMethod || 'Cash on Delivery (COD)'}
                   </span>
                   <h2 className="mt-1.5 font-mono text-xl font-bold text-[#2A0E4D]">
                     {selectedOrder.orderNumber}
                   </h2>
                   <p className="text-xs text-[#5F4B78]">
-                    Placed {formatDateTime(selectedOrder.createdAt)}
+                    Placed {formatDateTime(selectedOrder.createdAt)} · Status:{' '}
+                    <strong className="text-[#6A11CB]">{selectedOrder.fulfillmentStatus}</strong>
                   </p>
                 </div>
                 <div className="text-right">
@@ -389,30 +391,60 @@ export function AdminCouponsPage() {
   const { data: coupons } = useCoupons();
   const { pushToast } = useToast();
 
+  const [editingCouponId, setEditingCouponId] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [description, setDescription] = useState('');
   const [discountType, setDiscountType] = useState<CouponDiscountType>('PERCENTAGE');
   const [value, setValue] = useState('10');
   const [minOrderInr, setMinOrderInr] = useState('599');
+  const [validFrom, setValidFrom] = useState('');
+  const [validUntil, setValidUntil] = useState('');
 
-  async function handleAddCoupon(e: React.FormEvent) {
+  function resetForm() {
+    setEditingCouponId(null);
+    setCode('');
+    setDescription('');
+    setDiscountType('PERCENTAGE');
+    setValue('10');
+    setMinOrderInr('599');
+    setValidFrom('');
+    setValidUntil('');
+  }
+
+  function startEditCoupon(cpn: Coupon) {
+    setEditingCouponId(cpn.id);
+    setCode(cpn.code);
+    setDescription(cpn.description);
+    setDiscountType(cpn.discountType);
+    setValue(String(cpn.value));
+    setMinOrderInr(String(cpn.minOrderInr));
+    setValidFrom(cpn.validFrom ? cpn.validFrom.slice(0, 10) : '');
+    setValidUntil(cpn.validUntil ? cpn.validUntil.slice(0, 10) : '');
+  }
+
+  async function handleSaveCoupon(e: React.FormEvent) {
     e.preventDefault();
     if (!code.trim()) return;
+    const existing = coupons.find((c) => c.id === editingCouponId);
     const coupon: Coupon = {
-      id: `cpn-${Date.now()}`,
+      id: existing?.id ?? `cpn-${Date.now()}`,
       code: code.trim().toUpperCase(),
       description: description.trim() || 'GiftKart promotional offer',
       discountType,
       value: Math.max(1, Number(value) || 10),
       minOrderInr: Math.max(0, Number(minOrderInr) || 0),
       maxDiscountInr: discountType === 'PERCENTAGE' ? 300 : undefined,
-      isActive: true,
-      createdAt: new Date().toISOString(),
+      validFrom: validFrom || undefined,
+      validUntil: validUntil || undefined,
+      isActive: existing ? existing.isActive : true,
+      createdAt: existing?.createdAt ?? new Date().toISOString(),
     };
     await services.promotions.upsertCoupon(coupon);
-    setCode('');
-    setDescription('');
-    pushToast({ title: `Coupon ${coupon.code} saved`, variant: 'success' });
+    resetForm();
+    pushToast({
+      title: existing ? `Coupon ${coupon.code} updated` : `Coupon ${coupon.code} saved`,
+      variant: 'success',
+    });
   }
 
   async function toggleCoupon(coupon: Coupon) {
@@ -421,24 +453,40 @@ export function AdminCouponsPage() {
 
   async function deleteCoupon(id: string) {
     await services.promotions.deleteCoupon(id);
+    if (editingCouponId === id) resetForm();
     pushToast({ title: 'Coupon deleted', variant: 'info' });
   }
+
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">Coupons &amp; Offers</h1>
         <p className="text-xs text-[#5F4B78]">
-          Create percentage or flat INR promo codes validated automatically in Cart &amp; Demo Checkout.
+          Create or edit percentage/flat INR promo codes with validity dates and minimum order rules.
         </p>
       </div>
 
       <form
-        onSubmit={(e) => void handleAddCoupon(e)}
+        onSubmit={(e) => void handleSaveCoupon(e)}
         className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-4"
       >
-        <h2 className="font-display text-base font-bold text-[#2A0E4D]">Create Promo Coupon</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-display text-base font-bold text-[#2A0E4D]">
+            {editingCouponId ? `Edit Coupon (${code.toUpperCase()})` : 'Create Promo Coupon'}
+          </h2>
+          {editingCouponId && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="text-xs font-semibold text-[#7B6496] hover:text-[#2A0E4D]"
+            >
+              Cancel Edit
+            </button>
+          )}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <input
             type="text"
             required
@@ -459,7 +507,7 @@ export function AdminCouponsPage() {
             type="number"
             min={1}
             required
-            placeholder="Value"
+            placeholder="Discount Value"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             className="rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-xs focus:border-[#6A11CB] focus:outline-none"
@@ -473,11 +521,39 @@ export function AdminCouponsPage() {
             onChange={(e) => setMinOrderInr(e.target.value)}
             className="rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-xs focus:border-[#6A11CB] focus:outline-none"
           />
-          <Button type="submit" size="sm" variant="primary">
-            <Plus className="h-3.5 w-3.5" />
-            <span>Save Coupon</span>
-          </Button>
         </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div>
+            <label className="block text-[11px] font-semibold text-[#5F4B78]">
+              Valid From (Optional)
+            </label>
+            <input
+              type="date"
+              value={validFrom}
+              onChange={(e) => setValidFrom(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-[#5F4B78]">
+              Valid Until (Optional)
+            </label>
+            <input
+              type="date"
+              value={validUntil}
+              onChange={(e) => setValidUntil(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
+            />
+          </div>
+          <div className="flex items-end">
+            <Button type="submit" size="sm" variant="primary" fullWidth>
+              <Plus className="h-3.5 w-3.5" />
+              <span>{editingCouponId ? 'Update Coupon' : 'Save Coupon'}</span>
+            </Button>
+          </div>
+        </div>
+
         <input
           type="text"
           placeholder="Short description shown to customers"
@@ -488,46 +564,73 @@ export function AdminCouponsPage() {
       </form>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {coupons.map((cpn) => (
-          <div
-            key={cpn.id}
-            className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-3"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Tag className="h-4 w-4 text-[#FF4D8D]" />
-                <span className="font-mono text-base font-bold text-[#6A11CB]">{cpn.code}</span>
+        {coupons.map((cpn) => {
+          const isExpired = Boolean(cpn.validUntil && todayIso > cpn.validUntil.slice(0, 10));
+          return (
+            <div
+              key={cpn.id}
+              className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-[#FF4D8D]" />
+                  <span className="font-mono text-base font-bold text-[#6A11CB]">{cpn.code}</span>
+                  {isExpired && (
+                    <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
+                      Expired
+                    </span>
+                  )}
+                </div>
+                <span className="rounded-full bg-[#FAF6FF] px-2.5 py-0.5 font-mono text-xs font-bold text-[#2A0E4D]">
+                  {cpn.discountType === 'PERCENTAGE'
+                    ? `${cpn.value}% OFF`
+                    : `${formatInr(cpn.value)} OFF`}
+                </span>
               </div>
-              <span className="rounded-full bg-[#FAF6FF] px-2.5 py-0.5 font-mono text-xs font-bold text-[#2A0E4D]">
-                {cpn.discountType === 'PERCENTAGE' ? `${cpn.value}% OFF` : `${formatInr(cpn.value)} OFF`}
-              </span>
+              <p className="text-xs text-[#5F4B78]">{cpn.description}</p>
+              <p className="text-[11px] text-[#7B6496]">
+                Min order: {formatInr(cpn.minOrderInr)}
+                {cpn.maxDiscountInr ? ` · Max discount: ${formatInr(cpn.maxDiscountInr)}` : ''}
+                {(cpn.validFrom || cpn.validUntil) && (
+                  <span>
+                    {' '}
+                    · Valid: {cpn.validFrom?.slice(0, 10) || 'Anytime'} to{' '}
+                    {cpn.validUntil?.slice(0, 10) || 'No expiry'}
+                  </span>
+                )}
+              </p>
+              <div className="flex items-center justify-between border-t border-[#F0E4FF] pt-3">
+                <button
+                  type="button"
+                  onClick={() => void toggleCoupon(cpn)}
+                  className={`rounded-full px-3 py-1 text-[11px] font-bold ${
+                    cpn.isActive ? 'bg-[#F4EBFF] text-[#6A11CB]' : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {cpn.isActive ? 'Active' : 'Disabled'}
+                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => startEditCoupon(cpn)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#6A11CB] hover:underline"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void deleteCoupon(cpn.id)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:underline"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-[#5F4B78]">{cpn.description}</p>
-            <p className="text-[11px] text-[#7B6496]">
-              Min order: {formatInr(cpn.minOrderInr)}
-              {cpn.maxDiscountInr ? ` · Max discount: ${formatInr(cpn.maxDiscountInr)}` : ''}
-            </p>
-            <div className="flex items-center justify-between border-t border-[#F0E4FF] pt-3">
-              <button
-                type="button"
-                onClick={() => void toggleCoupon(cpn)}
-                className={`rounded-full px-3 py-1 text-[11px] font-bold ${
-                  cpn.isActive ? 'bg-[#F4EBFF] text-[#6A11CB]' : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                {cpn.isActive ? 'Active' : 'Disabled'}
-              </button>
-              <button
-                type="button"
-                onClick={() => void deleteCoupon(cpn.id)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:underline"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                <span>Delete</span>
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

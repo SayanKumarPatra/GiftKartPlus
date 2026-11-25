@@ -32,6 +32,21 @@ export class LocalPromotionService implements IPromotionService {
     if (!coupon) {
       return { valid: false, discountInr: 0, message: 'Promo code is invalid or inactive.' };
     }
+    const todayIso = new Date().toISOString().slice(0, 10);
+    if (coupon.validFrom && todayIso < coupon.validFrom.slice(0, 10)) {
+      return {
+        valid: false,
+        discountInr: 0,
+        message: `Coupon ${coupon.code} starts on ${coupon.validFrom.slice(0, 10)}.`,
+      };
+    }
+    if (coupon.validUntil && todayIso > coupon.validUntil.slice(0, 10)) {
+      return {
+        valid: false,
+        discountInr: 0,
+        message: `Coupon ${coupon.code} has expired.`,
+      };
+    }
     if (subtotalInr < coupon.minOrderInr) {
       return {
         valid: false,

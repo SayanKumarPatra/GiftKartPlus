@@ -2,6 +2,7 @@ import type { ICatalogService } from '../interfaces';
 import type { Category, Product, ProductFilterParams, Subcategory } from '../../types';
 import { STORAGE_KEYS, readStorage, writeStorage } from '../../storage/localStorageEngine';
 import { SEED_CATEGORIES, SEED_PRODUCTS, ensureDemoSeedHydrated } from '../../data/seedData';
+import { filterStorefrontProducts, getProductAvailability } from '../../utils/productCatalog';
 
 export class LocalCatalogService implements ICatalogService {
   private readCategories(): Category[] {
@@ -48,6 +49,12 @@ export class LocalCatalogService implements ICatalogService {
     return category;
   }
 
+  async deleteCategory(categoryId: string): Promise<void> {
+    const all = this.readCategories();
+    const next = all.filter((c) => c.id !== categoryId);
+    writeStorage(STORAGE_KEYS.CATEGORIES, next, 'catalog');
+  }
+
   async saveSubcategory(categoryId: string, subcategory: Subcategory): Promise<Category> {
     const all = this.readCategories();
     const index = all.findIndex((c) => c.id === categoryId);
@@ -90,7 +97,8 @@ export class LocalCatalogService implements ICatalogService {
     let items = this.readProducts();
 
     if (!filters?.includeInactive) {
-      items = items.filter((p) => p.isActive);
+      const categories = this.readCategories();
+      items = filterStorefrontProducts(items, categories);
     }
     if (filters?.categoryId) {
       items = items.filter((p) => p.categoryId === filters.categoryId);
@@ -160,6 +168,7 @@ export class LocalCatalogService implements ICatalogService {
     const index = all.findIndex((p) => p.id === product.id);
     const saved: Product = {
       ...product,
+      availability: product.availability ?? getProductAvailability(product as Product),
       createdAt: index >= 0 ? all[index].createdAt : product.createdAt ?? now,
       updatedAt: now,
     };

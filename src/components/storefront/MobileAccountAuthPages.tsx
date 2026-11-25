@@ -69,7 +69,7 @@ function GoogleOfficialLogo({ className }: { className?: string }) {
 
 function CompactAuthHeader({ onBack }: { onBack: () => void }) {
   return (
-    <header className="sticky top-0 z-20 grid h-[58px] grid-cols-[44px_1fr_44px] items-center bg-[#FDF6FF]/92 px-3 backdrop-blur-md">
+    <header className="sticky top-0 z-20 grid h-[50px] grid-cols-[40px_1fr_40px] items-center bg-[#FDF6FF]/92 px-3 backdrop-blur-md">
       <button
         type="button"
         onClick={onBack}
@@ -405,31 +405,31 @@ export function MobileAccountAuthPages() {
 
         {/* PAGE 1: CREATE NEW ACCOUNT (SIGN UP) */}
         {authMode === 'signup' && (
-          <main className="mx-auto flex w-full max-w-[420px] flex-col items-center px-4 pb-10 pt-1">
+          <main className="mx-auto flex w-full max-w-[420px] flex-col items-center px-4 pb-6 pt-1">
             <div className="flex w-full items-center justify-center">
               <img
                 src={SIGNUP_ILLUSTRATION}
                 alt="Create New Account Illustration"
-                className="h-auto w-full max-w-[196px] object-contain mix-blend-multiply min-[390px]:max-w-[218px]"
+                className="h-auto w-full max-w-[138px] object-contain mix-blend-multiply min-[390px]:max-w-[156px]"
               />
             </div>
 
-            <h1 className="mt-1 text-center text-[24px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[26px]">
+            <h1 className="mt-0.5 text-center text-[21px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[23px]">
               Create New Account
             </h1>
-            <p className="mt-1.5 max-w-[300px] text-center text-[13px] leading-[1.45] text-[#553F70]">
+            <p className="mt-1 max-w-[300px] text-center text-[12px] leading-[1.4] text-[#553F70]">
               Join GiftKart and explore a world of gifts for every occasion.
             </p>
 
             <form
               onSubmit={(e) => void handleSignUpSubmit(e)}
               noValidate
-              className="mt-4 w-full space-y-2.5"
+              className="mt-3 w-full space-y-2"
             >
               {/* Full Name */}
               <div>
                 <div
-                  className={`flex items-center gap-3 rounded-2xl border bg-white px-3.5 py-2.5 shadow-[0_3px_12px_rgba(106,17,203,0.06)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15 ${
+                  className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-2 shadow-[0_2px_10px_rgba(106,17,203,0.05)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15 ${
                     signupErrors.name ? 'border-[#FF4D8D]' : 'border-[#EDE0FF]'
                   }`}
                 >
@@ -466,7 +466,7 @@ export function MobileAccountAuthPages() {
               {/* Email Address */}
               <div>
                 <div
-                  className={`flex items-center gap-3 rounded-2xl border bg-white px-3.5 py-2.5 shadow-[0_3px_12px_rgba(106,17,203,0.06)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15 ${
+                  className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-2 shadow-[0_2px_10px_rgba(106,17,203,0.05)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15 ${
                     signupErrors.email ? 'border-[#FF4D8D]' : 'border-[#EDE0FF]'
                   }`}
                 >
@@ -502,8 +502,8 @@ export function MobileAccountAuthPages() {
 
               {/* Mobile Number (Optional — No OTP) */}
               <div>
-                <div className="flex items-center gap-3 rounded-2xl border border-[#EDE0FF] bg-white px-3.5 py-2.5 shadow-[0_3px_12px_rgba(106,17,203,0.06)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15">
-                  <Phone className="h-[19px] w-[19px] shrink-0 text-[#4B148C] stroke-[1.9]" />
+                <div className="flex items-center gap-2.5 rounded-xl border border-[#EDE0FF] bg-white px-3 py-2 shadow-[0_2px_10px_rgba(106,17,203,0.05)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15">
+                  <Phone className="h-[18px] w-[18px] shrink-0 text-[#4B148C] stroke-[1.9]" />
                   <div className="min-w-0 flex-1">
                     <label
                       htmlFor="gk-signup-phone"
@@ -521,19 +521,16 @@ export function MobileAccountAuthPages() {
                       value={signupPhone}
                       onChange={(e) => setSignupPhone(e.target.value)}
                       placeholder="Enter your mobile number"
-                      className="mt-0.5 w-full bg-transparent text-[13.5px] font-medium text-[#2B0B4E] placeholder:text-[#8876A0] focus:outline-none"
+                      className="mt-0.5 w-full bg-transparent text-[13px] font-medium text-[#2B0B4E] placeholder:text-[#8876A0] focus:outline-none"
                     />
                   </div>
                 </div>
-                <p className="mt-1 pl-2 text-[10.5px] font-medium text-[#75618E]">
-                  Recommended for smoother gift delivery updates (no OTP required).
-                </p>
               </div>
 
               {/* Password */}
               <div>
                 <div
-                  className={`flex items-center gap-3 rounded-2xl border bg-white px-3.5 py-2.5 shadow-[0_3px_12px_rgba(106,17,203,0.06)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15 ${
+                  className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-2 shadow-[0_2px_10px_rgba(106,17,203,0.05)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15 ${
                     signupErrors.password
                       ? 'border-[#FF4D8D]'
                       : 'border-[#EDE0FF]'
@@ -589,11 +586,11 @@ export function MobileAccountAuthPages() {
               {/* Primary Button: Create Account */}
               <button
                 type="submit"
-                className="mt-2 flex min-h-[50px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[15px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985]"
+                className="mt-1.5 flex min-h-[46px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[14.5px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985]"
               >
                 <span className="w-5 shrink-0" aria-hidden="true" />
-                <span className="flex items-center gap-2.5">
-                  <UserPlus className="h-[19px] w-[19px] shrink-0 stroke-[2.1]" />
+                <span className="flex items-center gap-2">
+                  <UserPlus className="h-[18px] w-[18px] shrink-0 stroke-[2.1]" />
                   <span>Create Account</span>
                 </span>
                 <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.3]" />
@@ -601,9 +598,9 @@ export function MobileAccountAuthPages() {
             </form>
 
             {/* OR Divider */}
-            <div className="my-4 flex w-full items-center gap-3">
+            <div className="my-3 flex w-full items-center gap-3">
               <span className="h-px flex-1 bg-[#E5D4FA]" />
-              <span className="text-[11.5px] font-bold tracking-wider text-[#7A6693]">
+              <span className="text-[11px] font-bold tracking-wider text-[#7A6693]">
                 OR
               </span>
               <span className="h-px flex-1 bg-[#E5D4FA]" />
@@ -613,14 +610,14 @@ export function MobileAccountAuthPages() {
             <button
               type="button"
               onClick={() => void handleContinueWithGoogle()}
-              className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-[#EAE0F8] bg-white px-5 text-[14.5px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
+              className="flex min-h-[44px] w-full items-center justify-center gap-2.5 rounded-full border border-[#EAE0F8] bg-white px-5 text-[14px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
             >
-              <GoogleOfficialLogo className="h-5 w-5 shrink-0" />
+              <GoogleOfficialLogo className="h-[18px] w-[18px] shrink-0" />
               <span>Continue with Google</span>
             </button>
 
             {/* Existing Account Switch */}
-            <p className="mt-5 text-center text-[13px] font-medium text-[#523D6D]">
+            <p className="mt-3.5 text-center text-[12.5px] font-medium text-[#523D6D]">
               Already have an account?{' '}
               <button
                 type="button"
@@ -638,24 +635,24 @@ export function MobileAccountAuthPages() {
 
         {/* PAGE 2: LOGIN */}
         {authMode === 'login' && (
-          <main className="mx-auto flex w-full max-w-[420px] flex-col items-center px-4 pb-10 pt-2">
+          <main className="mx-auto flex w-full max-w-[420px] flex-col items-center px-4 pb-6 pt-1">
             <div className="flex w-full items-center justify-center">
               <img
                 src={LOGIN_ILLUSTRATION}
                 alt="Login to GiftKart Illustration"
-                className="h-auto w-full max-w-[205px] object-contain mix-blend-multiply min-[390px]:max-w-[228px]"
+                className="h-auto w-full max-w-[162px] object-contain mix-blend-multiply min-[390px]:max-w-[180px]"
               />
             </div>
 
-            <h1 className="mt-2 text-center text-[24px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[26px]">
+            <h1 className="mt-1 text-center text-[21px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[23px]">
               Login to Your Account
             </h1>
-            <p className="mt-1.5 max-w-[300px] text-center text-[13px] leading-[1.45] text-[#553F70]">
+            <p className="mt-1 max-w-[300px] text-center text-[12.5px] leading-[1.4] text-[#553F70]">
               Welcome back! Log in to continue shopping on GiftKart.
             </p>
 
             {navState?.reason === 'wishlist' && (
-              <div className="mt-3 w-full rounded-2xl border border-[#EBD8FF] bg-white/90 px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#6A11CB]">
+              <div className="mt-2.5 w-full rounded-xl border border-[#EBD8FF] bg-white/90 px-3 py-2 text-center text-[11.5px] font-semibold text-[#6A11CB]">
                 Please log in to save gifts in your Wishlist.
               </div>
             )}
@@ -663,12 +660,12 @@ export function MobileAccountAuthPages() {
             <form
               onSubmit={(e) => void handleLoginSubmit(e)}
               noValidate
-              className="mt-5 w-full space-y-3"
+              className="mt-3.5 w-full space-y-2.5"
             >
               {/* Email Address */}
               <div>
                 <div
-                  className={`flex items-center gap-3 rounded-2xl border bg-white px-3.5 py-2.5 shadow-[0_3px_12px_rgba(106,17,203,0.06)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15 ${
+                  className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-2 shadow-[0_2px_10px_rgba(106,17,203,0.05)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15 ${
                     loginErrors.email ? 'border-[#FF4D8D]' : 'border-[#EDE0FF]'
                   }`}
                 >
@@ -705,7 +702,7 @@ export function MobileAccountAuthPages() {
               {/* Password */}
               <div>
                 <div
-                  className={`flex items-center gap-3 rounded-2xl border bg-white px-3.5 py-2.5 shadow-[0_3px_12px_rgba(106,17,203,0.06)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15 ${
+                  className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-2 shadow-[0_2px_10px_rgba(106,17,203,0.05)] focus-within:border-[#6A11CB]/60 focus-within:ring-2 focus-within:ring-[#6A11CB]/15 ${
                     loginErrors.password
                       ? 'border-[#FF4D8D]'
                       : 'border-[#EDE0FF]'
@@ -777,11 +774,11 @@ export function MobileAccountAuthPages() {
               {/* Primary Button: Login / Sign In */}
               <button
                 type="submit"
-                className="flex min-h-[50px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[15px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985]"
+                className="flex min-h-[46px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[14.5px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985]"
               >
                 <span className="w-5 shrink-0" aria-hidden="true" />
-                <span className="flex items-center gap-2.5">
-                  <LogIn className="h-[19px] w-[19px] shrink-0 stroke-[2.1]" />
+                <span className="flex items-center gap-2">
+                  <LogIn className="h-[18px] w-[18px] shrink-0 stroke-[2.1]" />
                   <span>Login / Sign In</span>
                 </span>
                 <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.3]" />
@@ -789,9 +786,9 @@ export function MobileAccountAuthPages() {
             </form>
 
             {/* OR Divider */}
-            <div className="my-4 flex w-full items-center gap-3">
+            <div className="my-3 flex w-full items-center gap-3">
               <span className="h-px flex-1 bg-[#E5D4FA]" />
-              <span className="text-[11.5px] font-bold tracking-wider text-[#7A6693]">
+              <span className="text-[11px] font-bold tracking-wider text-[#7A6693]">
                 OR
               </span>
               <span className="h-px flex-1 bg-[#E5D4FA]" />
@@ -801,14 +798,14 @@ export function MobileAccountAuthPages() {
             <button
               type="button"
               onClick={() => void handleContinueWithGoogle()}
-              className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-full border border-[#EAE0F8] bg-white px-5 text-[14.5px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
+              className="flex min-h-[44px] w-full items-center justify-center gap-2.5 rounded-full border border-[#EAE0F8] bg-white px-5 text-[14px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
             >
-              <GoogleOfficialLogo className="h-5 w-5 shrink-0" />
+              <GoogleOfficialLogo className="h-[18px] w-[18px] shrink-0" />
               <span>Continue with Google</span>
             </button>
 
             {/* Registration Link */}
-            <p className="mt-5 text-center text-[13px] font-medium text-[#523D6D]">
+            <p className="mt-3.5 text-center text-[12.5px] font-medium text-[#523D6D]">
               Don&apos;t have an account?{' '}
               <button
                 type="button"
@@ -944,7 +941,7 @@ export function MobileAccountAuthPages() {
    * Renders inside StorefrontLayout so MobileBottomNav stays visible & Active
    * ======================================================================== */
   return (
-    <div className="min-h-[calc(100dvh-132px)] w-full overflow-x-clip bg-gradient-to-b from-[#FCE9F6] via-[#FAF0FF] to-[#F6EEFF] px-3.5 pb-8 pt-3">
+    <div className="min-h-[calc(100dvh-132px)] w-full overflow-x-clip bg-gradient-to-b from-[#FCE9F6] via-[#FAF0FF] to-[#F6EEFF] px-3 pb-4 pt-2">
       {/* SUB-VIEW: EDIT PROFILE */}
       {accountSubView === 'edit-profile' && (
         <section aria-label="Edit Profile" className="mx-auto max-w-[420px]">
@@ -1219,17 +1216,17 @@ export function MobileAccountAuthPages() {
       {accountSubView === 'main' && (
         <section
           aria-label="My Account"
-          className="mx-auto max-w-[440px] space-y-3"
+          className="mx-auto max-w-[440px] space-y-2"
         >
           {/* Premium Purple-Pink Gradient Profile Header Card */}
-          <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-[#6A11CB] via-[#9D1FC4] to-[#FF4D8D] p-4 text-white shadow-[0_10px_26px_rgba(106,17,203,0.26)]">
+          <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-r from-[#6A11CB] via-[#9D1FC4] to-[#FF4D8D] p-3 text-white shadow-[0_8px_22px_rgba(106,17,203,0.24)]">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/15 blur-xl"
+              className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/15 blur-xl"
             />
-            <div className="relative z-10 flex items-center gap-3.5">
+            <div className="relative z-10 flex items-center gap-3">
               {/* Circular Profile Photo */}
-              <div className="flex h-[68px] w-[68px] shrink-0 items-center justify-center overflow-hidden rounded-full border-[3px] border-white/95 bg-gradient-to-br from-[#F3E6FF] to-[#FFD6E8] text-[22px] font-extrabold text-[#6A11CB] shadow-md">
+              <div className="flex h-[54px] w-[54px] shrink-0 items-center justify-center overflow-hidden rounded-full border-[2.5px] border-white/95 bg-gradient-to-br from-[#F3E6FF] to-[#FFD6E8] text-[18px] font-extrabold text-[#6A11CB] shadow-md">
                 {avatarPreviewUrl ? (
                   <img
                     src={avatarPreviewUrl}
@@ -1243,40 +1240,40 @@ export function MobileAccountAuthPages() {
 
               {/* Name, Email & Edit Profile Button */}
               <div className="min-w-0 flex-1">
-                <h1 className="truncate text-[18px] font-extrabold leading-tight text-white min-[390px]:text-[19px]">
+                <h1 className="truncate text-[16.5px] font-extrabold leading-tight text-white min-[390px]:text-[17.5px]">
                   {activeProfile.fullName}
                 </h1>
-                <p className="mt-0.5 truncate text-[12px] font-medium text-white/90 min-[390px]:text-[12.5px]">
+                <p className="mt-0.5 truncate text-[11.5px] font-medium text-white/90">
                   {activeProfile.email}
                 </p>
 
                 <button
                   type="button"
                   onClick={() => setAccountSubView('edit-profile')}
-                  className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[11.5px] font-bold text-[#6A11CB] shadow-xs transition-transform active:scale-95"
+                  className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-[#6A11CB] shadow-xs transition-transform active:scale-95"
                 >
-                  <PencilLine className="h-3.5 w-3.5 stroke-[2.2]" />
+                  <PencilLine className="h-3 w-3 stroke-[2.2]" />
                   <span>Edit Profile</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* 7 Account Menu Option Cards (Exact Order & Subtitles) */}
-          <div className="space-y-2.5 pt-0.5">
+          {/* 7 Account Menu Option Cards (Compact single-screen fit) */}
+          <div className="space-y-1.5">
             {/* 1. My Orders */}
             <Link
               to="/my-orders"
-              className="flex items-center gap-3 rounded-[20px] border border-[#EFE2FF] bg-white px-3.5 py-3 shadow-[0_4px_14px_rgba(106,17,203,0.06)] transition-transform active:scale-[0.985]"
+              className="flex items-center gap-2.5 rounded-[16px] border border-[#EFE2FF] bg-white px-3 py-2 shadow-[0_3px_10px_rgba(106,17,203,0.05)] transition-transform active:scale-[0.985]"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F3E8FF] text-[#6A11CB]">
-                <Package className="h-[21px] w-[21px] stroke-[1.9]" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F3E8FF] text-[#6A11CB]">
+                <Package className="h-[18px] w-[18px] stroke-[1.9]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-extrabold leading-tight text-[#2B0B4E]">
+                <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
                   My Orders
                 </p>
-                <p className="mt-0.5 truncate text-[11.5px] font-medium text-[#6C5885]">
+                <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
                   Track and view your orders.
                 </p>
               </div>
@@ -1286,16 +1283,16 @@ export function MobileAccountAuthPages() {
             {/* 2. My Wishlist */}
             <Link
               to="/wishlist"
-              className="flex items-center gap-3 rounded-[20px] border border-[#EFE2FF] bg-white px-3.5 py-3 shadow-[0_4px_14px_rgba(106,17,203,0.06)] transition-transform active:scale-[0.985]"
+              className="flex items-center gap-2.5 rounded-[16px] border border-[#EFE2FF] bg-white px-3 py-2 shadow-[0_3px_10px_rgba(106,17,203,0.05)] transition-transform active:scale-[0.985]"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F3E8FF] text-[#6A11CB]">
-                <Heart className="h-[21px] w-[21px] stroke-[1.9]" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F3E8FF] text-[#6A11CB]">
+                <Heart className="h-[18px] w-[18px] stroke-[1.9]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-extrabold leading-tight text-[#2B0B4E]">
+                <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
                   My Wishlist
                 </p>
-                <p className="mt-0.5 truncate text-[11.5px] font-medium text-[#6C5885]">
+                <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
                   Your saved products.
                 </p>
               </div>
@@ -1305,16 +1302,16 @@ export function MobileAccountAuthPages() {
             {/* 3. Delivery Addresses */}
             <Link
               to="/addresses"
-              className="flex items-center gap-3 rounded-[20px] border border-[#EFE2FF] bg-white px-3.5 py-3 shadow-[0_4px_14px_rgba(106,17,203,0.06)] transition-transform active:scale-[0.985]"
+              className="flex items-center gap-2.5 rounded-[16px] border border-[#EFE2FF] bg-white px-3 py-2 shadow-[0_3px_10px_rgba(106,17,203,0.05)] transition-transform active:scale-[0.985]"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F3E8FF] text-[#6A11CB]">
-                <MapPin className="h-[21px] w-[21px] stroke-[1.9]" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F3E8FF] text-[#6A11CB]">
+                <MapPin className="h-[18px] w-[18px] stroke-[1.9]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-extrabold leading-tight text-[#2B0B4E]">
+                <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
                   Delivery Addresses
                 </p>
-                <p className="mt-0.5 truncate text-[11.5px] font-medium text-[#6C5885]">
+                <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
                   Manage your delivery addresses.
                 </p>
               </div>
@@ -1325,16 +1322,16 @@ export function MobileAccountAuthPages() {
             <button
               type="button"
               onClick={() => setAccountSubView('settings')}
-              className="flex w-full items-center gap-3 rounded-[20px] border border-[#EFE2FF] bg-white px-3.5 py-3 text-left shadow-[0_4px_14px_rgba(106,17,203,0.06)] transition-transform active:scale-[0.985]"
+              className="flex w-full items-center gap-2.5 rounded-[16px] border border-[#EFE2FF] bg-white px-3 py-2 text-left shadow-[0_3px_10px_rgba(106,17,203,0.05)] transition-transform active:scale-[0.985]"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F3E8FF] text-[#6A11CB]">
-                <Settings className="h-[21px] w-[21px] stroke-[1.9]" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F3E8FF] text-[#6A11CB]">
+                <Settings className="h-[18px] w-[18px] stroke-[1.9]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-extrabold leading-tight text-[#2B0B4E]">
+                <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
                   Account Settings
                 </p>
-                <p className="mt-0.5 truncate text-[11.5px] font-medium text-[#6C5885]">
+                <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
                   Update your account and preferences.
                 </p>
               </div>
@@ -1345,16 +1342,16 @@ export function MobileAccountAuthPages() {
             <button
               type="button"
               onClick={() => setAccountSubView('notifications')}
-              className="flex w-full items-center gap-3 rounded-[20px] border border-[#EFE2FF] bg-white px-3.5 py-3 text-left shadow-[0_4px_14px_rgba(106,17,203,0.06)] transition-transform active:scale-[0.985]"
+              className="flex w-full items-center gap-2.5 rounded-[16px] border border-[#EFE2FF] bg-white px-3 py-2 text-left shadow-[0_3px_10px_rgba(106,17,203,0.05)] transition-transform active:scale-[0.985]"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F3E8FF] text-[#6A11CB]">
-                <Bell className="h-[21px] w-[21px] stroke-[1.9]" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F3E8FF] text-[#6A11CB]">
+                <Bell className="h-[18px] w-[18px] stroke-[1.9]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-extrabold leading-tight text-[#2B0B4E]">
+                <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
                   Notifications
                 </p>
-                <p className="mt-0.5 truncate text-[11.5px] font-medium text-[#6C5885]">
+                <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
                   Order, offer and important updates.
                 </p>
               </div>
@@ -1364,16 +1361,16 @@ export function MobileAccountAuthPages() {
             {/* 6. Help & Support */}
             <Link
               to="/contact"
-              className="flex items-center gap-3 rounded-[20px] border border-[#EFE2FF] bg-white px-3.5 py-3 shadow-[0_4px_14px_rgba(106,17,203,0.06)] transition-transform active:scale-[0.985]"
+              className="flex items-center gap-2.5 rounded-[16px] border border-[#EFE2FF] bg-white px-3 py-2 shadow-[0_3px_10px_rgba(106,17,203,0.05)] transition-transform active:scale-[0.985]"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F3E8FF] text-[#6A11CB]">
-                <Headset className="h-[21px] w-[21px] stroke-[1.9]" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F3E8FF] text-[#6A11CB]">
+                <Headset className="h-[18px] w-[18px] stroke-[1.9]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-extrabold leading-tight text-[#2B0B4E]">
+                <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
                   Help &amp; Support
                 </p>
-                <p className="mt-0.5 truncate text-[11.5px] font-medium text-[#6C5885]">
+                <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
                   Get help on WhatsApp.
                 </p>
               </div>
@@ -1384,16 +1381,16 @@ export function MobileAccountAuthPages() {
             <button
               type="button"
               onClick={() => setShowLogoutDialog(true)}
-              className="flex w-full items-center gap-3 rounded-[20px] border border-[#FFD6E7] bg-white px-3.5 py-3 text-left shadow-[0_4px_14px_rgba(255,77,141,0.08)] transition-transform active:scale-[0.985]"
+              className="flex w-full items-center gap-2.5 rounded-[16px] border border-[#FFD6E7] bg-white px-3 py-2 text-left shadow-[0_3px_10px_rgba(255,77,141,0.07)] transition-transform active:scale-[0.985]"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FFF0F6] text-[#FF4D8D]">
-                <LogOut className="h-[21px] w-[21px] stroke-[2]" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF0F6] text-[#FF4D8D]">
+                <LogOut className="h-[18px] w-[18px] stroke-[2]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-extrabold leading-tight text-[#E11D74]">
+                <p className="text-[13.5px] font-extrabold leading-tight text-[#E11D74]">
                   Logout
                 </p>
-                <p className="mt-0.5 truncate text-[11.5px] font-medium text-[#8C5B76]">
+                <p className="mt-0.5 truncate text-[11px] font-medium text-[#8C5B76]">
                   Sign out from your account.
                 </p>
               </div>

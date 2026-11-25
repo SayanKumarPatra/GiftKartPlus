@@ -110,45 +110,45 @@ export function MobileHelpSupportPage() {
         /* STATE A — USER NOT LOGGED IN (Strictly NO WhatsApp button, NO form, NO personal info) */
         <section
           aria-label="Login Required for Help and Support"
-          className="flex flex-col items-center px-4 pb-8 pt-4 text-center"
+          className="flex flex-col items-center px-4 pb-4 pt-2 text-center"
         >
           {/* Uploaded PNG #1: Help & Support Illustration (Original Ratio, Centered) */}
-          <div className="flex w-full items-center justify-center py-2">
+          <div className="flex w-full items-center justify-center py-1">
             <img
               src={LOGGED_OUT_HELP_ILLUSTRATION}
               alt="GiftKart Help and Support Illustration"
-              className="mx-auto h-auto w-full max-w-[238px] object-contain drop-shadow-[0_10px_22px_rgba(106,17,203,0.12)] min-[390px]:max-w-[264px]"
+              className="mx-auto h-auto w-full max-w-[172px] object-contain drop-shadow-[0_10px_22px_rgba(106,17,203,0.12)] min-[390px]:max-w-[192px]"
             />
           </div>
 
-          <h1 className="mt-2.5 text-[26px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[28px]">
+          <h1 className="mt-1.5 text-[22px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[24px]">
             Help &amp; Support
           </h1>
 
-          <p className="mt-2 max-w-[295px] text-[13.5px] leading-[1.48] text-[#523D6D]">
+          <p className="mt-1.5 max-w-[290px] text-[12.5px] leading-[1.45] text-[#523D6D]">
             Please log in to get support and contact our team on WhatsApp.
           </p>
 
           {/* Primary & Secondary Auth Buttons */}
-          <div className="mt-6 w-full max-w-[348px] space-y-3">
+          <div className="mt-4 w-full max-w-[348px] space-y-2.5">
             <Link
               to="/account"
               state={{ from: '/contact' }}
-              className="flex min-h-[50px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[15px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985]"
+              className="flex min-h-[46px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[14.5px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985]"
             >
-              <span className="flex items-center gap-3">
-                <User className="h-[20px] w-[20px] shrink-0 stroke-[2]" />
+              <span className="flex items-center gap-2.5">
+                <User className="h-[19px] w-[19px] shrink-0 stroke-[2]" />
                 <span>Login / Sign In</span>
               </span>
-              <ChevronRight className="h-[20px] w-[20px] shrink-0 stroke-[2.2]" />
+              <ChevronRight className="h-[19px] w-[19px] shrink-0 stroke-[2.2]" />
             </Link>
 
             <Link
               to="/account"
               state={{ from: '/contact', mode: 'signup' }}
-              className="flex min-h-[48px] w-full items-center justify-start gap-3 rounded-full border border-[#EBD8FF] bg-white px-5 text-[14.5px] font-bold text-[#6A11CB] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
+              className="flex min-h-[44px] w-full items-center justify-start gap-2.5 rounded-full border border-[#EBD8FF] bg-white px-5 text-[14px] font-bold text-[#6A11CB] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
             >
-              <UserPlus className="h-[20px] w-[20px] shrink-0 text-[#6A11CB] stroke-[2]" />
+              <UserPlus className="h-[19px] w-[19px] shrink-0 text-[#6A11CB] stroke-[2]" />
               <span>Create New Account</span>
             </Link>
           </div>
@@ -157,21 +157,21 @@ export function MobileHelpSupportPage() {
         /* STATE B — USER ALREADY LOGGED IN (Support Girl + WhatsApp Card + 6 Help Categories) */
         <section
           aria-label="GiftKart Customer Help and WhatsApp Support"
-          className="px-3.5 pb-8 pt-2"
+          className="px-3.5 pb-4 pt-1"
         >
           {/* Top Heading + Support Girl Illustration Blended Seamlessly */}
-          <div className="relative flex items-end justify-between gap-1 pt-1">
-            <div className="min-w-0 flex-1 pb-6 pl-0.5">
-              <h1 className="text-[22px] font-extrabold leading-[1.15] tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[24px]">
+          <div className="relative flex items-end justify-between gap-1">
+            <div className="min-w-0 flex-1 pb-4 pl-0.5">
+              <h1 className="text-[20px] font-extrabold leading-[1.15] tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[22px]">
                 Help &amp; Support
               </h1>
-              <p className="mt-1.5 text-[13px] font-medium text-[#564073] min-[390px]:text-[13.5px]">
+              <p className="mt-1 text-[12.5px] font-medium text-[#564073]">
                 We&apos;re here to help you!
               </p>
             </div>
 
             {/* Uploaded PNG #2: GiftKart Support Girl (Original Ratio, Clean Blend) */}
-            <div className="relative z-10 -mb-2.5 w-[158px] shrink-0 min-[390px]:w-[176px] min-[412px]:w-[188px]">
+            <div className="relative z-10 -mb-2 w-[128px] shrink-0 min-[390px]:w-[142px] min-[412px]:w-[152px]">
               <img
                 src={SUPPORT_GIRL_ILLUSTRATION}
                 alt="GiftKart Support Representative"
@@ -181,17 +181,17 @@ export function MobileHelpSupportPage() {
           </div>
 
           {/* Premium WhatsApp Contact Card */}
-          <div className="relative z-20 rounded-[24px] border border-[#EFE2FF] bg-white p-4 shadow-[0_10px_28px_rgba(106,17,203,0.09)]">
-            <div className="flex items-center gap-3.5">
-              <div className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_6px_14px_rgba(37,211,102,0.32)]">
-                <WhatsAppIcon className="h-[28px] w-[28px]" />
+          <div className="relative z-20 rounded-[20px] border border-[#EFE2FF] bg-white p-3.5 shadow-[0_8px_22px_rgba(106,17,203,0.09)]">
+            <div className="flex items-center gap-3">
+              <div className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_6px_14px_rgba(37,211,102,0.3)]">
+                <WhatsAppIcon className="h-[24px] w-[24px]" />
               </div>
 
               <div className="min-w-0 flex-1">
-                <h2 className="text-[15.5px] font-extrabold leading-tight text-[#2B0B4E] min-[390px]:text-[16.5px]">
+                <h2 className="text-[14.5px] font-extrabold leading-tight text-[#2B0B4E] min-[390px]:text-[15.5px]">
                   Contact Us on WhatsApp
                 </h2>
-                <p className="mt-1 text-[12px] leading-[1.4] text-[#5B4775] min-[390px]:text-[12.5px]">
+                <p className="mt-0.5 text-[11.5px] leading-[1.35] text-[#5B4775] min-[390px]:text-[12px]">
                   Have an issue? Chat with our support team directly on
                   WhatsApp.
                 </p>
@@ -202,33 +202,33 @@ export function MobileHelpSupportPage() {
               href={whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 flex min-h-[48px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#18B852] via-[#22C55E] to-[#16A34A] px-5 text-[14.5px] font-extrabold text-white shadow-[0_8px_18px_rgba(22,163,74,0.3)] transition-transform active:scale-[0.985]"
+              className="mt-3 flex min-h-[44px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#18B852] via-[#22C55E] to-[#16A34A] px-4 text-[13.5px] font-extrabold text-white shadow-[0_6px_16px_rgba(22,163,74,0.28)] transition-transform active:scale-[0.985]"
             >
-              <span className="w-5 shrink-0" aria-hidden="true" />
+              <span className="w-4 shrink-0" aria-hidden="true" />
               <span className="flex items-center gap-2">
-                <WhatsAppIcon className="h-[19px] w-[19px] shrink-0" />
+                <WhatsAppIcon className="h-[17px] w-[17px] shrink-0" />
                 <span>Chat on WhatsApp</span>
               </span>
-              <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.4]" />
+              <ChevronRight className="h-4 w-4 shrink-0 stroke-[2.4]" />
             </a>
           </div>
 
           {/* Support Topics Section (Informational 2-Column Grid — No Forms/Tickets/FAQ) */}
-          <div className="mt-5">
-            <h2 className="mb-3 pl-0.5 text-[14px] font-extrabold text-[#2B0B4E] min-[390px]:text-[14.5px]">
+          <div className="mt-3.5">
+            <h2 className="mb-2 pl-0.5 text-[13px] font-extrabold text-[#2B0B4E] min-[390px]:text-[13.5px]">
               You can contact us for:
             </h2>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
               {SUPPORT_TOPICS.map(({ id, label, Icon }) => (
                 <div
                   key={id}
-                  className="flex items-center gap-2.5 rounded-2xl border border-[#EFE2FF] bg-white px-3 py-3 shadow-[0_4px_12px_rgba(106,17,203,0.06)]"
+                  className="flex items-center gap-2 rounded-xl border border-[#EFE2FF] bg-white px-2.5 py-2.5 shadow-[0_3px_10px_rgba(106,17,203,0.05)]"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#F6EEFF] text-[#6A11CB]">
-                    <Icon className="h-[18px] w-[18px] stroke-[1.95]" />
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F6EEFF] text-[#6A11CB]">
+                    <Icon className="h-[15px] w-[15px] stroke-[1.95]" />
                   </div>
-                  <span className="text-[11.5px] font-bold leading-[1.25] text-[#2B0B4E] min-[390px]:text-[12px]">
+                  <span className="text-[11px] font-bold leading-[1.2] text-[#2B0B4E] min-[390px]:text-[11.5px]">
                     {label}
                   </span>
                 </div>

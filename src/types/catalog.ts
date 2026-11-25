@@ -34,6 +34,8 @@ export interface ProductVariantGroup {
   options: string[];
 }
 
+export type ProductAvailability = 'IN_STOCK' | 'OUT_OF_STOCK' | 'PREORDER';
+
 export interface Product {
   id: string;
   slug: string;
@@ -48,10 +50,13 @@ export interface Product {
   occasionTags: OccasionTag[];
   images: string[];
   variants: ProductVariantGroup[];
+  availability?: ProductAvailability;
   stockCount: number;
   isBestSeller: boolean;
   isFeatured: boolean;
   isActive: boolean;
+  isArchived?: boolean;
+  isSampleOrTest?: boolean;
   supportsPersonalization: boolean;
   supportsPhotoUpload?: boolean;
   personalizationPrompt?: string;

@@ -2,8 +2,11 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
+  Archive,
+  ArchiveRestore,
   ArrowRight,
   Check,
+  Database,
   Edit3,
   FolderTree,
   Gift,
@@ -40,6 +43,7 @@ import type {
 } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { ProductImage } from '../../components/ui/ProductImage';
+import { auditCatalogProducts, getAvailabilityLabel } from '../../utils/productCatalog';
 
 const MEDIA_OPTIONS: { label: string; url: string }[] = [
   { label: 'Banner 1 — Welcome to GiftKart', url: HERO_BANNERS.welcome },
@@ -282,6 +286,44 @@ export function AdminDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Firebase Database Integration Readiness Status */}
+      <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0E4FF] pb-3">
+          <div className="flex items-center gap-2">
+            <Database className="h-4 w-4 text-[#6A11CB]" />
+            <h2 className="font-display text-lg font-bold text-[#2A0E4D]">
+              System Status &amp; Database Integration Readiness
+            </h2>
+          </div>
+          <span className="rounded-full bg-[#F4EBFF] px-3 py-1 text-[11px] font-bold text-[#6A11CB]">
+            Local Storage Active · Firebase Ready
+          </span>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 text-xs">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-2">
+            <p className="font-bold text-emerald-900">Active Now (Working Locally)</p>
+            <ul className="space-y-1 text-emerald-800">
+              <li>• Product CRUD, Archive / Restore, Stock &amp; Price Management</li>
+              <li>• Category CRUD, Display Order, Images &amp; Subcategories</li>
+              <li>• Order Inspection, Payment Method Display &amp; Status History</li>
+              <li>• Coupon Create / Edit, Validity Dates &amp; Min Order Rules</li>
+              <li>• Homepage Banners, Promotional Content &amp; Storefront Filtering</li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-[#EBD8FF] bg-[#FAF6FF] p-4 space-y-2">
+            <p className="font-bold text-[#3B0764]">Awaiting Live Firebase Integration</p>
+            <ul className="space-y-1 text-[#594A6B]">
+              <li>• Cloud Firestore sync across devices (Products, Orders, Coupons)</li>
+              <li>• Real Firebase Authentication &amp; Role-Based Admin Access</li>
+              <li>• Firebase Storage for permanent product &amp; custom photo uploads</li>
+              <li>• Live Online UPI / Payment Gateway &amp; Order Notifications</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -341,13 +383,34 @@ export function AdminProductsPage() {
 
   const [search, setSearch] = useState('');
   const [filterCatId, setFilterCatId] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'ARCHIVED' | 'REVIEW'>('ALL');
   const [editingForm, setEditingForm] = useState<ProductFormState | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const productAuditMap = useMemo(
+    () => auditCatalogProducts(products, categories),
+    [products, categories]
+  );
+
+  const reviewCount = useMemo(
+    () =>
+      products.filter((p) => productAuditMap.get(p.id)?.needsReview).length,
+    [products, productAuditMap]
+  );
 
   const filteredProducts = useMemo(() => {
     const q = search.trim().toLowerCase();
     return products.filter((p) => {
       if (filterCatId && p.categoryId !== filterCatId) {
+        return false;
+      }
+      if (statusFilter === 'ACTIVE' && (!p.isActive || p.isArchived)) {
+        return false;
+      }
+      if (statusFilter === 'ARCHIVED' && (p.isActive && !p.isArchived)) {
+        return false;
+      }
+      if (statusFilter === 'REVIEW' && !productAuditMap.get(p.id)?.needsReview) {
         return false;
       }
       if (!q) {
@@ -359,7 +422,7 @@ export function AdminProductsPage() {
         p.shortDescription.toLowerCase().includes(q)
       );
     });
-  }, [products, search, filterCatId]);
+  }, [products, search, filterCatId, statusFilter, productAuditMap]);
 
   const selectedFormCategory = useMemo(
     () => categories.find((c) => c.id === editingForm?.categoryId),
@@ -405,6 +468,19 @@ export function AdminProductsPage() {
       return;
     }
 
+    const normalizedSku = editingForm.sku.trim().toUpperCase();
+    const duplicateSku = products.find(
+      (p) => p.id !== editingForm.id && p.sku.trim().toUpperCase() === normalizedSku
+    );
+    if (duplicateSku) {
+      pushToast({
+        title: 'Duplicate SKU detected',
+        description: `SKU "${normalizedSku}" is already assigned to "${duplicateSku.name}".`,
+        variant: 'error',
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const existing = products.find((p) => p.id === editingForm.id);
@@ -412,7 +488,7 @@ export function AdminProductsPage() {
       await services.catalog.saveProduct({
         id,
         slug: existing?.slug || slugify(editingForm.name),
-        sku: editingForm.sku.trim().toUpperCase(),
+        sku: normalizedSku,
         name: editingForm.name.trim(),
         shortDescription:
           editingForm.shortDescription.trim() || 'Personalized gift crafted by GiftKart.',
@@ -429,10 +505,13 @@ export function AdminProductsPage() {
           editingForm.occasionTags.length > 0 ? editingForm.occasionTags : ['Special Occasion'],
         images: [editingForm.imageUrl.trim() || STUDIO_MEDIA.giftBox],
         variants: existing?.variants ?? [{ name: 'Edition', options: ['Standard'] }],
+        availability: stock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
         stockCount: stock,
         isBestSeller: editingForm.isBestSeller,
         isFeatured: editingForm.isFeatured,
         isActive: editingForm.isActive,
+        isArchived: existing?.isArchived ?? false,
+        isSampleOrTest: false,
         supportsPersonalization: editingForm.supportsPersonalization,
         supportsPhotoUpload: editingForm.supportsPhotoUpload,
         personalizationPrompt: editingForm.personalizationPrompt.trim() || undefined,
@@ -443,13 +522,50 @@ export function AdminProductsPage() {
 
       pushToast({
         title: editingForm.id ? 'Product updated' : 'Product added to catalog',
-        description: `${editingForm.name.trim()} saved to local catalog. Historical demo orders remain unchanged.`,
+        description: `${editingForm.name.trim()} saved to local catalog. Historical orders remain unchanged.`,
         variant: 'success',
       });
       setEditingForm(null);
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleToggleActive(product: Product) {
+    await services.catalog.saveProduct({
+      ...product,
+      isActive: !product.isActive,
+      isArchived: !product.isActive ? false : product.isArchived,
+    });
+    pushToast({
+      title: `${product.name} ${!product.isActive ? 'activated' : 'hidden'}`,
+      variant: 'info',
+    });
+  }
+
+  async function handleToggleArchive(product: Product) {
+    const nextArchived = !product.isArchived;
+    await services.catalog.saveProduct({
+      ...product,
+      isArchived: nextArchived,
+      isActive: nextArchived ? false : true,
+    });
+    pushToast({
+      title: nextArchived ? 'Product archived' : 'Product restored',
+      description: nextArchived
+        ? `${product.name} hidden from customer storefront without deleting data.`
+        : `${product.name} restored to active catalog.`,
+      variant: 'info',
+    });
+  }
+
+  async function handleAdjustStock(product: Product, delta: number) {
+    const nextStock = Math.max(0, product.stockCount + delta);
+    await services.catalog.saveProduct({
+      ...product,
+      stockCount: nextStock,
+      availability: nextStock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
+    });
   }
 
   async function handleDelete(product: Product) {
@@ -762,23 +878,36 @@ export function AdminProductsPage() {
             onChange={(e) => setFilterCatId(e.target.value)}
             className="rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs font-semibold text-[#4A3862] focus:border-[#6A11CB] focus:outline-none"
           >
-            <option value="">All 15 Categories</option>
+            <option value="">All Categories</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
           </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as 'ALL' | 'ACTIVE' | 'ARCHIVED' | 'REVIEW')
+            }
+            className="rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs font-semibold text-[#4A3862] focus:border-[#6A11CB] focus:outline-none"
+          >
+            <option value="ALL">All Products ({products.length})</option>
+            <option value="ACTIVE">Active Storefront</option>
+            <option value="ARCHIVED">Hidden / Archived</option>
+            <option value="REVIEW">Needs Admin Review ({reviewCount})</option>
+          </select>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px] text-left text-xs">
+          <table className="w-full min-w-[740px] text-left text-xs">
             <thead>
               <tr className="border-b border-[#F0E4FF] text-[#7B6496]">
                 <th className="pb-2.5 font-semibold">Product</th>
                 <th className="pb-2.5 font-semibold">Category / Subcategory</th>
                 <th className="pb-2.5 font-semibold">Price</th>
-                <th className="pb-2.5 font-semibold">Stock</th>
+                <th className="pb-2.5 font-semibold">Stock &amp; Availability</th>
                 <th className="pb-2.5 font-semibold">Status</th>
                 <th className="pb-2.5 text-right font-semibold">Actions</th>
               </tr>
@@ -787,6 +916,8 @@ export function AdminProductsPage() {
               {filteredProducts.map((product) => {
                 const cat = categories.find((c) => c.id === product.categoryId);
                 const sub = cat?.subcategories.find((s) => s.id === product.subcategoryId);
+                const audit = productAuditMap.get(product.id);
+                const availLabel = getAvailabilityLabel(product);
                 return (
                   <tr key={product.id} className="hover:bg-[#FAF6FF]">
                     <td className="py-3">
@@ -801,6 +932,18 @@ export function AdminProductsPage() {
                         <div className="min-w-0">
                           <p className="truncate font-semibold text-[#2A0E4D]">{product.name}</p>
                           <p className="font-mono text-[11px] text-[#7B6496]">{product.sku}</p>
+                          {audit && audit.flags.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {audit.flags.map((flag) => (
+                                <span
+                                  key={flag.code}
+                                  className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
+                                >
+                                  {flag.label}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -811,27 +954,56 @@ export function AdminProductsPage() {
                     <td className="py-3 font-mono font-bold tabular-nums text-[#6A11CB]">
                       {formatInr(product.priceInr)}
                     </td>
-                    <td className="py-3 font-mono tabular-nums">
-                      <span
-                        className={
-                          product.stockCount <= 12
-                            ? 'font-bold text-[#FF4D8D]'
-                            : 'font-semibold text-[#2A0E4D]'
-                        }
-                      >
-                        {product.stockCount}
-                      </span>
+                    <td className="py-3">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => void handleAdjustStock(product, -1)}
+                          aria-label={`Decrease stock for ${product.name}`}
+                          className="flex h-6 w-6 items-center justify-center rounded border border-[#EBD8FF] text-[#4A3862] hover:bg-[#F4EBFF]"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <span
+                          className={`min-w-[26px] text-center font-mono tabular-nums ${
+                            product.stockCount <= 12
+                              ? 'font-bold text-[#FF4D8D]'
+                              : 'font-semibold text-[#2A0E4D]'
+                          }`}
+                        >
+                          {product.stockCount}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void handleAdjustStock(product, 1)}
+                          aria-label={`Increase stock for ${product.name}`}
+                          className="flex h-6 w-6 items-center justify-center rounded border border-[#EBD8FF] text-[#4A3862] hover:bg-[#F4EBFF]"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <p className="mt-0.5 text-[10px] font-semibold text-[#7B6496]">
+                        {availLabel}
+                      </p>
                     </td>
                     <td className="py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                          product.isActive
-                            ? 'bg-[#F4EBFF] text-[#6A11CB]'
-                            : 'bg-gray-100 text-gray-500'
+                      <button
+                        type="button"
+                        onClick={() => void handleToggleActive(product)}
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
+                          product.isArchived
+                            ? 'bg-amber-100 text-amber-800'
+                            : product.isActive
+                              ? 'bg-[#F4EBFF] text-[#6A11CB] hover:bg-[#EBD8FF]'
+                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         }`}
                       >
-                        {product.isActive ? 'Active' : 'Hidden'}
-                      </span>
+                        {product.isArchived
+                          ? 'Archived'
+                          : product.isActive
+                            ? 'Active'
+                            : 'Inactive'}
+                      </button>
                     </td>
                     <td className="py-3 text-right">
                       <div className="inline-flex items-center gap-1.5">
@@ -840,14 +1012,33 @@ export function AdminProductsPage() {
                           onClick={() => openEdit(product)}
                           className="rounded-lg border border-[#EBD8FF] p-1.5 text-[#6A11CB] hover:bg-[#F4EBFF]"
                           aria-label={`Edit ${product.name}`}
+                          title="Edit product"
                         >
                           <Edit3 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleToggleArchive(product)}
+                          className="rounded-lg border border-[#EBD8FF] p-1.5 text-[#5F4B78] hover:bg-amber-50 hover:text-amber-700"
+                          aria-label={
+                            product.isArchived
+                              ? `Restore ${product.name}`
+                              : `Archive ${product.name}`
+                          }
+                          title={product.isArchived ? 'Restore product' : 'Archive product'}
+                        >
+                          {product.isArchived ? (
+                            <ArchiveRestore className="h-3.5 w-3.5" />
+                          ) : (
+                            <Archive className="h-3.5 w-3.5" />
+                          )}
                         </button>
                         <button
                           type="button"
                           onClick={() => void handleDelete(product)}
                           className="rounded-lg border border-[#EBD8FF] p-1.5 text-[#7B6496] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
                           aria-label={`Delete ${product.name}`}
+                          title="Delete product"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -869,8 +1060,83 @@ export function AdminProductsPage() {
  * ========================================================================== */
 export function AdminCategoriesPage() {
   const { data: categories } = useCategories(true);
+  const { data: products } = useProducts({ includeInactive: true });
   const { pushToast } = useToast();
   const [newSubNames, setNewSubNames] = useState<Record<string, string>>({});
+
+  // Add / Edit Category form state
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [catName, setCatName] = useState('');
+  const [catDesc, setCatDesc] = useState('');
+  const [catImageUrl, setCatImageUrl] = useState<string>(STUDIO_MEDIA.giftBox);
+  const [catSortOrder, setCatSortOrder] = useState('16');
+  const [catActive, setCatActive] = useState(true);
+  const [showCatForm, setShowCatForm] = useState(false);
+
+  function openNewCategoryForm() {
+    setEditingCatId(null);
+    setCatName('');
+    setCatDesc('');
+    setCatImageUrl(STUDIO_MEDIA.giftBox);
+    setCatSortOrder(String(categories.length + 1));
+    setCatActive(true);
+    setShowCatForm(true);
+  }
+
+  function openEditCategoryForm(cat: Category) {
+    setEditingCatId(cat.id);
+    setCatName(cat.name);
+    setCatDesc(cat.description);
+    setCatImageUrl(cat.imageUrl ?? STUDIO_MEDIA.giftBox);
+    setCatSortOrder(String(cat.sortOrder));
+    setCatActive(cat.isActive);
+    setShowCatForm(true);
+  }
+
+  async function handleSaveCategory(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmedName = catName.trim();
+    if (!trimmedName) return;
+
+    const existing = categories.find((c) => c.id === editingCatId);
+    const payload: Category = {
+      id: existing?.id ?? `cat-${slugify(trimmedName)}-${Date.now().toString().slice(-3)}`,
+      slug: existing?.slug ?? slugify(trimmedName),
+      name: trimmedName,
+      description: catDesc.trim() || `${trimmedName} curated gift collection.`,
+      imageUrl: catImageUrl.trim() || STUDIO_MEDIA.giftBox,
+      sortOrder: Math.max(1, Number(catSortOrder) || categories.length + 1),
+      isActive: catActive,
+      subcategories: existing?.subcategories ?? [],
+    };
+
+    await services.catalog.saveCategory(payload);
+    pushToast({
+      title: existing ? 'Category updated' : 'Category created',
+      description: `${payload.name} (Display order #${payload.sortOrder}) saved.`,
+      variant: 'success',
+    });
+    setShowCatForm(false);
+    setEditingCatId(null);
+  }
+
+  async function handleDeleteCategory(cat: Category) {
+    const assignedCount = products.filter((p) => p.categoryId === cat.id).length;
+    if (assignedCount > 0) {
+      pushToast({
+        title: 'Cannot delete category in use',
+        description: `${assignedCount} product(s) belong to "${cat.name}". Reassign products or hide the category instead.`,
+        variant: 'error',
+      });
+      return;
+    }
+    await services.catalog.deleteCategory(cat.id);
+    pushToast({
+      title: 'Category deleted',
+      description: `${cat.name} removed from category list.`,
+      variant: 'info',
+    });
+  }
 
   async function toggleCategoryActive(cat: Category) {
     await services.catalog.saveCategory({ ...cat, isActive: !cat.isActive });
@@ -909,14 +1175,103 @@ export function AdminCategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">
-          Official 15 Categories &amp; Subcategories
-        </h1>
-        <p className="text-xs text-[#5F4B78]">
-          Preserves all 15 official GiftKart categories and exact Coffee Mug, T-shirt Print, and Photo Frame subcategory names.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">
+            Categories &amp; Subcategories ({categories.length})
+          </h1>
+          <p className="text-xs text-[#5F4B78]">
+            Add, edit, reorder, enable/disable, or safely remove categories and manage subcategories.
+          </p>
+        </div>
+
+        <Button type="button" size="sm" variant="primary" onClick={openNewCategoryForm}>
+          <Plus className="h-4 w-4" />
+          <span>Add Category</span>
+        </Button>
       </div>
+
+      {showCatForm && (
+        <form
+          onSubmit={(e) => void handleSaveCategory(e)}
+          className="rounded-2xl border border-[#6A11CB]/25 bg-white p-5 shadow-md space-y-4"
+        >
+          <div className="flex items-center justify-between border-b border-[#F0E4FF] pb-2.5">
+            <h2 className="font-display text-base font-bold text-[#2A0E4D]">
+              {editingCatId ? 'Edit Category' : 'Add New Category'}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setShowCatForm(false)}
+              className="text-xs font-semibold text-[#7B6496] hover:text-[#2A0E4D]"
+            >
+              Cancel
+            </button>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <input
+              type="text"
+              required
+              placeholder="Category Name *"
+              value={catName}
+              onChange={(e) => setCatName(e.target.value)}
+              className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
+            />
+            <input
+              type="number"
+              min={1}
+              required
+              placeholder="Display Order"
+              value={catSortOrder}
+              onChange={(e) => setCatSortOrder(e.target.value)}
+              className="rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-xs focus:border-[#6A11CB] focus:outline-none"
+            />
+            <select
+              value={catImageUrl}
+              onChange={(e) => setCatImageUrl(e.target.value)}
+              className="rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
+            >
+              {MEDIA_OPTIONS.map((m) => (
+                <option key={m.url} value={m.url}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="url"
+              placeholder="Or custom image URL"
+              value={catImageUrl}
+              onChange={(e) => setCatImageUrl(e.target.value)}
+              className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
+            />
+          </div>
+
+          <input
+            type="text"
+            placeholder="Category description"
+            value={catDesc}
+            onChange={(e) => setCatDesc(e.target.value)}
+            className="w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#4A3862]">
+              <input
+                type="checkbox"
+                checked={catActive}
+                onChange={(e) => setCatActive(e.target.checked)}
+                className="h-4 w-4 accent-[#6A11CB]"
+              />
+              <span>Visible on Storefront (Active)</span>
+            </label>
+            <Button type="submit" size="sm" variant="primary">
+              <Check className="h-3.5 w-3.5" />
+              <span>{editingCatId ? 'Update Category' : 'Save Category'}</span>
+            </Button>
+          </div>
+        </form>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         {categories.map((cat) => (
@@ -944,17 +1299,35 @@ export function AdminCategoriesPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => void toggleCategoryActive(cat)}
-                className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold ${
-                  cat.isActive
-                    ? 'bg-[#F4EBFF] text-[#6A11CB]'
-                    : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                {cat.isActive ? 'Active' : 'Hidden'}
-              </button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => openEditCategoryForm(cat)}
+                  aria-label={`Edit ${cat.name}`}
+                  className="rounded-lg border border-[#EBD8FF] p-1.5 text-[#6A11CB] hover:bg-[#F4EBFF]"
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void toggleCategoryActive(cat)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                    cat.isActive
+                      ? 'bg-[#F4EBFF] text-[#6A11CB]'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {cat.isActive ? 'Active' : 'Hidden'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteCategory(cat)}
+                  aria-label={`Delete ${cat.name}`}
+                  className="rounded-lg border border-[#EBD8FF] p-1.5 text-[#7B6496] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
 
             <div className="border-t border-[#F0E4FF] pt-3">
