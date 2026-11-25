@@ -529,32 +529,32 @@ export function MobileCheckoutPage() {
   // Empty cart fallback
   if (items.length === 0) {
     return (
-      <div className="min-h-[calc(100dvh-120px)] w-full bg-gradient-to-b from-[#FDF9FF] via-[#FAF4FF] to-[#F5ECFF] px-4 pb-24 pt-3">
-        <div className="flex items-center gap-2">
+      <div className="min-h-[calc(100dvh-128px)] w-full bg-gradient-to-b from-[#FDF9FF] via-[#FAF4FF] to-[#F5ECFF] px-4 pb-4 pt-2">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => navigate('/cart')}
             aria-label="Back to cart"
-            className="-ml-1.5 flex h-10 w-10 items-center justify-center rounded-full text-[#2B0B4E] active:bg-[#EBD8FF]/60"
+            className="-ml-1.5 flex h-9 w-9 items-center justify-center rounded-full text-[#2B0B4E] active:bg-[#EBD8FF]/60"
           >
             <ArrowLeft className="h-5 w-5 stroke-[2.3]" />
           </button>
-          <h1 className="text-[19px] font-extrabold text-[#2B0B4E]">Checkout</h1>
+          <h1 className="text-[17.5px] font-extrabold text-[#2B0B4E]">Checkout</h1>
         </div>
 
-        <div className="mt-10 flex flex-col items-center rounded-[24px] border border-[#EBD8FF] bg-white px-6 py-10 text-center shadow-[0_8px_24px_-12px_rgba(106,17,203,0.14)]">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F5ECFF] text-[#6A11CB]">
-            <ShoppingBag className="h-8 w-8 stroke-[1.9]" />
+        <div className="mt-6 flex flex-col items-center rounded-[20px] border border-[#EBD8FF] bg-white px-5 py-7 text-center shadow-[0_8px_24px_-12px_rgba(106,17,203,0.14)]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F5ECFF] text-[#6A11CB]">
+            <ShoppingBag className="h-7 w-7 stroke-[1.9]" />
           </div>
-          <h2 className="mt-4 text-[18px] font-extrabold text-[#2B0B4E]">
+          <h2 className="mt-3 text-[17px] font-extrabold text-[#2B0B4E]">
             Your Cart is Empty
           </h2>
-          <p className="mt-1.5 max-w-[260px] text-[13px] leading-relaxed text-[#6A5782]">
+          <p className="mt-1 max-w-[260px] text-[12.5px] leading-relaxed text-[#6A5782]">
             Add a gift to your cart before starting checkout.
           </p>
           <Link
             to="/shop"
-            className="mt-6 inline-flex h-[46px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-7 text-[14px] font-extrabold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] active:scale-[0.98]"
+            className="mt-4 inline-flex h-[44px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[13.5px] font-extrabold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] active:scale-[0.98]"
           >
             <Gift className="h-4 w-4 stroke-[2.2]" />
             <span>Explore Gifts</span>
@@ -572,36 +572,36 @@ export function MobileCheckoutPage() {
   })();
 
   return (
-    <div className="min-h-[calc(100dvh-56px)] w-full overflow-x-clip bg-gradient-to-b from-[#FDF9FF] via-[#FAF5FF] to-[#F6EEFF] pb-28">
+    <div className="min-h-[calc(100dvh-128px)] w-full overflow-x-clip bg-gradient-to-b from-[#FDF9FF] via-[#FAF5FF] to-[#F6EEFF] pb-3">
       {/* TOP CHECKOUT BAR */}
-      <div className="flex items-center gap-1.5 px-3 pb-1 pt-2.5">
+      <div className="flex items-center gap-1 px-3 pb-0.5 pt-1.5">
         <button
           type="button"
           onClick={handleBack}
           aria-label="Go back"
-          className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#2B0B4E] transition-colors active:bg-[#EBD8FF]/60"
+          className="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#2B0B4E] transition-colors active:bg-[#EBD8FF]/60"
         >
-          <ArrowLeft className="h-[20px] w-[20px] stroke-[2.3]" />
+          <ArrowLeft className="h-[19px] w-[19px] stroke-[2.3]" />
         </button>
-        <h1 className="text-[19px] font-extrabold tracking-[-0.015em] text-[#2B0B4E]">
+        <h1 className="text-[17px] font-extrabold tracking-[-0.015em] text-[#2B0B4E]">
           Checkout
         </h1>
       </div>
 
       {/* 3-STEP PROGRESS INDICATOR */}
-      <nav aria-label="Checkout progress" className="px-5 pb-3.5 pt-1.5">
+      <nav aria-label="Checkout progress" className="px-4 pb-2 pt-1">
         <div className="relative flex items-start justify-between">
           {/* Connector Lines */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute left-[16%] right-[50%] top-[14px] h-[2px] rounded-full transition-colors duration-200"
+            className="pointer-events-none absolute left-[16%] right-[50%] top-[12px] h-[2px] rounded-full transition-colors duration-200"
             style={{
               backgroundColor: step > 1 ? '#6A11CB' : '#E6D4FF',
             }}
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute left-[50%] right-[16%] top-[14px] h-[2px] rounded-full transition-colors duration-200"
+            className="pointer-events-none absolute left-[50%] right-[16%] top-[12px] h-[2px] rounded-full transition-colors duration-200"
             style={{
               backgroundColor: step > 2 ? '#6A11CB' : '#E6D4FF',
             }}
@@ -621,27 +621,27 @@ export function MobileCheckoutPage() {
                   if (canClick) setStep(item.step);
                 }}
                 aria-current={isCurrent ? 'step' : undefined}
-                className={`relative z-10 flex w-1/3 flex-col items-center gap-1.5 text-center ${
+                className={`relative z-10 flex w-1/3 flex-col items-center gap-1 text-center ${
                   canClick ? 'cursor-pointer' : 'cursor-default'
                 }`}
               >
                 <span
-                  className={`flex h-[29px] w-[29px] items-center justify-center rounded-full text-[13px] font-extrabold transition-all ${
+                  className={`flex h-[25px] w-[25px] items-center justify-center rounded-full text-[12px] font-extrabold transition-all ${
                     isCurrent
-                      ? 'bg-[#6A11CB] text-white shadow-[0_4px_12px_rgba(106,17,203,0.34)]'
+                      ? 'bg-[#6A11CB] text-white shadow-[0_3px_10px_rgba(106,17,203,0.32)]'
                       : isCompleted
                         ? 'border-[1.8px] border-[#6A11CB] bg-white text-[#6A11CB]'
                         : 'border-[1.5px] border-[#D8C5F3] bg-white text-[#85729F]'
                   }`}
                 >
                   {isCompleted ? (
-                    <Check className="h-4 w-4 stroke-[2.7]" />
+                    <Check className="h-3.5 w-3.5 stroke-[2.7]" />
                   ) : (
                     item.step
                   )}
                 </span>
                 <span
-                  className={`text-[12px] leading-tight whitespace-nowrap ${
+                  className={`text-[11px] leading-tight whitespace-nowrap ${
                     isCurrent
                       ? 'font-extrabold text-[#2B0B4E]'
                       : isCompleted
@@ -664,22 +664,22 @@ export function MobileCheckoutPage() {
         <form
           onSubmit={(e) => void handleStep1Continue(e)}
           noValidate
-          className="px-3.5"
+          className="px-3"
         >
-          <section className="rounded-[22px] border border-[#EBD8FF] bg-white/90 p-4 shadow-[0_6px_22px_-12px_rgba(106,17,203,0.14)]">
-            <div className="flex items-center gap-2">
+          <section className="rounded-[18px] border border-[#EBD8FF] bg-white/95 p-3 shadow-[0_5px_18px_-10px_rgba(106,17,203,0.14)]">
+            <div className="flex items-center gap-1.5">
               <MapPin
                 aria-hidden="true"
-                className="h-[20px] w-[20px] shrink-0 text-[#6A11CB] stroke-[2.2]"
+                className="h-[17px] w-[17px] shrink-0 text-[#6A11CB] stroke-[2.2]"
               />
-              <h2 className="text-[16.5px] font-extrabold text-[#5B10B8]">
+              <h2 className="text-[15px] font-extrabold text-[#5B10B8]">
                 Add Delivery Address
               </h2>
             </div>
 
             {/* Optional Quick-Select Saved Addresses Strip */}
             {savedAddresses.length > 0 && (
-              <div className="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <div className="mt-2 flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
                 {savedAddresses.map((addr) => {
                   const isPicked = activeAddressId === addr.id;
                   return (
@@ -687,7 +687,7 @@ export function MobileCheckoutPage() {
                       key={addr.id}
                       type="button"
                       onClick={() => handleApplySavedAddress(addr.id)}
-                      className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[11.5px] font-bold transition-colors ${
+                      className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors ${
                         isPicked
                           ? 'border-[#6A11CB] bg-[#F3E8FF] text-[#6A11CB]'
                           : 'border-[#E6D4FF] bg-white text-[#4B3568]'
@@ -700,21 +700,21 @@ export function MobileCheckoutPage() {
               </div>
             )}
 
-            <div className="mt-3.5 space-y-3">
+            <div className="mt-2.5 space-y-2">
               {/* Full Name (Required) */}
               <div>
                 <label
                   htmlFor="mc-full-name"
-                  className={`flex items-center gap-3 rounded-2xl border bg-white px-3.5 py-2.5 transition-colors focus-within:border-[#6A11CB] ${
+                  className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-1.5 transition-colors focus-within:border-[#6A11CB] ${
                     formErrors.fullName ? 'border-rose-400' : 'border-[#DEC9FA]'
                   }`}
                 >
                   <User
                     aria-hidden="true"
-                    className="h-[19px] w-[19px] shrink-0 text-[#6A11CB] stroke-[1.9]"
+                    className="h-[17px] w-[17px] shrink-0 text-[#6A11CB] stroke-[1.9]"
                   />
                   <div className="min-w-0 flex-1">
-                    <span className="block text-[11px] font-semibold leading-none text-[#5E4B78]">
+                    <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
                       Full Name <span className="text-[#FF247A]">*</span>
                     </span>
                     <input
@@ -729,12 +729,12 @@ export function MobileCheckoutPage() {
                         }
                       }}
                       placeholder="Enter your full name"
-                      className="mt-1 w-full bg-transparent text-[14.5px] font-bold text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
+                      className="mt-0.5 w-full bg-transparent text-[13.5px] font-bold text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
                     />
                   </div>
                 </label>
                 {formErrors.fullName && (
-                  <p className="mt-1 pl-1 text-[11.5px] font-semibold text-rose-600">
+                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-rose-600">
                     {formErrors.fullName}
                   </p>
                 )}
@@ -744,16 +744,16 @@ export function MobileCheckoutPage() {
               <div>
                 <label
                   htmlFor="mc-phone"
-                  className={`flex items-center gap-3 rounded-2xl border bg-white px-3.5 py-2.5 transition-colors focus-within:border-[#6A11CB] ${
+                  className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-1.5 transition-colors focus-within:border-[#6A11CB] ${
                     formErrors.phone ? 'border-rose-400' : 'border-[#DEC9FA]'
                   }`}
                 >
                   <Phone
                     aria-hidden="true"
-                    className="h-[19px] w-[19px] shrink-0 text-[#6A11CB] stroke-[1.9]"
+                    className="h-[17px] w-[17px] shrink-0 text-[#6A11CB] stroke-[1.9]"
                   />
                   <div className="min-w-0 flex-1">
-                    <span className="block text-[11px] font-semibold leading-none text-[#5E4B78]">
+                    <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
                       Mobile Number <span className="text-[#FF247A]">*</span>
                     </span>
                     <input
@@ -770,12 +770,12 @@ export function MobileCheckoutPage() {
                         }
                       }}
                       placeholder="10-digit mobile number"
-                      className="mt-1 w-full bg-transparent text-[14.5px] font-bold tabular-nums text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
+                      className="mt-0.5 w-full bg-transparent text-[13.5px] font-bold tabular-nums text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
                     />
                   </div>
                 </label>
                 {formErrors.phone && (
-                  <p className="mt-1 pl-1 text-[11.5px] font-semibold text-rose-600">
+                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-rose-600">
                     {formErrors.phone}
                   </p>
                 )}
@@ -785,16 +785,16 @@ export function MobileCheckoutPage() {
               <div>
                 <label
                   htmlFor="mc-email"
-                  className={`flex items-center gap-3 rounded-2xl border bg-white px-3.5 py-2.5 transition-colors focus-within:border-[#6A11CB] ${
+                  className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-1.5 transition-colors focus-within:border-[#6A11CB] ${
                     formErrors.email ? 'border-rose-400' : 'border-[#DEC9FA]'
                   }`}
                 >
                   <Mail
                     aria-hidden="true"
-                    className="h-[19px] w-[19px] shrink-0 text-[#6A11CB] stroke-[1.9]"
+                    className="h-[17px] w-[17px] shrink-0 text-[#6A11CB] stroke-[1.9]"
                   />
                   <div className="min-w-0 flex-1">
-                    <span className="block text-[11px] font-semibold leading-none text-[#5E4B78]">
+                    <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
                       Email Address
                     </span>
                     <input
@@ -808,12 +808,12 @@ export function MobileCheckoutPage() {
                         }
                       }}
                       placeholder="you@example.com"
-                      className="mt-1 w-full bg-transparent text-[14.5px] font-bold text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
+                      className="mt-0.5 w-full bg-transparent text-[13.5px] font-bold text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
                     />
                   </div>
                 </label>
                 {formErrors.email && (
-                  <p className="mt-1 pl-1 text-[11.5px] font-semibold text-rose-600">
+                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-rose-600">
                     {formErrors.email}
                   </p>
                 )}
@@ -823,16 +823,16 @@ export function MobileCheckoutPage() {
               <div>
                 <label
                   htmlFor="mc-address"
-                  className={`flex items-center gap-3 rounded-2xl border bg-white px-3.5 py-2.5 transition-colors focus-within:border-[#6A11CB] ${
+                  className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-1.5 transition-colors focus-within:border-[#6A11CB] ${
                     formErrors.addressLine1 ? 'border-rose-400' : 'border-[#DEC9FA]'
                   }`}
                 >
                   <Home
                     aria-hidden="true"
-                    className="h-[19px] w-[19px] shrink-0 text-[#6A11CB] stroke-[1.9]"
+                    className="h-[17px] w-[17px] shrink-0 text-[#6A11CB] stroke-[1.9]"
                   />
                   <div className="min-w-0 flex-1">
-                    <span className="block text-[11px] font-semibold leading-none text-[#5E4B78]">
+                    <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
                       House / Flat / Building / Street{' '}
                       <span className="text-[#FF247A]">*</span>
                     </span>
@@ -848,12 +848,12 @@ export function MobileCheckoutPage() {
                         }
                       }}
                       placeholder="House no., street, locality"
-                      className="mt-1 w-full bg-transparent text-[14.5px] font-bold text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
+                      className="mt-0.5 w-full bg-transparent text-[13.5px] font-bold text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
                     />
                   </div>
                 </label>
                 {formErrors.addressLine1 && (
-                  <p className="mt-1 pl-1 text-[11.5px] font-semibold text-rose-600">
+                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-rose-600">
                     {formErrors.addressLine1}
                   </p>
                 )}
@@ -863,14 +863,14 @@ export function MobileCheckoutPage() {
               <div>
                 <label
                   htmlFor="mc-landmark"
-                  className="flex items-center gap-3 rounded-2xl border border-[#DEC9FA] bg-white px-3.5 py-2.5 transition-colors focus-within:border-[#6A11CB]"
+                  className="flex items-center gap-2.5 rounded-xl border border-[#DEC9FA] bg-white px-3 py-1.5 transition-colors focus-within:border-[#6A11CB]"
                 >
                   <MapPin
                     aria-hidden="true"
-                    className="h-[19px] w-[19px] shrink-0 text-[#6A11CB] stroke-[1.9]"
+                    className="h-[17px] w-[17px] shrink-0 text-[#6A11CB] stroke-[1.9]"
                   />
                   <div className="min-w-0 flex-1">
-                    <span className="block text-[11px] font-semibold leading-none text-[#5E4B78]">
+                    <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
                       Landmark (Optional)
                     </span>
                     <input
@@ -879,7 +879,7 @@ export function MobileCheckoutPage() {
                       value={landmark}
                       onChange={(e) => setLandmark(e.target.value)}
                       placeholder="Near school, temple, or market"
-                      className="mt-1 w-full bg-transparent text-[14.5px] font-bold text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
+                      className="mt-0.5 w-full bg-transparent text-[13.5px] font-bold text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
                     />
                   </div>
                 </label>
@@ -889,16 +889,16 @@ export function MobileCheckoutPage() {
               <div>
                 <label
                   htmlFor="mc-pincode"
-                  className={`flex items-center gap-3 rounded-2xl border bg-white px-3.5 py-2.5 transition-colors focus-within:border-[#6A11CB] ${
+                  className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-1.5 transition-colors focus-within:border-[#6A11CB] ${
                     formErrors.pincode ? 'border-rose-400' : 'border-[#DEC9FA]'
                   }`}
                 >
                   <LayoutGrid
                     aria-hidden="true"
-                    className="h-[19px] w-[19px] shrink-0 text-[#6A11CB] stroke-[1.9]"
+                    className="h-[17px] w-[17px] shrink-0 text-[#6A11CB] stroke-[1.9]"
                   />
                   <div className="min-w-0 flex-1">
-                    <span className="block text-[11px] font-semibold leading-none text-[#5E4B78]">
+                    <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
                       PIN Code <span className="text-[#FF247A]">*</span>
                     </span>
                     <input
@@ -915,12 +915,12 @@ export function MobileCheckoutPage() {
                         }
                       }}
                       placeholder="6-digit PIN code"
-                      className="mt-1 w-full bg-transparent text-[14.5px] font-bold tabular-nums text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
+                      className="mt-0.5 w-full bg-transparent text-[13.5px] font-bold tabular-nums text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
                     />
                   </div>
                 </label>
                 {formErrors.pincode && (
-                  <p className="mt-1 pl-1 text-[11.5px] font-semibold text-rose-600">
+                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-rose-600">
                     {formErrors.pincode}
                   </p>
                 )}
@@ -928,31 +928,31 @@ export function MobileCheckoutPage() {
             </div>
 
             {/* Save Address for Future Orders Checkbox */}
-            <label className="mt-4 flex min-h-[44px] cursor-pointer items-center gap-2.5 select-none">
+            <label className="mt-2 flex min-h-[34px] cursor-pointer items-center gap-2 select-none">
               <button
                 type="button"
                 role="checkbox"
                 aria-checked={saveForFuture}
                 onClick={() => setSaveForFuture((prev) => !prev)}
-                className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border transition-colors ${
+                className={`flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-md border transition-colors ${
                   saveForFuture
                     ? 'border-[#6A11CB] bg-[#6A11CB] text-white'
                     : 'border-[#C9B3EC] bg-white'
                 }`}
               >
-                {saveForFuture && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                {saveForFuture && <Check className="h-3 w-3 stroke-[3]" />}
               </button>
-              <span className="text-[13.5px] font-semibold text-[#2B0B4E]">
+              <span className="text-[12.5px] font-semibold text-[#2B0B4E]">
                 Save this address for future orders
               </span>
             </label>
           </section>
 
           {/* Step 1 Continue Button */}
-          <div className="mt-4">
+          <div className="mt-2.5">
             <button
               type="submit"
-              className="flex h-[52px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[16px] font-extrabold text-white shadow-[0_8px_22px_-4px_rgba(162,28,175,0.48)] transition-transform active:scale-[0.985]"
+              className="flex h-[46px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[15px] font-extrabold text-white shadow-[0_6px_18px_-4px_rgba(162,28,175,0.45)] transition-transform active:scale-[0.985]"
             >
               <span>Continue</span>
               <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.5]" />
@@ -965,64 +965,62 @@ export function MobileCheckoutPage() {
           STEP 2: CONFIRM DETAILS
       ================================================================ */}
       {step === 2 && (
-        <div className="space-y-3 px-3.5">
+        <div className="space-y-2 px-3">
           {/* Delivering To Card */}
           <section
             aria-label="Delivering to"
-            className="rounded-[20px] border border-[#EBD8FF] bg-white p-3.5 shadow-[0_6px_18px_-12px_rgba(106,17,203,0.14)]"
+            className="rounded-[16px] border border-[#EBD8FF] bg-white p-2.5 shadow-[0_4px_14px_-10px_rgba(106,17,203,0.14)]"
           >
-            <div className="flex items-center gap-2">
-              <MapPin
-                aria-hidden="true"
-                className="h-[18px] w-[18px] shrink-0 text-[#6A11CB] stroke-[2.2]"
-              />
-              <h2 className="text-[15.5px] font-extrabold text-[#2B0B4E]">
-                Delivering to
-              </h2>
-            </div>
-
-            <div className="mt-2.5 rounded-2xl border border-[#EFE2FF] bg-[#FAF6FF] p-3.5">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex min-w-0 items-start gap-2">
-                  <User
-                    aria-hidden="true"
-                    className="mt-0.5 h-[16px] w-[16px] shrink-0 text-[#5B10B8] stroke-[2]"
-                  />
-                  <div className="min-w-0">
-                    <p className="text-[14.5px] font-extrabold leading-snug text-[#2B0B4E]">
-                      {fullName}
-                    </p>
-                    <p className="mt-1 text-[12.5px] leading-[1.45] text-[#4B3568]">
-                      {addressLine1}
-                      {landmark.trim() ? `, ${landmark.trim()}` : ''}
-                      <br />
-                      {displayCityState} - {pincode}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="shrink-0 whitespace-nowrap rounded-xl border border-[#DEC7FF] bg-white px-3.5 py-1.5 text-[12px] font-extrabold text-[#5B10B8] shadow-2xs transition-transform active:scale-95"
-                >
-                  Change
-                </button>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <MapPin
+                  aria-hidden="true"
+                  className="h-[16px] w-[16px] shrink-0 text-[#6A11CB] stroke-[2.2]"
+                />
+                <h2 className="text-[14px] font-extrabold text-[#2B0B4E]">
+                  Delivering to
+                </h2>
               </div>
 
-              <div className="mt-2.5 space-y-1 border-t border-[#EFE2FF] pt-2 text-[12.5px] font-semibold text-[#3B2654]">
-                <p className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="shrink-0 whitespace-nowrap rounded-lg border border-[#DEC7FF] bg-[#FAF6FF] px-2.5 py-1 text-[11.5px] font-extrabold text-[#5B10B8] transition-transform active:scale-95"
+              >
+                Change
+              </button>
+            </div>
+
+            <div className="mt-1.5 rounded-xl border border-[#EFE2FF] bg-[#FAF6FF] px-2.5 py-2">
+              <div className="flex items-start gap-1.5">
+                <User
+                  aria-hidden="true"
+                  className="mt-0.5 h-[14px] w-[14px] shrink-0 text-[#5B10B8] stroke-[2]"
+                />
+                <div className="min-w-0">
+                  <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
+                    {fullName}
+                  </p>
+                  <p className="mt-0.5 text-[11.5px] leading-[1.35] text-[#4B3568]">
+                    {addressLine1}
+                    {landmark.trim() ? `, ${landmark.trim()}` : ''}, {displayCityState} - {pincode}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-[#EFE2FF] pt-1.5 text-[11.5px] font-semibold text-[#3B2654]">
+                <p className="flex items-center gap-1.5">
                   <Phone
                     aria-hidden="true"
-                    className="h-3.5 w-3.5 shrink-0 text-[#5B10B8]"
+                    className="h-3 w-3 shrink-0 text-[#5B10B8]"
                   />
                   <span className="tabular-nums">{phone}</span>
                 </p>
                 {email.trim() && (
-                  <p className="flex items-center gap-2">
+                  <p className="flex min-w-0 items-center gap-1.5">
                     <Mail
                       aria-hidden="true"
-                      className="h-3.5 w-3.5 shrink-0 text-[#5B10B8]"
+                      className="h-3 w-3 shrink-0 text-[#5B10B8]"
                     />
                     <span className="truncate">{email.trim()}</span>
                   </p>
@@ -1034,7 +1032,7 @@ export function MobileCheckoutPage() {
           {/* Cart Products List Card */}
           <section
             aria-label="Order items"
-            className="divide-y divide-[#F2E6FF] rounded-[20px] border border-[#EBD8FF] bg-white shadow-[0_6px_18px_-12px_rgba(106,17,203,0.14)]"
+            className="divide-y divide-[#F2E6FF] rounded-[16px] border border-[#EBD8FF] bg-white shadow-[0_4px_14px_-10px_rgba(106,17,203,0.14)]"
           >
             {items.map((item) => {
               const catalogProduct = productById.get(item.productId);
@@ -1047,9 +1045,9 @@ export function MobileCheckoutPage() {
               return (
                 <div
                   key={item.cartItemId}
-                  className="flex items-center gap-3 p-3.5"
+                  className="flex items-center gap-2.5 p-2.5"
                 >
-                  <div className="h-[78px] w-[78px] shrink-0 overflow-hidden rounded-[14px] border border-[#F2E6FF] bg-[#FAF6FF]">
+                  <div className="h-[64px] w-[64px] shrink-0 overflow-hidden rounded-xl border border-[#F2E6FF] bg-[#FAF6FF]">
                     <ProductImage
                       src={item.image}
                       alt={item.productName}
@@ -1058,7 +1056,7 @@ export function MobileCheckoutPage() {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#DEC7FF] bg-[#F5ECFF] px-2.5 py-[2px] text-[10.5px] font-bold leading-none text-[#6A11CB]">
+                    <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#DEC7FF] bg-[#F5ECFF] px-2 py-[1.5px] text-[10px] font-bold leading-none text-[#6A11CB]">
                       <CategoryIcon
                         aria-hidden="true"
                         className="h-2.5 w-2.5 shrink-0 stroke-[2.2]"
@@ -1066,17 +1064,18 @@ export function MobileCheckoutPage() {
                       <span className="truncate">{categoryLabel}</span>
                     </span>
 
-                    <p className="mt-1 line-clamp-2 text-[13.5px] font-extrabold leading-snug text-[#2B0B4E]">
+                    <p className="mt-0.5 line-clamp-1 text-[13px] font-extrabold leading-snug text-[#2B0B4E]">
                       {item.productName}
                     </p>
 
-                    <p className="mt-0.5 text-[16px] font-extrabold leading-tight tabular-nums text-[#FF1F7A]">
-                      {formatInr(item.unitPriceInr * item.quantity)}
-                    </p>
-
-                    <span className="mt-1 inline-block rounded-lg bg-[#F4ECFF] px-2.5 py-0.5 text-[11.5px] font-bold tabular-nums text-[#3B0764]">
-                      Qty: {item.quantity}
-                    </span>
+                    <div className="mt-1 flex items-center gap-2">
+                      <p className="text-[15px] font-extrabold leading-tight tabular-nums text-[#FF1F7A]">
+                        {formatInr(item.unitPriceInr * item.quantity)}
+                      </p>
+                      <span className="inline-block rounded-md bg-[#F4ECFF] px-2 py-0.5 text-[11px] font-bold tabular-nums text-[#3B0764]">
+                        Qty: {item.quantity}
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
@@ -1085,29 +1084,29 @@ export function MobileCheckoutPage() {
 
           {/* Apply Coupon Section */}
           <section aria-label="Apply coupon">
-            <div className="overflow-hidden rounded-2xl border border-[#E6D4FF] bg-[#F4ECFF]">
+            <div className="overflow-hidden rounded-xl border border-[#E6D4FF] bg-[#F4ECFF]">
               <button
                 type="button"
                 onClick={() => setCouponPanelOpen((prev) => !prev)}
                 aria-expanded={couponPanelOpen}
-                className="flex min-h-[48px] w-full items-center justify-between gap-2 px-4 py-3 text-left transition-colors active:bg-[#EDE0FF]"
+                className="flex min-h-[40px] w-full items-center justify-between gap-2 px-3 py-2 text-left transition-colors active:bg-[#EDE0FF]"
               >
-                <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex min-w-0 items-center gap-2">
                   <Ticket
                     aria-hidden="true"
-                    className="h-[20px] w-[20px] shrink-0 text-[#FF4D8D] stroke-[2]"
+                    className="h-[18px] w-[18px] shrink-0 text-[#FF4D8D] stroke-[2]"
                   />
                   {appliedCouponCode ? (
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="truncate text-[14px] font-extrabold text-[#2B0B4E]">
+                      <span className="truncate text-[13px] font-extrabold text-[#2B0B4E]">
                         {appliedCouponCode} Applied
                       </span>
-                      <span className="shrink-0 rounded-full bg-[#DCFCE7] px-2 py-0.5 text-[11px] font-bold text-[#15803D]">
+                      <span className="shrink-0 rounded-full bg-[#DCFCE7] px-2 py-0.5 text-[10.5px] font-bold text-[#15803D]">
                         -{formatInr(couponDiscount)}
                       </span>
                     </div>
                   ) : (
-                    <span className="text-[14.5px] font-extrabold text-[#2B0B4E]">
+                    <span className="text-[13.5px] font-extrabold text-[#2B0B4E]">
                       Apply Coupon
                     </span>
                   )}
@@ -1115,14 +1114,14 @@ export function MobileCheckoutPage() {
 
                 <ChevronRight
                   aria-hidden="true"
-                  className={`h-[18px] w-[18px] shrink-0 text-[#4C1D95] stroke-[2.3] transition-transform duration-200 ${
+                  className={`h-[17px] w-[17px] shrink-0 text-[#4C1D95] stroke-[2.3] transition-transform duration-200 ${
                     couponPanelOpen ? 'rotate-90' : ''
                   }`}
                 />
               </button>
 
               {couponPanelOpen && (
-                <div className="border-t border-[#E6D4FF] bg-white px-3.5 pb-3.5 pt-3">
+                <div className="border-t border-[#E6D4FF] bg-white px-3 pb-3 pt-2.5">
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -1139,25 +1138,25 @@ export function MobileCheckoutPage() {
                       }}
                       placeholder="Enter coupon code"
                       aria-label="Coupon code"
-                      className="h-[42px] min-w-0 flex-1 rounded-xl border border-[#E6D4FF] bg-[#FAF6FF] px-3 font-mono text-[13px] font-bold uppercase text-[#2B0B4E] placeholder:font-sans placeholder:font-medium placeholder:normal-case placeholder:text-[#84729B] focus:border-[#6A11CB] focus:outline-none"
+                      className="h-[38px] min-w-0 flex-1 rounded-xl border border-[#E6D4FF] bg-[#FAF6FF] px-3 font-mono text-[12.5px] font-bold uppercase text-[#2B0B4E] placeholder:font-sans placeholder:font-medium placeholder:normal-case placeholder:text-[#84729B] focus:border-[#6A11CB] focus:outline-none"
                     />
                     <button
                       type="submit"
                       disabled={couponValidating}
-                      className="h-[42px] shrink-0 whitespace-nowrap rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] px-4 text-[13px] font-extrabold text-white shadow-sm active:scale-95 disabled:opacity-50"
+                      className="h-[38px] shrink-0 whitespace-nowrap rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] px-3.5 text-[12.5px] font-extrabold text-white shadow-sm active:scale-95 disabled:opacity-50"
                     >
                       {couponValidating ? '...' : 'Apply'}
                     </button>
                   </form>
 
                   {couponError && (
-                    <p className="mt-2 text-[12px] font-semibold text-rose-600">
+                    <p className="mt-1.5 text-[11.5px] font-semibold text-rose-600">
                       {couponError}
                     </p>
                   )}
 
                   {appliedCouponCode && (
-                    <div className="mt-2.5 flex items-center justify-between rounded-xl bg-[#ECFDF5] px-3 py-2 text-[12px]">
+                    <div className="mt-2 flex items-center justify-between rounded-xl bg-[#ECFDF5] px-2.5 py-1.5 text-[11.5px]">
                       <span className="font-bold text-[#15803D]">
                         Code {appliedCouponCode} saves{' '}
                         {formatInr(couponDiscount)}
@@ -1173,19 +1172,19 @@ export function MobileCheckoutPage() {
                   )}
 
                   {activeCoupons.length > 0 && (
-                    <div className="mt-3 space-y-2">
+                    <div className="mt-2 space-y-1.5">
                       {activeCoupons.map((coupon) => {
                         const isApplied = appliedCouponCode === coupon.code;
                         return (
                           <div
                             key={coupon.id}
-                            className="flex items-center justify-between gap-2 rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] px-3 py-2"
+                            className="flex items-center justify-between gap-2 rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] px-2.5 py-1.5"
                           >
                             <div className="min-w-0">
-                              <p className="font-mono text-[12.5px] font-extrabold text-[#6A11CB]">
+                              <p className="font-mono text-[12px] font-extrabold text-[#6A11CB]">
                                 {coupon.code}
                               </p>
-                              <p className="mt-0.5 text-[11px] leading-snug text-[#5B4775]">
+                              <p className="mt-0.5 text-[10.5px] leading-snug text-[#5B4775]">
                                 {coupon.description}
                               </p>
                             </div>
@@ -1193,7 +1192,7 @@ export function MobileCheckoutPage() {
                               type="button"
                               onClick={() => void applyCouponCode(coupon.code)}
                               disabled={isApplied || couponValidating}
-                              className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-[11.5px] font-extrabold active:scale-95 ${
+                              className={`shrink-0 whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-extrabold active:scale-95 ${
                                 isApplied
                                   ? 'bg-[#DCFCE7] text-[#15803D]'
                                   : 'border border-[#DEC7FF] bg-white text-[#6A11CB]'
@@ -1214,14 +1213,14 @@ export function MobileCheckoutPage() {
           {/* Price Details Card */}
           <section
             aria-label="Price details"
-            className="rounded-[20px] border border-[#EBD8FF] bg-white p-4 shadow-[0_6px_18px_-12px_rgba(106,17,203,0.14)]"
+            className="rounded-[16px] border border-[#EBD8FF] bg-white p-3 shadow-[0_4px_14px_-10px_rgba(106,17,203,0.14)]"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <ReceiptText
                 aria-hidden="true"
-                className="h-[19px] w-[19px] shrink-0 text-[#5B10B8] stroke-[2]"
+                className="h-[17px] w-[17px] shrink-0 text-[#5B10B8] stroke-[2]"
               />
-              <h2 className="text-[15.5px] font-extrabold text-[#2B0B4E]">
+              <h2 className="text-[14px] font-extrabold text-[#2B0B4E]">
                 Price Details{' '}
                 <span className="font-semibold text-[#5E477A]">
                   ({itemCount} {itemCount === 1 ? 'Item' : 'Items'})
@@ -1229,7 +1228,7 @@ export function MobileCheckoutPage() {
               </h2>
             </div>
 
-            <dl className="mt-3.5 space-y-2.5 text-[14px]">
+            <dl className="mt-2 space-y-1.5 text-[13px]">
               <div className="flex items-center justify-between gap-2">
                 <dt className="font-medium text-[#2B0B4E]">Product Price</dt>
                 <dd className="font-bold tabular-nums text-[#2B0B4E]">
@@ -1267,22 +1266,22 @@ export function MobileCheckoutPage() {
               )}
             </dl>
 
-            <div className="my-3.5 border-t border-[#EFE3FF]" />
+            <div className="my-2 border-t border-[#EFE3FF]" />
 
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[16px] font-extrabold text-[#2B0B4E]">
+              <span className="text-[15px] font-extrabold text-[#2B0B4E]">
                 Order Total
               </span>
-              <span className="text-[18.5px] font-extrabold tabular-nums text-[#5B10B8]">
+              <span className="text-[17px] font-extrabold tabular-nums text-[#5B10B8]">
                 {formatInr(pricing.orderTotalInr)}
               </span>
             </div>
 
             {pricing.totalDiscountInr > 0 && (
-              <div className="mt-3.5 flex items-center justify-center gap-2 rounded-xl bg-[#DCFCE7] px-3.5 py-2.5 text-[13px] font-bold text-[#15803D]">
+              <div className="mt-2 flex items-center justify-center gap-1.5 rounded-xl bg-[#DCFCE7] px-3 py-1.5 text-[12px] font-bold text-[#15803D]">
                 <BadgePercent
                   aria-hidden="true"
-                  className="h-[19px] w-[19px] shrink-0 fill-[#16A34A] text-white"
+                  className="h-[17px] w-[17px] shrink-0 fill-[#16A34A] text-white"
                 />
                 <span>
                   Yay! Your total discount is{' '}
@@ -1293,11 +1292,11 @@ export function MobileCheckoutPage() {
           </section>
 
           {/* Step 2 Continue Button */}
-          <div className="pt-1">
+          <div className="pt-0.5">
             <button
               type="button"
               onClick={() => setStep(3)}
-              className="flex h-[52px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[16px] font-extrabold text-white shadow-[0_8px_22px_-4px_rgba(162,28,175,0.48)] transition-transform active:scale-[0.985]"
+              className="flex h-[46px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[15px] font-extrabold text-white shadow-[0_6px_18px_-4px_rgba(162,28,175,0.45)] transition-transform active:scale-[0.985]"
             >
               <span>Continue</span>
               <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.5]" />
@@ -1310,16 +1309,16 @@ export function MobileCheckoutPage() {
           STEP 3: PAYMENT (ONLY UPI DISABLED + COD ACTIVE)
       ================================================================ */}
       {step === 3 && (
-        <div className="space-y-4 px-3.5">
+        <div className="space-y-2.5 px-3">
           {/* Total Amount Collapsible Lavender Bar */}
-          <div className="overflow-hidden rounded-2xl border border-[#E6D4FF] bg-[#F4ECFF]">
+          <div className="overflow-hidden rounded-xl border border-[#E6D4FF] bg-[#F4ECFF]">
             <button
               type="button"
               onClick={() => setAmountExpanded((prev) => !prev)}
               aria-expanded={amountExpanded}
-              className="flex min-h-[54px] w-full items-center justify-between gap-2 px-4 py-3 text-left"
+              className="flex min-h-[44px] w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left"
             >
-              <span className="inline-flex items-center gap-1.5 text-[15.5px] font-extrabold text-[#5B10B8]">
+              <span className="inline-flex items-center gap-1.5 text-[14.5px] font-extrabold text-[#5B10B8]">
                 <span>Total Amount</span>
                 <ChevronDown
                   aria-hidden="true"
@@ -1328,13 +1327,13 @@ export function MobileCheckoutPage() {
                   }`}
                 />
               </span>
-              <span className="text-[19px] font-extrabold tabular-nums text-[#5B10B8]">
+              <span className="text-[17.5px] font-extrabold tabular-nums text-[#5B10B8]">
                 {formatInr(pricing.orderTotalInr)}
               </span>
             </button>
 
             {amountExpanded && (
-              <div className="space-y-1.5 border-t border-[#E6D4FF] bg-white px-4 py-3 text-[13px]">
+              <div className="space-y-1.5 border-t border-[#E6D4FF] bg-white px-3.5 py-2.5 text-[12.5px]">
                 <div className="flex justify-between text-[#4B3568]">
                   <span>
                     Product Price ({itemCount}{' '}
@@ -1363,13 +1362,13 @@ export function MobileCheckoutPage() {
           </div>
 
           {/* Select Payment Method */}
-          <section aria-label="Select payment method" className="space-y-3">
-            <div className="flex items-center gap-2 pt-1">
+          <section aria-label="Select payment method" className="space-y-2">
+            <div className="flex items-center gap-1.5 pt-0.5">
               <CreditCard
                 aria-hidden="true"
-                className="h-[20px] w-[20px] shrink-0 text-[#5B10B8] stroke-[2.2]"
+                className="h-[18px] w-[18px] shrink-0 text-[#5B10B8] stroke-[2.2]"
               />
-              <h2 className="text-[16px] font-extrabold text-[#2B0B4E]">
+              <h2 className="text-[15px] font-extrabold text-[#2B0B4E]">
                 Select Payment Method
               </h2>
             </div>
@@ -1377,15 +1376,15 @@ export function MobileCheckoutPage() {
             {/* 1. UPI Payment — DISABLED & NOT SELECTABLE */}
             <div
               aria-disabled="true"
-              className="flex cursor-not-allowed select-none items-center gap-3.5 rounded-[18px] border border-[#E6E1EE] bg-[#F3F1F6] p-4"
+              className="flex cursor-not-allowed select-none items-center gap-3 rounded-[16px] border border-[#E6E1EE] bg-[#F3F1F6] p-3"
             >
               <UpiWordmarkIcon />
 
               <div className="min-w-0 flex-1">
-                <p className="text-[15px] font-extrabold leading-tight text-[#847D8F]">
+                <p className="text-[14px] font-extrabold leading-tight text-[#847D8F]">
                   UPI Payment
                 </p>
-                <p className="mt-1 text-[12.5px] font-medium leading-snug text-[#E53935]">
+                <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#E53935]">
                   UPI payment is currently not available.
                 </p>
               </div>
@@ -1401,26 +1400,26 @@ export function MobileCheckoutPage() {
               type="button"
               role="radio"
               aria-checked={paymentMethod === 'cod'}
-              className="flex w-full items-center gap-3.5 rounded-[18px] border-[1.6px] border-[#6A11CB] bg-white p-4 text-left shadow-[0_6px_20px_-10px_rgba(106,17,203,0.22)] transition-transform active:scale-[0.99]"
+              className="flex w-full items-center gap-3 rounded-[16px] border-[1.6px] border-[#6A11CB] bg-white p-3 text-left shadow-[0_5px_16px_-10px_rgba(106,17,203,0.22)] transition-transform active:scale-[0.99]"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5ECFF] text-[#6A11CB]">
-                <PackageCheck className="h-[22px] w-[22px] stroke-[2]" />
+                <PackageCheck className="h-[20px] w-[20px] stroke-[2]" />
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="text-[15px] font-extrabold leading-tight text-[#2B0B4E]">
+                <p className="text-[14px] font-extrabold leading-tight text-[#2B0B4E]">
                   Cash on Delivery (COD)
                 </p>
-                <p className="mt-1 text-[12.5px] font-medium leading-snug text-[#5B4775]">
+                <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#5B4775]">
                   Pay when you receive your order
                 </p>
               </div>
 
               <span
                 aria-hidden="true"
-                className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-2 border-[#6A11CB] bg-white"
+                className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full border-2 border-[#6A11CB] bg-white"
               >
-                <span className="h-3 w-3 rounded-full bg-[#6A11CB]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#6A11CB]" />
               </span>
             </button>
           </section>
@@ -1428,16 +1427,16 @@ export function MobileCheckoutPage() {
           {/* Safe & Secure Order Notice */}
           <section
             aria-label="Safe and secure order"
-            className="flex items-center gap-3.5 rounded-[20px] border border-[#E6D4FF] bg-[#F5EEFF] p-4"
+            className="flex items-center gap-3 rounded-[16px] border border-[#E6D4FF] bg-[#F5EEFF] p-3"
           >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#6A11CB] text-white shadow-[0_4px_12px_rgba(106,17,203,0.28)]">
-              <ShieldCheck className="h-6 w-6 stroke-[2.2]" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6A11CB] text-white shadow-[0_4px_12px_rgba(106,17,203,0.28)]">
+              <ShieldCheck className="h-5 w-5 stroke-[2.2]" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-extrabold text-[#2B0B4E]">
+              <p className="text-[14px] font-extrabold text-[#2B0B4E]">
                 Safe &amp; Secure Order
               </p>
-              <p className="mt-0.5 text-[12.5px] leading-snug text-[#533F6E]">
+              <p className="mt-0.5 text-[12px] leading-snug text-[#533F6E]">
                 Your order is protected and will be delivered to your given
                 address.
               </p>
@@ -1445,14 +1444,14 @@ export function MobileCheckoutPage() {
           </section>
 
           {/* Place Order Gradient Button */}
-          <div className="pt-2">
+          <div className="pt-1">
             <button
               type="button"
               onClick={() => void handlePlaceOrder()}
               disabled={submitting}
-              className="flex h-[52px] w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[16px] font-extrabold text-white shadow-[0_8px_22px_-4px_rgba(162,28,175,0.48)] transition-transform active:scale-[0.985] disabled:opacity-60"
+              className="flex h-[46px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[15px] font-extrabold text-white shadow-[0_6px_18px_-4px_rgba(162,28,175,0.45)] transition-transform active:scale-[0.985] disabled:opacity-60"
             >
-              <Lock className="h-[18px] w-[18px] shrink-0 stroke-[2.4]" />
+              <Lock className="h-[17px] w-[17px] shrink-0 stroke-[2.4]" />
               <span>{submitting ? 'Placing Order...' : 'Place Order'}</span>
             </button>
           </div>
