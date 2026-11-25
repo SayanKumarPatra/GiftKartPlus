@@ -3,14 +3,21 @@ import { Link } from 'react-router-dom';
 import {
   ChevronDown,
   ChevronRight,
+  CreditCard,
   Mail,
   MapPin,
+  MessageCircle,
+  Package,
   Phone,
-  Send,
+  RotateCcw,
+  ShoppingBag,
+  Truck,
+  User,
+  UserPlus,
 } from 'lucide-react';
 import { useStoreSettings } from '../../hooks/useStoreData';
-import { useToast } from '../../context/ToastContext';
-import { validateEmail, validateRequired } from '../../utils/validation';
+import { useAuth } from '../../context/AuthContext';
+import { buildWhatsAppSupportUrl } from '../../utils/storefrontHelpers';
 import { MobileHelpSupportPage } from '../../components/storefront/MobileHelpSupportPage';
 
 export function AboutUsPage() {
@@ -165,35 +172,33 @@ export function AboutUsPage() {
   );
 }
 
+const DESKTOP_LOGGED_OUT_HELP_ILLUSTRATION =
+  '/assets/aistudio/3D_Headset_Support_Illustration_e1278b5b.png';
+const DESKTOP_SUPPORT_AGENT_ILLUSTRATION =
+  '/assets/aistudio/Cheerful_Customer_Support_Agent_with_Laptop_b3ec24dc.png';
+
+const DESKTOP_SUPPORT_TOPICS = [
+  { id: 'order-issues', label: 'Order Related Issues', Icon: ShoppingBag },
+  { id: 'payment-issues', label: 'Payment Issues', Icon: CreditCard },
+  { id: 'delivery-issues', label: 'Delivery Issues', Icon: Truck },
+  { id: 'return-refund', label: 'Return & Refund', Icon: RotateCcw },
+  { id: 'product-issues', label: 'Product Related Issues', Icon: Package },
+  { id: 'other-queries', label: 'Other Queries', Icon: MessageCircle },
+];
+
 export function ContactUsPage() {
   const { data: settings } = useStoreSettings();
-  const { pushToast } = useToast();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
+  const { customerAccount, isAuthReady } = useAuth();
+  const [selectedTopic, setSelectedTopic] = useState<string>('');
+  const [issueNote, setIssueNote] = useState('');
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const n = validateRequired(name, 'Name');
-    const em = validateEmail(email);
-    const m = validateRequired(message, 'Message');
-    if (!n.valid || !em.valid || !m.valid) {
-      pushToast({
-        title: 'Incomplete inquiry',
-        description: n.error ?? em.error ?? m.error,
-        variant: 'error',
-      });
-      return;
-    }
-    setName('');
-    setEmail('');
-    setMessage('');
-    pushToast({
-      title: 'Inquiry Submitted',
-      description: 'Thank you for reaching out. Our GiftKart support team will get back to you shortly.',
-      variant: 'success',
-    });
-  }
+  const whatsappHref = buildWhatsAppSupportUrl(
+    settings?.supportPhone,
+    customerAccount?.fullName ?? 'GiftKart Customer',
+    customerAccount?.email ?? '',
+    issueNote,
+    selectedTopic || undefined
+  );
 
   return (
     <>
@@ -202,68 +207,207 @@ export function ContactUsPage() {
         <MobileHelpSupportPage />
       </div>
 
-      {/* Desktop & Mobile Desktop-Site (>= 900px): Existing Desktop Contact Page Unchanged */}
-      <div className="mx-auto hidden max-w-5xl gap-6 lg:grid lg:grid-cols-12">
-        <div className="gk-promo-gradient space-y-5 rounded-3xl border border-[#EBD8FF] p-6 sm:p-8 lg:col-span-5">
-          <h1 className="text-3xl font-extrabold text-[#3B0764]">Contact GiftKart</h1>
-          <p className="text-sm text-[#4B2C70]">
-            Questions about custom photo printing, bulk corporate gifts, or Jalchak delivery? Reach out below.
-          </p>
-          <div className="space-y-3 text-sm font-semibold text-[#2B0B4E]">
-            <p className="flex items-center gap-2.5">
-              <MapPin className="h-4 w-4 text-[#FF4D8D]" />
-              <span>Jalchak, West Bengal, India</span>
+      {/* Desktop & Laptop (>= 900px): Full Feature Parity with Mobile Help & Support */}
+      <div className="mx-auto hidden max-w-5xl lg:block">
+        {!isAuthReady ? (
+          <div className="h-72 animate-pulse rounded-2xl bg-[#FAF5FF]" />
+        ) : !customerAccount ? (
+          /* Logged-Out State — Same Illustration & Prompt as Mobile */
+          <div className="mx-auto max-w-xl rounded-2xl border border-[#EFE3FF] bg-white px-10 py-10 text-center shadow-[0_12px_36px_-18px_rgba(106,17,203,0.18)]">
+            <img
+              src={DESKTOP_LOGGED_OUT_HELP_ILLUSTRATION}
+              alt="GiftKart Help and Support"
+              className="mx-auto h-44 w-auto object-contain drop-shadow-[0_10px_22px_rgba(106,17,203,0.12)]"
+            />
+            <h1 className="mt-4 font-display text-2xl font-bold text-[#1E1035]">
+              Help &amp; Support
+            </h1>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-[#594A6B]">
+              Please log in to get support and contact our team directly on WhatsApp.
             </p>
-            <p className="flex items-center gap-2.5">
-              <Mail className="h-4 w-4 text-[#6A11CB]" />
-              <span>{settings?.supportEmail ?? 'support@giftkart.in'}</span>
-            </p>
-            <p className="flex items-center gap-2.5">
-              <Phone className="h-4 w-4 text-[#6A11CB]" />
-              <span>{settings?.supportPhone ?? '+91 9382040746'}</span>
-            </p>
+            <div className="mx-auto mt-6 flex max-w-sm flex-col gap-3">
+              <Link
+                to="/account"
+                state={{ from: '/contact' }}
+                className="flex h-11 w-full items-center justify-between rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-opacity hover:opacity-95"
+              >
+                <span className="flex items-center gap-2.5">
+                  <User className="h-4 w-4" />
+                  <span>Login / Sign In</span>
+                </span>
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/account"
+                state={{ from: '/contact', mode: 'signup' }}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#DFD2F2] bg-[#FAF6FF] px-5 text-sm font-bold text-[#6A11CB] transition-colors hover:bg-[#F2E7FF]"
+              >
+                <UserPlus className="h-4 w-4" />
+                <span>Create New Account</span>
+              </Link>
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Logged-In State — Support Agent Illustration + WhatsApp Hub + 6 Topics */
+          <div className="space-y-6">
+            <div className="flex items-center justify-between gap-6 rounded-2xl border border-[#EFE3FF] bg-gradient-to-r from-[#FAF5FF] via-white to-[#FFF4FA] px-8 py-6">
+              <div className="max-w-xl">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#6A11CB]">
+                  GiftKart Customer Care
+                </p>
+                <h1 className="mt-1 font-display text-3xl font-bold text-[#1E1035]">
+                  Help &amp; Support
+                </h1>
+                <p className="mt-1.5 text-sm text-[#594A6B]">
+                  Hi <strong className="text-[#1E1035]">{customerAccount.fullName}</strong>, we&apos;re
+                  here to help! Select a topic below or chat with our support team directly on WhatsApp.
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-5 text-xs font-semibold text-[#594A6B]">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-[#6A11CB]" />
+                    {settings?.supportPhone ?? '+91 9382040746'}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 text-[#6A11CB]" />
+                    {settings?.supportEmail ?? 'support@giftkart.in'}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-[#FF4D8D]" />
+                    Jalchak, Paschim Medinipur, WB
+                  </span>
+                </div>
+              </div>
+              <img
+                src={DESKTOP_SUPPORT_AGENT_ILLUSTRATION}
+                alt="GiftKart Support Representative"
+                className="h-40 w-auto shrink-0 object-contain drop-shadow-[0_10px_20px_rgba(106,17,203,0.12)]"
+              />
+            </div>
 
-        <div className="gk-card rounded-3xl p-6 sm:p-8 lg:col-span-7">
-          <h2 className="text-lg font-extrabold text-[#3B0764]">Send a Message</h2>
-          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-[#2B0B4E]">Your Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3.5 py-2.5 text-sm focus:border-[#6A11CB] focus:outline-none"
-              />
+            <div className="grid grid-cols-12 gap-6 items-start">
+              {/* Left: 6 Support Topics */}
+              <div className="col-span-7 space-y-4 rounded-2xl border border-[#EFE3FF] bg-white p-6 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.1)]">
+                <div>
+                  <h2 className="text-base font-extrabold text-[#1E1035]">
+                    What can we help you with?
+                  </h2>
+                  <p className="mt-0.5 text-xs text-[#685782]">
+                    Choose a topic to pre-fill your WhatsApp support message.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {DESKTOP_SUPPORT_TOPICS.map(({ id, label, Icon }) => {
+                    const active = selectedTopic === label;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() =>
+                          setSelectedTopic((prev) => (prev === label ? '' : label))
+                        }
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 text-left transition-all ${
+                          active
+                            ? 'border-[#6A11CB] bg-[#FAF5FF] shadow-xs ring-1 ring-[#6A11CB]/20'
+                            : 'border-[#EFE3FF] bg-white hover:border-[#6A11CB]/40'
+                        }`}
+                      >
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                            active
+                              ? 'bg-[#6A11CB] text-white'
+                              : 'bg-[#F6EEFF] text-[#6A11CB]'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <span className="text-xs font-bold text-[#1E1035]">{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="border-t border-[#EFE3FF] pt-4">
+                  <label
+                    htmlFor="desktop-support-note"
+                    className="block text-xs font-bold text-[#2B0B4E]"
+                  >
+                    Brief Message / Order Number (Optional)
+                  </label>
+                  <textarea
+                    id="desktop-support-note"
+                    rows={3}
+                    value={issueNote}
+                    onChange={(e) => setIssueNote(e.target.value)}
+                    placeholder="Share your Order # or describe your question..."
+                    className="mt-1.5 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] px-3.5 py-2.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Right: WhatsApp Direct Support Card + Quick Policy Links */}
+              <div className="col-span-5 space-y-4">
+                <div className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-[0_8px_24px_-14px_rgba(22,163,74,0.18)]">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_6px_14px_rgba(37,211,102,0.3)]">
+                      <MessageCircle className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-extrabold text-[#1E1035]">
+                        Contact Us on WhatsApp
+                      </h2>
+                      <p className="text-xs text-[#594A6B]">
+                        Chat directly with our Jalchak support desk.
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedTopic && (
+                    <p className="mt-3 rounded-lg bg-[#FAF5FF] px-3 py-1.5 text-xs font-semibold text-[#6A11CB]">
+                      Selected Topic: {selectedTopic}
+                    </p>
+                  )}
+
+                  <a
+                    href={whatsappHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 flex h-12 w-full items-center justify-between rounded-xl bg-gradient-to-r from-[#18B852] via-[#22C55E] to-[#16A34A] px-5 text-sm font-bold text-white shadow-[0_8px_18px_rgba(22,163,74,0.28)] transition-opacity hover:opacity-95"
+                  >
+                    <span className="flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4" />
+                      <span>Chat on WhatsApp</span>
+                    </span>
+                    <ChevronRight className="h-4 w-4" />
+                  </a>
+                </div>
+
+                <div className="rounded-2xl border border-[#EFE3FF] bg-white p-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#7A6894]">
+                    Helpful Self-Service Links
+                  </p>
+                  <div className="mt-2.5 divide-y divide-[#F3EAFF] text-xs font-semibold">
+                    {[
+                      { label: 'Track & Manage My Orders', to: '/my-orders' },
+                      { label: 'Frequently Asked Questions (FAQ)', to: '/faq' },
+                      { label: 'Return & Refund Policy', to: '/return-policy' },
+                      { label: 'Order Cancellation Policy', to: '/cancellation-policy' },
+                    ].map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        className="flex items-center justify-between py-2.5 text-[#2B0B4E] transition-colors hover:text-[#6A11CB]"
+                      >
+                        <span>{item.label}</span>
+                        <ChevronRight className="h-3.5 w-3.5 text-[#9B8AB4]" />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-[#2B0B4E]">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3.5 py-2.5 text-sm focus:border-[#6A11CB] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-[#2B0B4E]">Message</label>
-              <textarea
-                rows={4}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3.5 py-2.5 text-sm focus:border-[#6A11CB] focus:outline-none"
-              />
-            </div>
-            <button
-              type="submit"
-              className="gk-btn-purple inline-flex min-h-[44px] items-center gap-2 rounded-full px-6 text-sm font-bold"
-            >
-              <Send className="h-4 w-4" />
-              <span>Submit Inquiry</span>
-            </button>
-          </form>
-        </div>
+          </div>
+        )}
       </div>
     </>
   );

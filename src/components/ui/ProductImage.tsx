@@ -7,6 +7,7 @@ interface ProductImageProps {
   className?: string;
   aspectClass?: string;
   zoomOnHover?: boolean;
+  eager?: boolean;
 }
 
 export function ProductImage({
@@ -15,6 +16,7 @@ export function ProductImage({
   className = '',
   aspectClass = 'aspect-[4/3]',
   zoomOnHover = false,
+  eager = false,
 }: ProductImageProps) {
   const [failed, setFailed] = useState(false);
 
@@ -38,7 +40,7 @@ export function ProductImage({
       <img
         src={src}
         alt={alt}
-        loading="lazy"
+        loading={eager ? 'eager' : 'lazy'}
         referrerPolicy="no-referrer"
         onError={() => setFailed(true)}
         className={`h-full w-full object-cover ${

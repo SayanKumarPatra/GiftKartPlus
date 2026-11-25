@@ -69,7 +69,7 @@ export function CartDrawer() {
                 Your gift bag is empty
               </p>
               <p className="mt-1 max-w-xs text-xs leading-relaxed text-[#5F4B78]">
-                Explore 15 personalized gifting categories and add thoughtful keepsakes to begin a story.
+                Explore personalized mugs, photo frames, LED lamps, cushions, and curated gift hampers.
               </p>
               <Link to="/shop" onClick={closeCartDrawer} className="mt-5">
                 <Button size="sm" variant="accent">
@@ -257,7 +257,7 @@ export function CartDrawer() {
               </Link>
               <Link to="/checkout" onClick={closeCartDrawer}>
                 <Button variant="accent" fullWidth>
-                  Demo Checkout
+                  Checkout
                 </Button>
               </Link>
             </div>

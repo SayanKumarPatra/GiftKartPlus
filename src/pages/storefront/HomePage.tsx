@@ -1,23 +1,25 @@
 import {
-  ForYouSection,
   HeroSliderSection,
-  OccasionsSection,
+  ProductListingSection,
+  ShopByCategorySection,
+  TrendingGiftsSection,
 } from '../../components/storefront/HomeSections';
 import { MobileHomePage } from '../../components/storefront/MobileHomePage';
 
 export function HomePage() {
   return (
     <div className="w-full">
-      {/* Normal Mobile View (< 900px): Dedicated Redesigned Mobile Homepage */}
+      {/* Mobile View (< 1024px): Protected Mobile Homepage */}
       <div className="lg:hidden">
         <MobileHomePage />
       </div>
 
-      {/* Desktop, Laptop & Mobile "Desktop Site" Mode (>= 900px): Existing Desktop Homepage Unchanged */}
+      {/* Desktop & Laptop View (>= 1024px): Redesigned Desktop Homepage */}
       <div className="hidden lg:block">
         <HeroSliderSection />
-        <OccasionsSection />
-        <ForYouSection />
+        <ShopByCategorySection />
+        <TrendingGiftsSection />
+        <ProductListingSection />
       </div>
     </div>
   );

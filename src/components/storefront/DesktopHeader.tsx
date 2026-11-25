@@ -1,8 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   ChevronDown,
+  Headset,
   Heart,
+  LogOut,
+  MapPin,
+  Package,
   Search,
   ShoppingCart,
   User,
@@ -15,9 +19,17 @@ interface DesktopHeaderProps {
   onOpenSearch: () => void;
 }
 
+const DESKTOP_NAV_LINKS = [
+  { label: 'Home', to: '/', end: true },
+  { label: 'Categories', to: '/categories', end: false },
+  { label: 'All Gifts', to: '/shop', end: false },
+  { label: 'My Orders', to: '/my-orders', end: false },
+  { label: 'Help & Support', to: '/contact', end: false },
+];
+
 export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
-  const { itemCount, wishlistIds, openCartDrawer } = useCart();
-  const { customerAccount } = useAuth();
+  const { itemCount, wishlistIds } = useCart();
+  const { customerAccount, signOutCustomer } = useAuth();
   const [accountOpen, setAccountOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const headerRef = useRef<HTMLDivElement>(null);
@@ -48,13 +60,20 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
     navigate(`/search?search=${encodeURIComponent(trimmed)}`);
   }
 
+  async function handleLogout() {
+    await signOutCustomer();
+    setAccountOpen(false);
+    navigate('/');
+  }
+
   return (
     <header
       ref={headerRef}
-      className="sticky top-0 z-40 hidden border-b border-[#EAE2F5] bg-white/98 backdrop-blur-xl lg:block"
+      className="sticky top-0 z-40 hidden border-b border-[#EBD8FF] bg-white/98 backdrop-blur-xl lg:block"
     >
-      <div className="mx-auto flex h-[64px] max-w-7xl items-center justify-between gap-6 px-6">
-        {/* Left: Upright GiftKart Brand Logo */}
+      {/* Primary Brand + Search + Utility Row */}
+      <div className="mx-auto flex h-[66px] max-w-[1400px] items-center justify-between gap-6 px-6 xl:px-8">
+        {/* Left: GiftKart Brand Logo */}
         <Link
           to="/"
           aria-label="GiftKart Home"
@@ -63,11 +82,11 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
           <BrandLogo size="md" showTagline />
         </Link>
 
-        {/* Center: Clean, Professional Integrated Ecommerce Search Bar */}
+        {/* Center: Search Bar */}
         <form
           onSubmit={handleSearchSubmit}
           role="search"
-          className="flex h-[42px] max-w-2xl flex-1 items-stretch overflow-hidden rounded-lg border border-[#DCD3EB] bg-[#FAF9FC] transition-colors focus-within:border-[#6A11CB] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#6A11CB]/12"
+          className="flex h-[42px] max-w-2xl flex-1 items-stretch overflow-hidden rounded-lg border border-[#DCD0EF] bg-[#FAF8FC] transition-colors focus-within:border-[#6A11CB] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#6A11CB]/12"
         >
           <label htmlFor="desktop-header-search" className="sr-only">
             Search GiftKart products
@@ -77,26 +96,25 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search personalized gifts, mugs, t-shirts, photo frames..."
+            placeholder="Search personalized mugs, photo frames, LED lamps, cushions, chocolates..."
             className="w-full bg-transparent px-4 text-[13px] font-medium text-[#1E1035] placeholder:text-[#7E7094] focus:outline-none"
           />
           <button
             type="submit"
             aria-label="Search gifts"
-            className="inline-flex h-full shrink-0 cursor-pointer items-center justify-center gap-1.5 border-l border-[#6A11CB] bg-[#6A11CB] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-[#540CA6] active:bg-[#46098C]"
+            className="inline-flex h-full shrink-0 cursor-pointer items-center justify-center gap-1.5 bg-[#6A11CB] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#560DA8] active:bg-[#46098C]"
           >
             <Search className="h-4 w-4 stroke-[2.2]" />
             <span>Search</span>
           </button>
         </form>
 
-        {/* Right: Wishlist | Account ▾ | Cart */}
-        <div className="flex shrink-0 items-center gap-4">
-          {/* Wishlist */}
+        {/* Right: Wishlist | Account Dropdown | Cart */}
+        <div className="flex shrink-0 items-center gap-5">
           <Link
             to="/wishlist"
             aria-label={`Wishlist (${wishlistIds.length} items)`}
-            className="group relative inline-flex items-center gap-1.5 text-[13px] font-bold text-[#1E1035] transition-colors hover:text-[#6A11CB]"
+            className="group relative inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1E1035] transition-colors hover:text-[#6A11CB]"
           >
             <span className="relative flex items-center justify-center">
               <Heart className="h-[19px] w-[19px] text-[#6A11CB] transition-colors group-hover:text-[#FF4D8D]" />
@@ -109,9 +127,9 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
             <span>Wishlist</span>
           </Link>
 
-          <span className="h-4 w-px bg-[#E5DCF2]" aria-hidden="true" />
+          <span className="h-4 w-px bg-[#EBD8FF]" aria-hidden="true" />
 
-          {/* Account Dropdown */}
+          {/* Account Menu */}
           <div
             className="relative"
             onMouseEnter={() => setAccountOpen(true)}
@@ -119,11 +137,11 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
           >
             <Link
               to="/account"
-              className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#1E1035] transition-colors hover:text-[#6A11CB]"
+              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1E1035] transition-colors hover:text-[#6A11CB]"
             >
               <User className="h-[19px] w-[19px] text-[#6A11CB]" />
-              <span className="max-w-[96px] truncate">
-                {customerAccount ? customerAccount.fullName.split(' ')[0] : 'Account'}
+              <span className="max-w-[110px] truncate">
+                {customerAccount ? customerAccount.fullName.split(' ')[0] : 'Sign In'}
               </span>
               <ChevronDown
                 className={`h-3.5 w-3.5 text-[#594A6B] transition-transform duration-150 ${
@@ -133,45 +151,117 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
             </Link>
 
             {accountOpen && (
-              <div className="absolute right-0 top-full z-50 w-52 pt-2.5">
-                <div className="rounded-xl border border-[#E6DCF5] bg-white p-1.5 shadow-lg shadow-[#2B0B4E]/10">
-                  {[
-                    { label: customerAccount ? 'My Profile' : 'Sign In / Account', to: '/account' },
-                    { label: 'My Orders', to: '/my-orders' },
-                    { label: 'Saved Addresses', to: '/addresses' },
-                  ].map((item) => (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      className="block rounded-lg px-3 py-2 text-xs font-semibold text-[#2B0B4E] transition-colors hover:bg-[#F7F2FF] hover:text-[#6A11CB]"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+              <div className="absolute right-0 top-full z-50 w-56 pt-2">
+                <div className="rounded-xl border border-[#EBD8FF] bg-white p-1.5 shadow-lg shadow-[#2B0B4E]/10">
+                  {customerAccount && (
+                    <div className="border-b border-[#F2E8FF] px-3 py-2 mb-1">
+                      <p className="truncate text-xs font-bold text-[#1E1035]">
+                        {customerAccount.fullName}
+                      </p>
+                      <p className="truncate text-[11px] text-[#6F5D88]">
+                        {customerAccount.email}
+                      </p>
+                    </div>
+                  )}
+
+                  <Link
+                    to="/account"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-[#2B0B4E] transition-colors hover:bg-[#FAF5FF] hover:text-[#6A11CB]"
+                  >
+                    <User className="h-3.5 w-3.5 text-[#6A11CB]" />
+                    <span>{customerAccount ? 'My Profile' : 'Login / Sign Up'}</span>
+                  </Link>
+                  <Link
+                    to="/my-orders"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-[#2B0B4E] transition-colors hover:bg-[#FAF5FF] hover:text-[#6A11CB]"
+                  >
+                    <Package className="h-3.5 w-3.5 text-[#6A11CB]" />
+                    <span>My Orders</span>
+                  </Link>
+                  <Link
+                    to="/addresses"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-[#2B0B4E] transition-colors hover:bg-[#FAF5FF] hover:text-[#6A11CB]"
+                  >
+                    <MapPin className="h-3.5 w-3.5 text-[#6A11CB]" />
+                    <span>Delivery Addresses</span>
+                  </Link>
+                  <Link
+                    to="/contact"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-[#2B0B4E] transition-colors hover:bg-[#FAF5FF] hover:text-[#6A11CB]"
+                  >
+                    <Headset className="h-3.5 w-3.5 text-[#6A11CB]" />
+                    <span>Help &amp; Support</span>
+                  </Link>
+
+                  {customerAccount && (
+                    <>
+                      <div className="my-1 h-px bg-[#F2E8FF]" />
+                      <button
+                        type="button"
+                        onClick={() => void handleLogout()}
+                        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                      >
+                        <LogOut className="h-3.5 w-3.5" />
+                        <span>Logout</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
           </div>
 
-          <span className="h-4 w-px bg-[#E5DCF2]" aria-hidden="true" />
+          <span className="h-4 w-px bg-[#EBD8FF]" aria-hidden="true" />
 
-          {/* Cart */}
-          <button
-            type="button"
-            onClick={openCartDrawer}
+          {/* Cart Direct Link */}
+          <Link
+            to="/cart"
             aria-label={`Shopping cart (${itemCount} items)`}
-            className="group relative inline-flex cursor-pointer items-center gap-2 text-[13px] font-bold text-[#1E1035] transition-colors hover:text-[#6A11CB]"
+            className="group relative inline-flex items-center gap-2 rounded-lg bg-[#FAF5FF] px-3.5 py-2 text-[13px] font-bold text-[#6A11CB] transition-colors hover:bg-[#F1E4FF]"
           >
             <span className="relative flex items-center justify-center">
-              <ShoppingCart className="h-[19px] w-[19px] text-[#6A11CB]" />
-              <span className="absolute -right-2 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF4D8D] px-1 font-mono text-[9px] font-bold tabular-nums text-white">
-                {itemCount}
-              </span>
+              <ShoppingCart className="h-[18px] w-[18px]" />
+              {itemCount > 0 && (
+                <span className="absolute -right-2 -top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF4D8D] px-1 font-mono text-[9px] font-bold tabular-nums text-white">
+                  {itemCount}
+                </span>
+              )}
             </span>
             <span>Cart</span>
-          </button>
+          </Link>
         </div>
       </div>
+
+      {/* Secondary Clean Navigation Strip */}
+      <nav
+        aria-label="Primary desktop navigation"
+        className="border-t border-[#F3EAFF] bg-[#FCFAFF]"
+      >
+        <div className="mx-auto flex h-10 max-w-[1400px] items-center justify-between px-6 xl:px-8">
+          <div className="flex items-center gap-7">
+            {DESKTOP_NAV_LINKS.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `relative flex h-10 items-center text-[13px] font-semibold transition-colors ${
+                    isActive
+                      ? 'text-[#6A11CB] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#6A11CB]'
+                      : 'text-[#4B3963] hover:text-[#6A11CB]'
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
+
+          <p className="text-[12px] font-medium text-[#6C5987]">
+            Personalized Gifts &amp; Hampers · Cash on Delivery Available
+          </p>
+        </div>
+      </nav>
     </header>
   );
 }

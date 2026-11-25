@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
 import type { Product } from '../../types';
 import { ProductImage } from '../ui/ProductImage';
 import { useCart } from '../../context/CartContext';
@@ -10,9 +10,14 @@ import { formatInr } from '../../utils/format';
 interface ProductCardProps {
   product: Product;
   categoryLabel?: string;
+  compact?: boolean;
 }
 
-export function ProductCard({ product, categoryLabel }: ProductCardProps) {
+export function ProductCard({
+  product,
+  categoryLabel,
+  compact = false,
+}: ProductCardProps) {
   const { items, addToCart, toggleWishlist, isWishlisted } = useCart();
   const { customerAccount } = useAuth();
   const { pushToast } = useToast();
@@ -54,7 +59,7 @@ export function ProductCard({ product, categoryLabel }: ProductCardProps) {
   }
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-[#ECE4F5] bg-white shadow-[0_1px_4px_rgba(43,11,78,0.04)] transition-shadow duration-200 hover:shadow-[0_12px_26px_-12px_rgba(106,17,203,0.18)]">
+    <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-[#ECE4F5] bg-white shadow-[0_1px_4px_rgba(43,11,78,0.04)] transition-all duration-200 hover:border-[#D7B9FA] hover:shadow-[0_12px_26px_-12px_rgba(106,17,203,0.18)]">
       {/* Flush Square Product Image + Top-Right Circular Wishlist Toggle */}
       <div className="relative overflow-hidden bg-[#FAF7FD]">
         <Link to={`/product/${product.slug}`} className="block">
@@ -70,60 +75,74 @@ export function ProductCard({ product, categoryLabel }: ProductCardProps) {
           type="button"
           onClick={handleWishlistClick}
           aria-label={
-            saved ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`
+            saved
+              ? `Remove ${product.name} from wishlist`
+              : `Save ${product.name} to wishlist`
           }
-          className="absolute right-2.5 top-2.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-white/95 text-[#2B0B4E] shadow-xs transition-transform duration-150 hover:scale-105 sm:h-8 sm:w-8"
+          className="absolute right-2.5 top-2.5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-[#2B0B4E] shadow-xs transition-transform duration-150 hover:scale-105"
         >
           <Heart
-            className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${
+            className={`h-4 w-4 ${
               saved ? 'fill-[#FF4D8D] text-[#FF4D8D]' : 'text-[#2B0B4E]'
             }`}
           />
         </button>
       </div>
 
-      {/* Clean Modern Card Body */}
-      <div className="flex flex-1 flex-col p-2.5 sm:p-3.5">
-        {/* Price (Left) + Crisp Compact NEW Tag (Right) */}
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[13px] font-bold tabular-nums text-[#1E1035] sm:text-[15px]">
-            {formatInr(product.priceInr)}
-          </span>
-          <span className="shrink-0 rounded bg-[#F3ECFB] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#5A11AD]">
-            NEW
-          </span>
-        </div>
+      {/* Clean Modern E-Commerce Card Body (Normal Selling Price Only — No Ratings/Reviews/MRP) */}
+      <div className={`flex flex-1 flex-col ${compact ? 'p-3' : 'p-3.5'}`}>
+        {categoryLabel && (
+          <p className="truncate text-[11px] font-semibold text-[#6A11CB]">
+            {categoryLabel}
+          </p>
+        )}
 
-        {/* Clean Sans-Serif Product Title */}
         <Link
           to={`/product/${product.slug}`}
-          className="mt-1 line-clamp-2 text-[12.5px] font-semibold leading-[1.35] text-[#1E1035] transition-colors hover:text-[#6A11CB] sm:text-[14px]"
+          className={`mt-0.5 line-clamp-2 font-semibold leading-[1.35] text-[#1E1035] transition-colors hover:text-[#6A11CB] ${
+            compact ? 'text-[13px]' : 'text-[14px]'
+          }`}
         >
           {product.name}
         </Link>
 
-        {/* Subtle Maker / Brand Attribution */}
-        <p className="mt-1.5 truncate text-[10.5px] font-medium text-[#84759A] sm:text-[11px]">
-          {categoryLabel ? `By GiftKart · ${categoryLabel}` : 'By GiftKart'}
-        </p>
+        <div className="mt-2 flex items-baseline justify-between gap-2">
+          <span
+            className={`font-bold tabular-nums text-[#1E1035] ${
+              compact ? 'text-[14.5px]' : 'text-[16px]'
+            }`}
+          >
+            {formatInr(product.priceInr)}
+          </span>
+          {product.stockCount <= 0 && (
+            <span className="text-[11px] font-semibold text-rose-600">
+              Out of Stock
+            </span>
+          )}
+        </div>
 
         {/* Bottom Full-Width Add to Cart / Go to Cart Button */}
-        <div className="mt-auto pt-2.5 sm:pt-3">
+        <div className={`mt-auto ${compact ? 'pt-2.5' : 'pt-3'}`}>
           <button
             type="button"
             onClick={handleAddToCart}
             disabled={!isInCart && product.stockCount <= 0}
-            className={`flex h-9 w-full cursor-pointer items-center justify-center rounded-lg px-3 text-[11.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:h-[38px] sm:text-xs ${
+            className={`flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              compact ? 'h-8 text-[11.5px]' : 'h-[38px] text-[12.5px]'
+            } ${
               isInCart
                 ? 'border border-[#6A11CB] bg-[#F5ECFF] text-[#6A11CB] hover:bg-[#EDE0FF]'
-                : 'bg-[#5A11AD] text-white hover:bg-[#460B8C] active:bg-[#3A0875]'
+                : 'bg-[#6A11CB] text-white hover:bg-[#550DA8] active:bg-[#440A8A]'
             }`}
           >
-            {isInCart
-              ? 'Go to Cart'
-              : product.stockCount > 0
-                ? 'Add to Cart'
-                : 'Out of Stock'}
+            <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+            <span>
+              {isInCart
+                ? 'Go to Cart'
+                : product.stockCount > 0
+                  ? 'Add to Cart'
+                  : 'Out of Stock'}
+            </span>
           </button>
         </div>
       </div>

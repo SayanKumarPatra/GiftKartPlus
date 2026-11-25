@@ -85,7 +85,7 @@ export function StorefrontFooter() {
       {!isHome && (
         <div
           aria-hidden="true"
-          className="h-[68px] bg-[#F6EEFF] lg:hidden"
+          className="h-[64px] bg-white lg:hidden"
         />
       )}
       <footer
@@ -171,7 +171,7 @@ export function StorefrontFooter() {
             <div className="mt-3 space-y-1.5 text-xs text-[#594A6B]">
               <p className="flex items-center gap-1.5">
                 <Mail className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
-                <span>{settings?.supportEmail ?? 'demo@giftkart.in'}</span>
+                <span>{settings?.supportEmail ?? 'support@giftkart.in'}</span>
               </p>
               <p className="flex items-center gap-1.5">
                 <Phone className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
@@ -324,7 +324,7 @@ export function StorefrontFooter() {
                     </p>
                   ))}
                   <p className="text-[10.5px] leading-snug text-[#594A6B]">
-                    {settings?.supportEmail ?? 'demo@giftkart.in'}
+                    {settings?.supportEmail ?? 'support@giftkart.in'}
                   </p>
                   <p className="text-[10.5px] leading-snug text-[#594A6B]">
                     {settings?.supportPhone ?? '+91 9382040746'}
@@ -353,7 +353,7 @@ export function StorefrontFooter() {
           <span className="hidden text-white/40 sm:inline">|</span>
           <span>Made with ♥ in Bengal</span>
           <span className="hidden text-white/40 sm:inline">|</span>
-          <span className="text-white/85">Local Demo Mode · No Live Payments</span>
+          <span className="text-white/85">Jalchak, Paschim Medinipur, WB</span>
         </div>
       </div>
       </footer>
