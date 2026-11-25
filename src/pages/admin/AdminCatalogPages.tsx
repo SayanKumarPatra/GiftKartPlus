@@ -5,8 +5,9 @@ import {
   Archive,
   ArchiveRestore,
   ArrowRight,
+  Boxes,
   Check,
-  Database,
+  ChevronRight,
   Edit3,
   FolderTree,
   Gift,
@@ -16,10 +17,12 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Settings,
   ShoppingCart,
-  Sparkles,
+  Tag,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
 import {
   useCategories,
@@ -64,8 +67,19 @@ const MEDIA_OPTIONS: { label: string; url: string }[] = [
   { label: 'Desk & Diary Studio', url: STUDIO_MEDIA.stationeryDecor },
 ];
 
+const QUICK_MANAGE_SHORTCUTS = [
+  { label: 'Orders', to: '/admin/orders', icon: ShoppingCart, tone: 'bg-[#FFF0F6] text-[#FF4D8D]' },
+  { label: 'Products', to: '/admin/products', icon: Package, tone: 'bg-[#F4EBFF] text-[#6A11CB]' },
+  { label: 'Categories', to: '/admin/categories', icon: FolderTree, tone: 'bg-[#FFF0F6] text-[#FF4D8D]' },
+  { label: 'Stock', to: '/admin/inventory', icon: Boxes, tone: 'bg-amber-50 text-amber-700' },
+  { label: 'Banners', to: '/admin/banners', icon: ImageIcon, tone: 'bg-[#F4EBFF] text-[#6A11CB]' },
+  { label: 'Coupons', to: '/admin/coupons', icon: Tag, tone: 'bg-[#FFF0F6] text-[#FF4D8D]' },
+  { label: 'Gift Wrap', to: '/admin/gift-wrapping', icon: Gift, tone: 'bg-[#F4EBFF] text-[#6A11CB]' },
+  { label: 'Settings', to: '/admin/settings', icon: Settings, tone: 'bg-[#F4EBFF] text-[#6A11CB]' },
+];
+
 /* ============================================================================
- * 1. ADMIN DASHBOARD OVERVIEW
+ * 1. ADMIN DASHBOARD OVERVIEW (MOBILE-FIRST OWNER COCKPIT)
  * ========================================================================== */
 export function AdminDashboardPage() {
   const { data: products } = useProducts({ includeInactive: true });
@@ -76,11 +90,19 @@ export function AdminDashboardPage() {
   const { data: settings } = useStoreSettings();
   const { pushToast } = useToast();
 
-  const totalDemoRevenue = useMemo(
+  const totalRevenue = useMemo(
     () =>
       orders
         .filter((o) => o.fulfillmentStatus !== 'Cancelled')
         .reduce((sum, o) => sum + o.grandTotalInr, 0),
+    [orders]
+  );
+
+  const pendingOrdersCount = useMemo(
+    () =>
+      orders.filter(
+        (o) => o.fulfillmentStatus !== 'Delivered' && o.fulfillmentStatus !== 'Cancelled'
+      ).length,
     [orders]
   );
 
@@ -89,127 +111,241 @@ export function AdminDashboardPage() {
     [products]
   );
 
-  const giftWrappedCount = useMemo(
-    () => orders.filter((o) => o.giftWrap.enabled).length,
-    [orders]
+  const activeProductsCount = useMemo(
+    () => products.filter((p) => p.isActive && !p.isArchived).length,
+    [products]
   );
+
+  async function handleQuickRestock(product: Product) {
+    const nextStock = product.stockCount + 5;
+    await services.catalog.saveProduct({
+      ...product,
+      stockCount: nextStock,
+      availability: 'IN_STOCK',
+    });
+    pushToast({
+      title: 'Stock replenished (+5)',
+      description: `${product.name} now has ${nextStock} units.`,
+      variant: 'success',
+    });
+  }
 
   function handleResetDemo() {
     resetAllDemoSeedData();
     pushToast({
-      title: 'Demo seed data restored',
-      description:
-        'All 10 official categories, studio products, Jalchak delivery zone, and demo orders were restored.',
+      title: 'Store seed restored',
+      description: 'All 10 official categories, studio products, and Jalchak settings restored.',
       variant: 'info',
     });
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4 rounded-3xl border border-[#EBD8FF] bg-gradient-to-r from-[#6A11CB] to-[#9130E8] p-6 text-white shadow-lg shadow-[#6A11CB]/15">
-        <div>
-          <span className="inline-block rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white">
-            Local Demo Mode · Browser Storage
-          </span>
-          <h1 className="mt-2 font-display text-2xl font-bold sm:text-3xl">
-            GiftKart Store Operations
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm text-[#F4EBFF]">
-            Manage your {categories.length} official gift categories, personalized products, hero banners, gift wrapping, and Jalchak orders.
-          </p>
-        </div>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Compact Hero Summary Card */}
+      <div className="rounded-2xl bg-gradient-to-br from-[#6A11CB] via-[#7E1AD6] to-[#B026C7] p-4 text-white shadow-lg shadow-[#6A11CB]/20 sm:rounded-3xl sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold text-[#F1DBFF]">
+              GiftKart Store Control · Jalchak
+            </p>
+            <h1 className="mt-0.5 font-display text-xl font-bold leading-tight sm:text-2xl">
+              Store Operations Dashboard
+            </h1>
+            <p className="mt-1 text-xs text-[#F4EBFF]/90">
+              {categories.length} official categories · {activeProductsCount} active products ·{' '}
+              {settings?.deliveryZones.filter((z) => z.isActive).length ?? 1} active zone
+            </p>
+          </div>
 
-        <button
-          type="button"
-          onClick={handleResetDemo}
-          className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-white px-4 text-xs font-bold text-[#6A11CB] shadow-sm transition-colors hover:bg-[#FFF0F6] hover:text-[#FF4D8D]"
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/admin/products?new=1"
+              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-3.5 text-xs font-bold text-[#6A11CB] shadow-sm active:scale-[0.98] sm:flex-initial"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Product</span>
+            </Link>
+            <Link
+              to="/admin/orders"
+              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/15 px-3.5 text-xs font-bold text-white ring-1 ring-white/25 active:scale-[0.98] sm:flex-initial"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span>Orders ({pendingOrdersCount})</span>
+            </Link>
+            <button
+              type="button"
+              onClick={handleResetDemo}
+              aria-label="Reset store seed data"
+              title="Reset Demo Seed"
+              className="inline-flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/25 active:scale-95 sm:w-auto sm:gap-1.5 sm:px-3"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden text-xs font-semibold sm:inline">Reset</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 2x2 Mobile KPI Grid -> 4-Column Desktop Grid */}
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
+        <Link
+          to="/admin/reports"
+          className="rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs transition-transform active:scale-[0.98] sm:p-5"
         >
-          <RefreshCw className="h-3.5 w-3.5" />
-          <span>Reset Demo Seed</span>
-        </button>
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[11px] font-semibold text-[#5F4B78]">Order Volume</span>
+            <ShoppingCart className="h-4 w-4 shrink-0 text-[#FF4D8D]" />
+          </div>
+          <p className="mt-1.5 font-mono text-lg font-bold tabular-nums text-[#2A0E4D] sm:text-2xl">
+            {formatInr(totalRevenue)}
+          </p>
+          <p className="mt-0.5 text-[11px] text-[#7B6496]">
+            {orders.length} total · {pendingOrdersCount} active
+          </p>
+        </Link>
+
+        <Link
+          to="/admin/products"
+          className="rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs transition-transform active:scale-[0.98] sm:p-5"
+        >
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[11px] font-semibold text-[#5F4B78]">Active Catalog</span>
+            <Package className="h-4 w-4 shrink-0 text-[#6A11CB]" />
+          </div>
+          <p className="mt-1.5 font-mono text-lg font-bold tabular-nums text-[#2A0E4D] sm:text-2xl">
+            {activeProductsCount}{' '}
+            <span className="text-xs font-normal text-[#7B6496]">/ {products.length}</span>
+          </p>
+          <p className="mt-0.5 text-[11px] text-[#7B6496]">
+            {categories.length} official categories
+          </p>
+        </Link>
+
+        <Link
+          to="/admin/inventory"
+          className="rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs transition-transform active:scale-[0.98] sm:p-5"
+        >
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[11px] font-semibold text-[#5F4B78]">Low Stock</span>
+            <AlertTriangle className="h-4 w-4 shrink-0 text-[#FF4D8D]" />
+          </div>
+          <p className="mt-1.5 font-mono text-lg font-bold tabular-nums text-[#2A0E4D] sm:text-2xl">
+            {lowStockProducts.length}
+          </p>
+          <p className="mt-0.5 text-[11px] text-[#7B6496]">
+            {lowStockProducts.length === 0 ? 'All items stocked' : 'Items ≤ 12 units'}
+          </p>
+        </Link>
+
+        <Link
+          to="/admin/coupons"
+          className="rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs transition-transform active:scale-[0.98] sm:p-5"
+        >
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[11px] font-semibold text-[#5F4B78]">Offers &amp; Wrap</span>
+            <Gift className="h-4 w-4 shrink-0 text-[#6A11CB]" />
+          </div>
+          <p className="mt-1.5 font-mono text-lg font-bold tabular-nums text-[#2A0E4D] sm:text-2xl">
+            {coupons.filter((c) => c.isActive).length} Live
+          </p>
+          <p className="mt-0.5 text-[11px] text-[#7B6496]">
+            Wrap: {giftWrap?.globallyEnabled ? 'On' : 'Off'} ·{' '}
+            {giftWrap?.styles.filter((s) => s.isActive).length ?? 0} styles
+          </p>
+        </Link>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#5F4B78]">Demo Order Volume</span>
-            <ShoppingCart className="h-4 w-4 text-[#FF4D8D]" />
-          </div>
-          <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-[#2A0E4D]">
-            {formatInr(totalDemoRevenue)}
-          </p>
-          <p className="mt-1 text-xs text-[#7B6496]">
-            Across {orders.length} demo order(s) (non-cancelled)
-          </p>
+      {/* Mobile Quick Manage Grid (4x2 Thumb-Friendly Tiles) */}
+      <section className="rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs lg:hidden">
+        <div className="mb-2.5 flex items-center justify-between">
+          <h2 className="font-display text-sm font-bold text-[#2A0E4D]">Quick Manage</h2>
+          <span className="text-[11px] text-[#7B6496]">Tap any tool</span>
         </div>
-
-        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#5F4B78]">Active Catalog</span>
-            <Package className="h-4 w-4 text-[#6A11CB]" />
-          </div>
-          <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-[#2A0E4D]">
-            {products.filter((p) => p.isActive).length}{' '}
-            <span className="text-sm font-normal text-[#7B6496]">/ {products.length}</span>
-          </p>
-          <p className="mt-1 text-xs text-[#7B6496]">
-            {categories.length} official main categories
-          </p>
+        <div className="grid grid-cols-4 gap-2">
+          {QUICK_MANAGE_SHORTCUTS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="flex min-h-[68px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[#F3EAFF] bg-[#FDFBFF] p-2 text-center active:scale-95"
+              >
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg ${item.tone}`}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="text-[10.5px] font-semibold leading-tight text-[#2A0E4D]">
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
         </div>
+      </section>
 
-        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#5F4B78]">Gift Wrapping</span>
-            <Gift className="h-4 w-4 text-[#FF4D8D]" />
-          </div>
-          <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-[#2A0E4D]">
-            {giftWrappedCount} / {orders.length}
-          </p>
-          <p className="mt-1 text-xs text-[#7B6496]">
-            {giftWrap?.globallyEnabled ? 'Enabled' : 'Disabled'} ·{' '}
-            {giftWrap?.styles.filter((s) => s.isActive).length ?? 0} active styles
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#5F4B78]">Delivery Zones &amp; Promos</span>
-            <Sparkles className="h-4 w-4 text-[#6A11CB]" />
-          </div>
-          <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-[#2A0E4D]">
-            {settings?.deliveryZones.filter((z) => z.isActive).length ?? 0} Zones
-          </p>
-          <p className="mt-1 text-xs text-[#7B6496]">
-            {settings?.deliveryZones.map((z) => z.name).join(' & ') || 'Jalchak'} ·{' '}
-            {coupons.filter((c) => c.isActive).length} active coupons
-          </p>
-        </div>
-      </div>
-
-      {/* Recent Orders + Low Stock */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs lg:col-span-2">
+      {/* Recent Orders + Low Stock Watch */}
+      <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
+        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs sm:p-5 lg:col-span-2">
           <div className="flex items-center justify-between border-b border-[#F0E4FF] pb-3">
             <div>
-              <h2 className="font-display text-lg font-bold text-[#2A0E4D]">
-                Recent Demo Orders
+              <h2 className="font-display text-base font-bold text-[#2A0E4D] sm:text-lg">
+                Recent Orders
               </h2>
-              <p className="text-xs text-[#5F4B78]">
-                Preserved with immutable product, price, SKU, and gift-wrapping snapshots.
+              <p className="text-[11px] text-[#5F4B78]">
+                Tap any order to inspect items &amp; update delivery status
               </p>
             </div>
             <Link
               to="/admin/orders"
               className="inline-flex items-center gap-1 text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
             >
-              <span>Manage Orders</span>
+              <span>All Orders</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[520px] text-left text-xs">
+          {/* Mobile Stacked Order Cards */}
+          <div className="mt-3 space-y-2 md:hidden">
+            {orders.length === 0 ? (
+              <p className="py-6 text-center text-xs text-[#5F4B78]">No orders placed yet.</p>
+            ) : (
+              orders.slice(0, 5).map((order) => (
+                <Link
+                  key={order.id}
+                  to={`/admin/orders?order=${encodeURIComponent(order.id)}`}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[#F0E4FF] bg-[#FDFBFF] p-3 active:bg-[#F5ECFF]"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-[#6A11CB]">
+                        {order.orderNumber}
+                      </span>
+                      <span className="text-[11px] font-semibold text-[#FF4D8D]">
+                        · {order.fulfillmentStatus}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 truncate text-xs font-bold text-[#2A0E4D]">
+                      {order.customer.fullName}
+                    </p>
+                    <p className="truncate text-[11px] text-[#7B6496]">
+                      {order.customer.deliveryZoneNameSnapshot} · {order.items.length} item(s)
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span className="font-mono text-xs font-bold tabular-nums text-[#2A0E4D]">
+                      {formatInr(order.grandTotalInr)}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-[#8C75A8]" />
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Order Table */}
+          <div className="mt-4 hidden overflow-x-auto md:block">
+            <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[#F0E4FF] text-[#7B6496]">
                   <th className="pb-2.5 font-semibold">Order #</th>
@@ -222,7 +358,9 @@ export function AdminDashboardPage() {
                 {orders.slice(0, 6).map((order) => (
                   <tr key={order.id} className="hover:bg-[#FAF6FF]">
                     <td className="py-3 font-mono font-bold text-[#6A11CB]">
-                      {order.orderNumber}
+                      <Link to={`/admin/orders?order=${encodeURIComponent(order.id)}`}>
+                        {order.orderNumber}
+                      </Link>
                     </td>
                     <td className="py-3">
                       <p className="font-semibold text-[#2A0E4D]">{order.customer.fullName}</p>
@@ -230,10 +368,8 @@ export function AdminDashboardPage() {
                         {order.customer.deliveryZoneNameSnapshot} · {formatDateTime(order.createdAt)}
                       </p>
                     </td>
-                    <td className="py-3">
-                      <span className="inline-flex rounded-full bg-[#F4EBFF] px-2.5 py-0.5 text-[11px] font-semibold text-[#6A11CB]">
-                        {order.fulfillmentStatus}
-                      </span>
+                    <td className="py-3 font-semibold text-[#6A11CB]">
+                      {order.fulfillmentStatus}
                     </td>
                     <td className="py-3 text-right font-mono font-bold tabular-nums text-[#2A0E4D]">
                       {formatInr(order.grandTotalInr)}
@@ -245,80 +381,60 @@ export function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs">
+        {/* Low Stock Watch with 1-Tap +5 Restock */}
+        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs sm:p-5">
           <div className="flex items-center justify-between border-b border-[#F0E4FF] pb-3">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-[#FF4D8D]" />
-              <h2 className="font-display text-lg font-bold text-[#2A0E4D]">Low Stock Watch</h2>
+              <h2 className="font-display text-base font-bold text-[#2A0E4D] sm:text-lg">
+                Low Stock Alert
+              </h2>
             </div>
             <Link
               to="/admin/inventory"
               className="text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
             >
-              Inventory →
+              Stock →
             </Link>
           </div>
 
           {lowStockProducts.length === 0 ? (
-            <p className="py-8 text-center text-xs text-[#5F4B78]">
+            <p className="py-6 text-center text-xs text-[#5F4B78]">
               All catalog items are well stocked (&gt; 12 units).
             </p>
           ) : (
-            <ul className="mt-3 space-y-2.5">
+            <ul className="mt-3 space-y-2">
               {lowStockProducts.slice(0, 5).map((p) => (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-[#F0E4FF] bg-[#FDFBFF] px-3 py-2.5"
+                  className="flex items-center justify-between gap-2.5 rounded-xl border border-[#F0E4FF] bg-[#FDFBFF] p-2.5"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-semibold text-[#2A0E4D]">{p.name}</p>
-                    <p className="font-mono text-[11px] text-[#7B6496]">{p.sku}</p>
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-[#EBD8FF]">
+                      <ProductImage
+                        src={p.images[0]}
+                        alt={p.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-semibold text-[#2A0E4D]">{p.name}</p>
+                      <p className="font-mono text-[11px] font-bold text-[#FF4D8D]">
+                        {p.stockCount} left · {p.sku}
+                      </p>
+                    </div>
                   </div>
-                  <span className="shrink-0 rounded-full bg-[#FFF0F6] px-2.5 py-0.5 font-mono text-xs font-bold text-[#FF4D8D]">
-                    {p.stockCount} left
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void handleQuickRestock(p)}
+                    className="inline-flex min-h-[34px] shrink-0 items-center gap-0.5 rounded-lg bg-[#6A11CB] px-2.5 text-[11px] font-bold text-white active:scale-95"
+                  >
+                    <Plus className="h-3 w-3" />5
+                  </button>
                 </li>
               ))}
             </ul>
           )}
-        </div>
-      </div>
-
-      {/* Firebase Database Integration Readiness Status */}
-      <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0E4FF] pb-3">
-          <div className="flex items-center gap-2">
-            <Database className="h-4 w-4 text-[#6A11CB]" />
-            <h2 className="font-display text-lg font-bold text-[#2A0E4D]">
-              System Status &amp; Database Integration Readiness
-            </h2>
-          </div>
-          <span className="rounded-full bg-[#F4EBFF] px-3 py-1 text-[11px] font-bold text-[#6A11CB]">
-            Local Storage Active · Firebase Ready
-          </span>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 text-xs">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-2">
-            <p className="font-bold text-emerald-900">Active Now (Working Locally)</p>
-            <ul className="space-y-1 text-emerald-800">
-              <li>• Product CRUD, Archive / Restore, Stock &amp; Price Management</li>
-              <li>• Category CRUD, Display Order, Images &amp; Subcategories</li>
-              <li>• Order Inspection, Payment Method Display &amp; Status History</li>
-              <li>• Coupon Create / Edit, Validity Dates &amp; Min Order Rules</li>
-              <li>• Homepage Banners, Promotional Content &amp; Storefront Filtering</li>
-            </ul>
-          </div>
-
-          <div className="rounded-xl border border-[#EBD8FF] bg-[#FAF6FF] p-4 space-y-2">
-            <p className="font-bold text-[#3B0764]">Awaiting Live Firebase Integration</p>
-            <ul className="space-y-1 text-[#594A6B]">
-              <li>• Cloud Firestore sync across devices (Products, Orders, Coupons)</li>
-              <li>• Real Firebase Authentication &amp; Role-Based Admin Access</li>
-              <li>• Firebase Storage for permanent product &amp; custom photo uploads</li>
-              <li>• Live Online UPI / Payment Gateway &amp; Order Notifications</li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>
@@ -326,7 +442,7 @@ export function AdminDashboardPage() {
 }
 
 /* ============================================================================
- * 2. ADMIN PRODUCTS MANAGEMENT
+ * 2. ADMIN PRODUCTS MANAGEMENT (MOBILE CARD LIST + DESKTOP TABLE)
  * ========================================================================== */
 interface ProductFormState {
   id: string;
@@ -382,7 +498,10 @@ export function AdminProductsPage() {
   const [search, setSearch] = useState('');
   const [filterCatId, setFilterCatId] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'ARCHIVED' | 'REVIEW'>('ALL');
-  const [editingForm, setEditingForm] = useState<ProductFormState | null>(null);
+  const [editingForm, setEditingForm] = useState<ProductFormState | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('new') === '1' ? createEmptyProductForm([]) : null;
+  });
   const [saving, setSaving] = useState(false);
 
   const productAuditMap = useMemo(
@@ -391,8 +510,7 @@ export function AdminProductsPage() {
   );
 
   const reviewCount = useMemo(
-    () =>
-      products.filter((p) => productAuditMap.get(p.id)?.needsReview).length,
+    () => products.filter((p) => productAuditMap.get(p.id)?.needsReview).length,
     [products, productAuditMap]
   );
 
@@ -410,7 +528,7 @@ export function AdminProductsPage() {
       if (statusFilter === 'ACTIVE' && (!p.isActive || p.isArchived)) {
         return false;
       }
-      if (statusFilter === 'ARCHIVED' && (p.isActive && !p.isArchived)) {
+      if (statusFilter === 'ARCHIVED' && p.isActive && !p.isArchived) {
         return false;
       }
       if (statusFilter === 'REVIEW' && !productAuditMap.get(p.id)?.needsReview) {
@@ -453,13 +571,16 @@ export function AdminProductsPage() {
       supportsPhotoUpload: Boolean(product.supportsPhotoUpload),
       personalizationPrompt: product.personalizationPrompt ?? '',
     });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleSaveProduct(e: React.FormEvent) {
     e.preventDefault();
     if (!editingForm) return;
     const price = Number(editingForm.priceInr);
-    const compareAt = editingForm.compareAtPriceInr ? Number(editingForm.compareAtPriceInr) : undefined;
+    const compareAt = editingForm.compareAtPriceInr
+      ? Number(editingForm.compareAtPriceInr)
+      : undefined;
     const stock = Math.max(0, Number(editingForm.stockCount) || 0);
 
     if (!editingForm.name.trim() || !editingForm.sku.trim() || Number.isNaN(price) || price <= 0) {
@@ -502,7 +623,7 @@ export function AdminProductsPage() {
         priceInr: Math.round(price),
         compareAtPriceInr:
           compareAt && compareAt > price ? Math.round(compareAt) : undefined,
-        categoryId: editingForm.categoryId,
+        categoryId: editingForm.categoryId || assignableCategories[0]?.id || 'cat-photo-frame',
         subcategoryId: editingForm.subcategoryId || undefined,
         occasionTags:
           editingForm.occasionTags.length > 0 ? editingForm.occasionTags : ['Special Occasion'],
@@ -525,7 +646,7 @@ export function AdminProductsPage() {
 
       pushToast({
         title: editingForm.id ? 'Product updated' : 'Product added to catalog',
-        description: `${editingForm.name.trim()} saved to local catalog. Historical orders remain unchanged.`,
+        description: `${editingForm.name.trim()} saved live to storefront.`,
         variant: 'success',
       });
       setEditingForm(null);
@@ -555,9 +676,6 @@ export function AdminProductsPage() {
     });
     pushToast({
       title: nextArchived ? 'Product archived' : 'Product restored',
-      description: nextArchived
-        ? `${product.name} hidden from customer storefront without deleting data.`
-        : `${product.name} restored to active catalog.`,
       variant: 'info',
     });
   }
@@ -574,19 +692,21 @@ export function AdminProductsPage() {
   async function handleDelete(product: Product) {
     await services.catalog.deleteProduct(product.id);
     pushToast({
-      title: 'Product removed',
-      description: `${product.name} deleted from active catalog. Existing order snapshots remain intact.`,
+      title: 'Product deleted',
+      description: `${product.name} removed from active catalog.`,
       variant: 'info',
     });
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">Products Management</h1>
-          <p className="text-xs text-[#5F4B78]">
-            Editing product names or INR prices will never alter historical Demo Order snapshots.
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-xl font-bold text-[#2A0E4D] sm:text-2xl">
+            Products ({products.length})
+          </h1>
+          <p className="text-[11px] text-[#5F4B78] sm:text-xs">
+            Add, edit, adjust stock, or toggle visibility instantly
           </p>
         </div>
         <Button
@@ -595,54 +715,92 @@ export function AdminProductsPage() {
           onClick={() => setEditingForm(createEmptyProductForm(categories))}
         >
           <Plus className="h-4 w-4" />
-          <span>Add New Product</span>
+          <span>Add</span>
         </Button>
       </div>
 
-      {/* Add / Edit Product Drawer/Panel */}
+      {/* Add / Edit Product Form */}
       {editingForm && (
         <form
           onSubmit={(e) => void handleSaveProduct(e)}
-          className="rounded-3xl border border-[#6A11CB]/25 bg-white p-6 shadow-md space-y-5"
+          className="space-y-4 rounded-2xl border border-[#6A11CB]/25 bg-white p-4 shadow-md sm:rounded-3xl sm:p-6"
         >
           <div className="flex items-center justify-between border-b border-[#F0E4FF] pb-3">
-            <h2 className="font-display text-lg font-bold text-[#2A0E4D]">
+            <h2 className="font-display text-base font-bold text-[#2A0E4D] sm:text-lg">
               {editingForm.id ? 'Edit Product' : 'Create New Product'}
             </h2>
             <button
               type="button"
               onClick={() => setEditingForm(null)}
-              className="text-xs font-semibold text-[#5F4B78] hover:text-[#FF4D8D]"
+              aria-label="Close form"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FAF6FF] text-[#5F4B78]"
             >
-              Cancel
+              <X className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="sm:col-span-2">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            <div className="col-span-2">
               <label className="block text-xs font-semibold text-[#4A3862]">Product Name *</label>
               <input
                 type="text"
                 required
                 value={editingForm.name}
                 onChange={(e) => setEditingForm({ ...editingForm, name: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-sm focus:border-[#6A11CB] focus:outline-none"
+                className="mt-1 h-11 w-full rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
               />
             </div>
 
-            <div>
+            <div className="col-span-1">
               <label className="block text-xs font-semibold text-[#4A3862]">SKU *</label>
               <input
                 type="text"
                 required
                 value={editingForm.sku}
                 onChange={(e) => setEditingForm({ ...editingForm, sku: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
+                className="mt-1 h-11 w-full rounded-xl border border-[#EBD8FF] px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#4A3862]">Main Category *</label>
+            <div className="col-span-1">
+              <label className="block text-xs font-semibold text-[#4A3862]">Stock *</label>
+              <input
+                type="number"
+                min={0}
+                required
+                value={editingForm.stockCount}
+                onChange={(e) => setEditingForm({ ...editingForm, stockCount: e.target.value })}
+                className="mt-1 h-11 w-full rounded-xl border border-[#EBD8FF] px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
+              />
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-xs font-semibold text-[#4A3862]">Price (₹) *</label>
+              <input
+                type="number"
+                min={1}
+                required
+                value={editingForm.priceInr}
+                onChange={(e) => setEditingForm({ ...editingForm, priceInr: e.target.value })}
+                className="mt-1 h-11 w-full rounded-xl border border-[#EBD8FF] px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
+              />
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-xs font-semibold text-[#4A3862]">MRP (₹)</label>
+              <input
+                type="number"
+                min={0}
+                value={editingForm.compareAtPriceInr}
+                onChange={(e) =>
+                  setEditingForm({ ...editingForm, compareAtPriceInr: e.target.value })
+                }
+                className="mt-1 h-11 w-full rounded-xl border border-[#EBD8FF] px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
+              />
+            </div>
+
+            <div className="col-span-2 sm:col-span-1">
+              <label className="block text-xs font-semibold text-[#4A3862]">Category *</label>
               <select
                 value={editingForm.categoryId}
                 onChange={(e) => {
@@ -653,7 +811,7 @@ export function AdminProductsPage() {
                     subcategoryId: nextCat?.subcategories[0]?.id ?? '',
                   });
                 }}
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-sm focus:border-[#6A11CB] focus:outline-none"
+                className="mt-1 h-11 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
               >
                 {(assignableCategories.length > 0 ? assignableCategories : categories).map((cat) => (
                   <option key={cat.id} value={cat.id}>
@@ -663,15 +821,13 @@ export function AdminProductsPage() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#4A3862]">
-                Subcategory {selectedFormCategory?.subcategories.length ? '(Exact Official)' : '(None)'}
-              </label>
+            <div className="col-span-2 sm:col-span-1">
+              <label className="block text-xs font-semibold text-[#4A3862]">Subcategory</label>
               <select
                 value={editingForm.subcategoryId}
                 onChange={(e) => setEditingForm({ ...editingForm, subcategoryId: e.target.value })}
                 disabled={!selectedFormCategory?.subcategories.length}
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-sm disabled:bg-[#FAF6FF] focus:border-[#6A11CB] focus:outline-none"
+                className="mt-1 h-11 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-sm disabled:bg-[#FAF6FF] focus:border-[#6A11CB] focus:outline-none"
               >
                 <option value="">— None —</option>
                 {selectedFormCategory?.subcategories.map((sub) => (
@@ -682,11 +838,10 @@ export function AdminProductsPage() {
               </select>
             </div>
 
-            <div className="sm:col-span-2 lg:col-span-3">
-              <label className="block text-xs font-semibold text-[#4A3862]">
-                Product Photo (Studio Preset or Local File Upload)
-              </label>
-              <div className="mt-1.5 flex flex-col gap-3 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-3 sm:flex-row sm:items-center">
+            {/* Product Photo Uploader */}
+            <div className="col-span-2 lg:col-span-3">
+              <label className="block text-xs font-semibold text-[#4A3862]">Product Photo</label>
+              <div className="mt-1.5 flex items-center gap-3 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-3">
                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[#EBD8FF] bg-white">
                   <ProductImage
                     src={editingForm.imageUrl}
@@ -694,118 +849,70 @@ export function AdminProductsPage() {
                     className="h-full w-full"
                   />
                 </div>
-                <div className="grid flex-1 gap-2.5 sm:grid-cols-2">
-                  <div>
-                    <span className="block text-[11px] font-semibold text-[#6E5B85]">
-                      Choose Studio Photo Preset
-                    </span>
-                    <select
-                      value={
-                        MEDIA_OPTIONS.some((m) => m.url === editingForm.imageUrl)
-                          ? editingForm.imageUrl
-                          : ''
+                <div className="min-w-0 flex-1 space-y-2">
+                  <select
+                    value={
+                      MEDIA_OPTIONS.some((m) => m.url === editingForm.imageUrl)
+                        ? editingForm.imageUrl
+                        : ''
+                    }
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setEditingForm({ ...editingForm, imageUrl: e.target.value });
                       }
+                    }}
+                    className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-2.5 text-xs focus:border-[#6A11CB] focus:outline-none"
+                  >
+                    {!MEDIA_OPTIONS.some((m) => m.url === editingForm.imageUrl) && (
+                      <option value="">Custom Uploaded Image</option>
+                    )}
+                    {MEDIA_OPTIONS.map((m) => (
+                      <option key={m.url} value={m.url}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <label className="flex min-h-[40px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#6A11CB]/40 bg-white px-3 text-xs font-bold text-[#6A11CB] active:bg-[#F4EBFF]">
+                    <Upload className="h-3.5 w-3.5" />
+                    <span>Upload from Phone Gallery</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
                       onChange={(e) => {
-                        if (e.target.value) {
-                          setEditingForm({ ...editingForm, imageUrl: e.target.value });
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 1.5 * 1024 * 1024) {
+                          pushToast({
+                            title: 'Image too large',
+                            description: 'Please pick an image under 1.5 MB.',
+                            variant: 'error',
+                          });
+                          return;
                         }
-                      }}
-                      className="mt-1 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-                    >
-                      {!MEDIA_OPTIONS.some((m) => m.url === editingForm.imageUrl) && (
-                        <option value="">Custom Uploaded Image (Local Preview)</option>
-                      )}
-                      {MEDIA_OPTIONS.map((m) => (
-                        <option key={m.url} value={m.url}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <span className="block text-[11px] font-semibold text-[#6E5B85]">
-                      Or Upload Image (Local Demo ≤ 1.5MB)
-                    </span>
-                    <label className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#6A11CB]/40 bg-white px-3 py-2 text-xs font-bold text-[#6A11CB] transition hover:border-[#FF4D8D] hover:text-[#FF4D8D]">
-                      <Upload className="h-3.5 w-3.5" />
-                      <span>Upload Product Photo</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="sr-only"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          if (file.size > 1.5 * 1024 * 1024) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          if (typeof reader.result === 'string') {
+                            setEditingForm((prev) =>
+                              prev ? { ...prev, imageUrl: reader.result as string } : prev
+                            );
                             pushToast({
-                              title: 'File Too Large for Demo Storage',
-                              description: 'Please upload an image under 1.5 MB for local demo preview.',
-                              variant: 'error',
+                              title: 'Photo attached',
+                              description: file.name,
+                              variant: 'success',
                             });
-                            return;
                           }
-                          const reader = new FileReader();
-                          reader.onload = () => {
-                            if (typeof reader.result === 'string') {
-                              setEditingForm((prev) =>
-                                prev ? { ...prev, imageUrl: reader.result as string } : prev
-                              );
-                              pushToast({
-                                title: 'Product Photo Loaded',
-                                description: `${file.name} stored locally in browser demo mode.`,
-                                variant: 'success',
-                              });
-                            }
-                          };
-                          reader.readAsDataURL(file);
-                        }}
-                      />
-                    </label>
-                  </div>
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
                 </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#4A3862]">Price (INR ₹) *</label>
-              <input
-                type="number"
-                min={1}
-                required
-                value={editingForm.priceInr}
-                onChange={(e) => setEditingForm({ ...editingForm, priceInr: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#4A3862]">
-                Compare-at MRP (INR ₹)
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={editingForm.compareAtPriceInr}
-                onChange={(e) =>
-                  setEditingForm({ ...editingForm, compareAtPriceInr: e.target.value })
-                }
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#4A3862]">Stock Quantity *</label>
-              <input
-                type="number"
-                min={0}
-                required
-                value={editingForm.stockCount}
-                onChange={(e) => setEditingForm({ ...editingForm, stockCount: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
-              />
-            </div>
-
-            <div className="sm:col-span-2 lg:col-span-3">
+            <div className="col-span-2 lg:col-span-3">
               <label className="block text-xs font-semibold text-[#4A3862]">Short Description</label>
               <input
                 type="text"
@@ -813,32 +920,35 @@ export function AdminProductsPage() {
                 onChange={(e) =>
                   setEditingForm({ ...editingForm, shortDescription: e.target.value })
                 }
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-sm focus:border-[#6A11CB] focus:outline-none"
+                className="mt-1 h-11 w-full rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
               />
             </div>
 
-            <div className="sm:col-span-2 lg:col-span-3">
+            <div className="col-span-2 lg:col-span-3">
               <label className="block text-xs font-semibold text-[#4A3862]">Full Description</label>
               <textarea
                 rows={2}
                 value={editingForm.description}
                 onChange={(e) => setEditingForm({ ...editingForm, description: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-sm focus:border-[#6A11CB] focus:outline-none"
+                className="mt-1 w-full rounded-xl border border-[#EBD8FF] p-3 text-sm focus:border-[#6A11CB] focus:outline-none"
               />
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-4 pt-1 text-xs font-semibold text-[#4A3862]">
+          <div className="grid grid-cols-2 gap-2.5 pt-1 text-xs font-semibold text-[#4A3862] sm:flex sm:flex-wrap sm:gap-4">
             {(
               [
-                ['isActive', 'Active on Storefront'],
+                ['isActive', 'Active on Store'],
                 ['isBestSeller', 'Best Seller'],
                 ['isFeatured', 'Featured'],
-                ['supportsPersonalization', 'Personalization Text'],
-                ['supportsPhotoUpload', 'Photo Upload Preview'],
+                ['supportsPersonalization', 'Custom Text'],
+                ['supportsPhotoUpload', 'Photo Upload'],
               ] as const
             ).map(([key, label]) => (
-              <label key={key} className="inline-flex cursor-pointer items-center gap-2">
+              <label
+                key={key}
+                className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-xl border border-[#F0E4FF] bg-[#FDFBFF] px-3 sm:border-0 sm:bg-transparent sm:px-0"
+              >
                 <input
                   type="checkbox"
                   checked={editingForm[key]}
@@ -850,8 +960,13 @@ export function AdminProductsPage() {
             ))}
           </div>
 
-          <div className="flex justify-end gap-2.5 border-t border-[#F0E4FF] pt-4">
-            <Button type="button" variant="glass" size="sm" onClick={() => setEditingForm(null)}>
+          <div className="grid grid-cols-2 gap-2.5 border-t border-[#F0E4FF] pt-3.5 sm:flex sm:justify-end">
+            <Button
+              type="button"
+              variant="glass"
+              size="sm"
+              onClick={() => setEditingForm(null)}
+            >
               Cancel
             </Button>
             <Button type="submit" variant="primary" size="sm" disabled={saving}>
@@ -862,24 +977,24 @@ export function AdminProductsPage() {
         </form>
       )}
 
-      {/* Filters & Table */}
-      <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-[#EBD8FF] bg-[#FAF6FF] px-3 py-2">
-            <Search className="h-4 w-4 text-[#6A11CB]" />
+      {/* Search, Category Filter & Status Tabs */}
+      <div className="space-y-3 rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs sm:p-5">
+        <div className="grid gap-2.5 sm:grid-cols-12">
+          <div className="flex h-11 items-center gap-2 rounded-xl border border-[#EBD8FF] bg-[#FAF6FF] px-3 sm:col-span-7">
+            <Search className="h-4 w-4 shrink-0 text-[#6A11CB]" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search products by name or SKU..."
-              className="w-full bg-transparent text-xs text-[#2A0E4D] focus:outline-none"
+              placeholder="Search name or SKU..."
+              className="w-full bg-transparent text-sm text-[#2A0E4D] focus:outline-none sm:text-xs"
             />
           </div>
 
           <select
             value={filterCatId}
             onChange={(e) => setFilterCatId(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs font-semibold text-[#4A3862] focus:border-[#6A11CB] focus:outline-none"
+            className="h-11 rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#4A3862] focus:border-[#6A11CB] focus:outline-none sm:col-span-5"
           >
             <option value="">All Categories</option>
             {categories.map((c) => (
@@ -888,29 +1003,168 @@ export function AdminProductsPage() {
               </option>
             ))}
           </select>
-
-          <select
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as 'ALL' | 'ACTIVE' | 'ARCHIVED' | 'REVIEW')
-            }
-            className="rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs font-semibold text-[#4A3862] focus:border-[#6A11CB] focus:outline-none"
-          >
-            <option value="ALL">All Products ({products.length})</option>
-            <option value="ACTIVE">Active Storefront</option>
-            <option value="ARCHIVED">Hidden / Archived</option>
-            <option value="REVIEW">Needs Admin Review ({reviewCount})</option>
-          </select>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[740px] text-left text-xs">
+        {/* Interactive Status Segmented Tabs */}
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {(
+            [
+              ['ALL', `All (${products.length})`],
+              ['ACTIVE', 'Active'],
+              ['ARCHIVED', 'Hidden'],
+              ['REVIEW', `Review (${reviewCount})`],
+            ] as const
+          ).map(([val, label]) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => setStatusFilter(val)}
+              className={`min-h-[34px] shrink-0 rounded-lg px-3 text-xs font-semibold transition-colors whitespace-nowrap ${
+                statusFilter === val
+                  ? 'bg-[#6A11CB] text-white'
+                  : 'bg-[#FAF6FF] text-[#5F4B78] hover:bg-[#F1E6FF]'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* MOBILE PRODUCT CARDS (ZERO HORIZONTAL SCROLL) */}
+        <div className="space-y-3 md:hidden">
+          {filteredProducts.length === 0 ? (
+            <p className="py-8 text-center text-xs text-[#5F4B78]">
+              No products match your filter.
+            </p>
+          ) : (
+            filteredProducts.map((product) => {
+              const cat = categories.find((c) => c.id === product.categoryId);
+              const sub = cat?.subcategories.find((s) => s.id === product.subcategoryId);
+              const availLabel = getAvailabilityLabel(product);
+
+              return (
+                <div
+                  key={product.id}
+                  className="rounded-2xl border border-[#F0E4FF] bg-[#FDFBFF] p-3 space-y-3"
+                >
+                  <div className="flex gap-3">
+                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[#EBD8FF] bg-white">
+                      <ProductImage
+                        src={product.images[0]}
+                        alt={product.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="line-clamp-2 text-[13px] font-bold leading-snug text-[#2A0E4D]">
+                          {product.name}
+                        </p>
+                        <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-[#6A11CB]">
+                          {formatInr(product.priceInr)}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-[11px] text-[#7B6496]">
+                        {cat?.name ?? 'Uncategorized'}
+                        {sub ? ` / ${sub.name}` : ''} · <span className="font-mono">{product.sku}</span>
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-2 text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => void handleToggleActive(product)}
+                          className={`rounded-md px-2 py-0.5 font-bold ${
+                            product.isArchived
+                              ? 'bg-amber-100 text-amber-800'
+                              : product.isActive
+                                ? 'bg-[#F4EBFF] text-[#6A11CB]'
+                                : 'bg-gray-200 text-gray-600'
+                          }`}
+                        >
+                          {product.isArchived
+                            ? 'Archived'
+                            : product.isActive
+                              ? 'Active'
+                              : 'Hidden'}
+                        </button>
+                        <span className="font-medium text-[#7B6496]">{availLabel}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile Bottom Action Strip: Stock Stepper + Edit / Archive / Delete */}
+                  <div className="flex items-center justify-between gap-2 border-t border-[#F0E4FF] pt-2.5">
+                    <div className="inline-flex items-center gap-1.5 rounded-xl border border-[#EBD8FF] bg-white p-1">
+                      <button
+                        type="button"
+                        onClick={() => void handleAdjustStock(product, -1)}
+                        aria-label={`Decrease stock for ${product.name}`}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FAF6FF] text-[#4A3862] active:bg-[#EBD8FF]"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <span
+                        className={`min-w-[28px] text-center font-mono text-xs font-bold tabular-nums ${
+                          product.stockCount <= 12 ? 'text-[#FF4D8D]' : 'text-[#2A0E4D]'
+                        }`}
+                      >
+                        {product.stockCount}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void handleAdjustStock(product, 1)}
+                        aria-label={`Increase stock for ${product.name}`}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FAF6FF] text-[#4A3862] active:bg-[#EBD8FF]"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(product)}
+                        className="inline-flex h-9 items-center gap-1 rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-bold text-[#6A11CB] active:bg-[#F4EBFF]"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleToggleArchive(product)}
+                        aria-label={product.isArchived ? 'Restore product' : 'Archive product'}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#EBD8FF] bg-white text-[#5F4B78] active:bg-amber-50"
+                      >
+                        {product.isArchived ? (
+                          <ArchiveRestore className="h-4 w-4" />
+                        ) : (
+                          <Archive className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete(product)}
+                        aria-label={`Delete ${product.name}`}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#EBD8FF] bg-white text-rose-600 active:bg-rose-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* DESKTOP PRODUCT TABLE */}
+        <div className="hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[720px] text-left text-xs">
             <thead>
               <tr className="border-b border-[#F0E4FF] text-[#7B6496]">
                 <th className="pb-2.5 font-semibold">Product</th>
-                <th className="pb-2.5 font-semibold">Category / Subcategory</th>
+                <th className="pb-2.5 font-semibold">Category</th>
                 <th className="pb-2.5 font-semibold">Price</th>
-                <th className="pb-2.5 font-semibold">Stock &amp; Availability</th>
+                <th className="pb-2.5 font-semibold">Stock</th>
                 <th className="pb-2.5 font-semibold">Status</th>
                 <th className="pb-2.5 text-right font-semibold">Actions</th>
               </tr>
@@ -936,16 +1190,9 @@ export function AdminProductsPage() {
                           <p className="truncate font-semibold text-[#2A0E4D]">{product.name}</p>
                           <p className="font-mono text-[11px] text-[#7B6496]">{product.sku}</p>
                           {audit && audit.flags.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {audit.flags.map((flag) => (
-                                <span
-                                  key={flag.code}
-                                  className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
-                                >
-                                  {flag.label}
-                                </span>
-                              ))}
-                            </div>
+                            <p className="mt-0.5 text-[10px] font-semibold text-amber-700">
+                              {audit.flags.map((f) => f.label).join(' · ')}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -963,7 +1210,7 @@ export function AdminProductsPage() {
                           type="button"
                           onClick={() => void handleAdjustStock(product, -1)}
                           aria-label={`Decrease stock for ${product.name}`}
-                          className="flex h-6 w-6 items-center justify-center rounded border border-[#EBD8FF] text-[#4A3862] hover:bg-[#F4EBFF]"
+                          className="flex h-7 w-7 items-center justify-center rounded border border-[#EBD8FF] text-[#4A3862] hover:bg-[#F4EBFF]"
                         >
                           <Minus className="h-3 w-3" />
                         </button>
@@ -980,20 +1227,18 @@ export function AdminProductsPage() {
                           type="button"
                           onClick={() => void handleAdjustStock(product, 1)}
                           aria-label={`Increase stock for ${product.name}`}
-                          className="flex h-6 w-6 items-center justify-center rounded border border-[#EBD8FF] text-[#4A3862] hover:bg-[#F4EBFF]"
+                          className="flex h-7 w-7 items-center justify-center rounded border border-[#EBD8FF] text-[#4A3862] hover:bg-[#F4EBFF]"
                         >
                           <Plus className="h-3 w-3" />
                         </button>
                       </div>
-                      <p className="mt-0.5 text-[10px] font-semibold text-[#7B6496]">
-                        {availLabel}
-                      </p>
+                      <p className="mt-0.5 text-[10px] font-semibold text-[#7B6496]">{availLabel}</p>
                     </td>
                     <td className="py-3">
                       <button
                         type="button"
                         onClick={() => void handleToggleActive(product)}
-                        className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
+                        className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                           product.isArchived
                             ? 'bg-amber-100 text-amber-800'
                             : product.isActive
@@ -1015,7 +1260,6 @@ export function AdminProductsPage() {
                           onClick={() => openEdit(product)}
                           className="rounded-lg border border-[#EBD8FF] p-1.5 text-[#6A11CB] hover:bg-[#F4EBFF]"
                           aria-label={`Edit ${product.name}`}
-                          title="Edit product"
                         >
                           <Edit3 className="h-3.5 w-3.5" />
                         </button>
@@ -1023,12 +1267,7 @@ export function AdminProductsPage() {
                           type="button"
                           onClick={() => void handleToggleArchive(product)}
                           className="rounded-lg border border-[#EBD8FF] p-1.5 text-[#5F4B78] hover:bg-amber-50 hover:text-amber-700"
-                          aria-label={
-                            product.isArchived
-                              ? `Restore ${product.name}`
-                              : `Archive ${product.name}`
-                          }
-                          title={product.isArchived ? 'Restore product' : 'Archive product'}
+                          aria-label={product.isArchived ? 'Restore' : 'Archive'}
                         >
                           {product.isArchived ? (
                             <ArchiveRestore className="h-3.5 w-3.5" />
@@ -1041,7 +1280,6 @@ export function AdminProductsPage() {
                           onClick={() => void handleDelete(product)}
                           className="rounded-lg border border-[#EBD8FF] p-1.5 text-[#7B6496] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
                           aria-label={`Delete ${product.name}`}
-                          title="Delete product"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -1067,7 +1305,6 @@ export function AdminCategoriesPage() {
   const { pushToast } = useToast();
   const [newSubNames, setNewSubNames] = useState<Record<string, string>>({});
 
-  // Add / Edit Category form state
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [catName, setCatName] = useState('');
   const [catDesc, setCatDesc] = useState('');
@@ -1084,6 +1321,7 @@ export function AdminCategoriesPage() {
     setCatSortOrder(String(categories.length + 1));
     setCatActive(true);
     setShowCatForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function openEditCategoryForm(cat: Category) {
@@ -1094,6 +1332,7 @@ export function AdminCategoriesPage() {
     setCatSortOrder(String(cat.sortOrder));
     setCatActive(cat.isActive);
     setShowCatForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleSaveCategory(e: React.FormEvent) {
@@ -1116,7 +1355,7 @@ export function AdminCategoriesPage() {
     await services.catalog.saveCategory(payload);
     pushToast({
       title: existing ? 'Category updated' : 'Category created',
-      description: `${payload.name} (Display order #${payload.sortOrder}) saved.`,
+      description: `${payload.name} (#${payload.sortOrder}) synced across mobile & desktop.`,
       variant: 'success',
     });
     setShowCatForm(false);
@@ -1136,17 +1375,13 @@ export function AdminCategoriesPage() {
     if (assignedCount > 0) {
       pushToast({
         title: 'Cannot delete category in use',
-        description: `${assignedCount} product(s) belong to "${cat.name}". Reassign products or hide the category instead.`,
+        description: `${assignedCount} product(s) belong to "${cat.name}". Reassign or hide instead.`,
         variant: 'error',
       });
       return;
     }
     await services.catalog.deleteCategory(cat.id);
-    pushToast({
-      title: 'Category deleted',
-      description: `${cat.name} removed from category list.`,
-      variant: 'info',
-    });
+    pushToast({ title: 'Category deleted', variant: 'info' });
   }
 
   async function toggleCategoryActive(cat: Category) {
@@ -1168,44 +1403,36 @@ export function AdminCategoriesPage() {
       sortOrder: cat.subcategories.length + 1,
     });
     setNewSubNames((prev) => ({ ...prev, [cat.id]: '' }));
-    pushToast({
-      title: 'Subcategory added',
-      description: `${raw} added under ${cat.name}.`,
-      variant: 'success',
-    });
+    pushToast({ title: 'Subcategory added', description: raw, variant: 'success' });
   }
 
   async function handleDeleteSubcategory(cat: Category, subId: string, subName: string) {
     await services.catalog.deleteSubcategory(cat.id, subId);
-    pushToast({
-      title: 'Subcategory removed',
-      description: `${subName} removed from ${cat.name}.`,
-      variant: 'info',
-    });
+    pushToast({ title: 'Subcategory removed', description: subName, variant: 'info' });
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">
-            Categories &amp; Subcategories ({categories.length})
+          <h1 className="font-display text-xl font-bold text-[#2A0E4D] sm:text-2xl">
+            Categories ({categories.length})
           </h1>
-          <p className="text-xs text-[#5F4B78]">
-            Add, edit, reorder, enable/disable, or safely remove categories and manage subcategories.
+          <p className="text-[11px] text-[#5F4B78] sm:text-xs">
+            Live synced across Mobile, Desktop, Search &amp; Filters
           </p>
         </div>
 
         <Button type="button" size="sm" variant="primary" onClick={openNewCategoryForm}>
           <Plus className="h-4 w-4" />
-          <span>Add Category</span>
+          <span>Add</span>
         </Button>
       </div>
 
       {showCatForm && (
         <form
           onSubmit={(e) => void handleSaveCategory(e)}
-          className="rounded-2xl border border-[#6A11CB]/25 bg-white p-5 shadow-md space-y-4"
+          className="space-y-3.5 rounded-2xl border border-[#6A11CB]/25 bg-white p-4 shadow-md sm:p-5"
         >
           <div className="flex items-center justify-between border-b border-[#F0E4FF] pb-2.5">
             <h2 className="font-display text-base font-bold text-[#2A0E4D]">
@@ -1214,48 +1441,72 @@ export function AdminCategoriesPage() {
             <button
               type="button"
               onClick={() => setShowCatForm(false)}
-              className="text-xs font-semibold text-[#7B6496] hover:text-[#2A0E4D]"
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FAF6FF] text-[#5F4B78]"
             >
-              Cancel
+              <X className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-3 gap-2.5">
             <input
               type="text"
               required
               placeholder="Category Name *"
               value={catName}
               onChange={(e) => setCatName(e.target.value)}
-              className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
+              className="col-span-2 h-11 rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
             />
             <input
               type="number"
               min={1}
               required
-              placeholder="Display Order"
+              placeholder="Order #"
               value={catSortOrder}
               onChange={(e) => setCatSortOrder(e.target.value)}
-              className="rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-xs focus:border-[#6A11CB] focus:outline-none"
+              className="col-span-1 h-11 rounded-xl border border-[#EBD8FF] px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
             />
-            <select
-              value={catImageUrl}
-              onChange={(e) => setCatImageUrl(e.target.value)}
-              className="rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-            >
-              {MEDIA_OPTIONS.map((m) => (
-                <option key={m.url} value={m.url}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-            <input
-              type="url"
-              placeholder="Or custom image URL"
-              value={catImageUrl}
-              onChange={(e) => setCatImageUrl(e.target.value)}
-              className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-            />
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl border border-[#EBD8FF] bg-[#FAF6FF] p-2.5">
+            <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-[#EBD8FF] bg-white">
+              <ProductImage src={catImageUrl} alt={catName || 'Category'} className="h-full w-full" />
+            </div>
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <select
+                value={MEDIA_OPTIONS.some((m) => m.url === catImageUrl) ? catImageUrl : ''}
+                onChange={(e) => {
+                  if (e.target.value) setCatImageUrl(e.target.value);
+                }}
+                className="h-9 w-full rounded-lg border border-[#EBD8FF] bg-white px-2 text-xs focus:border-[#6A11CB] focus:outline-none"
+              >
+                {!MEDIA_OPTIONS.some((m) => m.url === catImageUrl) && (
+                  <option value="">Custom Uploaded / URL</option>
+                )}
+                {MEDIA_OPTIONS.map((m) => (
+                  <option key={m.url} value={m.url}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+              <label className="flex min-h-[34px] cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#6A11CB]/40 bg-white px-2 text-[11px] font-bold text-[#6A11CB]">
+                <Upload className="h-3 w-3" />
+                <span>Upload Image from Phone</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || file.size > 1.5 * 1024 * 1024) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      if (typeof reader.result === 'string') setCatImageUrl(reader.result);
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
+            </div>
           </div>
 
           <input
@@ -1263,35 +1514,39 @@ export function AdminCategoriesPage() {
             placeholder="Category description"
             value={catDesc}
             onChange={(e) => setCatDesc(e.target.value)}
-            className="w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
+            className="h-11 w-full rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
           />
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#4A3862]">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <label className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 text-xs font-semibold text-[#4A3862]">
               <input
                 type="checkbox"
                 checked={catActive}
                 onChange={(e) => setCatActive(e.target.checked)}
                 className="h-4 w-4 accent-[#6A11CB]"
               />
-              <span>Visible on Storefront (Active)</span>
+              <span>Visible on Storefront</span>
             </label>
             <Button type="submit" size="sm" variant="primary">
               <Check className="h-3.5 w-3.5" />
-              <span>{editingCatId ? 'Update Category' : 'Save Category'}</span>
+              <span>{editingCatId ? 'Update' : 'Save Category'}</span>
             </Button>
           </div>
         </form>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {categories.map((cat) => (
-          <div
-            key={cat.id}
-            className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-3"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
+      <div className="grid gap-3 md:grid-cols-2 sm:gap-4">
+        {categories.map((cat) => {
+          const itemCount =
+            cat.id === ALL_GIFTS_CATEGORY_ID
+              ? products.length
+              : products.filter((p) => p.categoryId === cat.id).length;
+          return (
+            <div
+              key={cat.id}
+              className="space-y-3 rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs sm:p-5"
+            >
+              <div className="flex items-start gap-3">
                 <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-[#EBD8FF] bg-[#FAF6FF]">
                   <ProductImage
                     src={cat.imageUrl}
@@ -1299,103 +1554,111 @@ export function AdminCategoriesPage() {
                     className="h-full w-full object-cover"
                   />
                 </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-[11px] font-bold text-[#8C75A8]">
-                      #{cat.sortOrder}
-                    </span>
-                    <h2 className="font-display text-base font-bold text-[#2A0E4D]">{cat.name}</h2>
-                    <span className="rounded-full bg-[#FAF5FF] px-2 py-0.5 text-[10.5px] font-semibold tabular-nums text-[#6A11CB]">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="truncate font-display text-sm font-bold text-[#2A0E4D] sm:text-base">
+                      <span className="mr-1 font-mono text-xs text-[#8C75A8]">
+                        #{cat.sortOrder}
+                      </span>
+                      {cat.name}
+                    </h2>
+                    <span className="shrink-0 text-[11px] font-semibold tabular-nums text-[#6A11CB]">
                       {cat.id === ALL_GIFTS_CATEGORY_ID
-                        ? `${products.length} total`
-                        : `${products.filter((p) => p.categoryId === cat.id).length} items`}
+                        ? `${itemCount} total`
+                        : `${itemCount} items`}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-[#5F4B78]">{cat.description}</p>
+                  <p className="mt-0.5 line-clamp-2 text-[11.5px] text-[#5F4B78]">
+                    {cat.description}
+                  </p>
                 </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => openEditCategoryForm(cat)}
-                  aria-label={`Edit ${cat.name}`}
-                  className="rounded-lg border border-[#EBD8FF] p-1.5 text-[#6A11CB] hover:bg-[#F4EBFF]"
-                >
-                  <Edit3 className="h-3.5 w-3.5" />
-                </button>
+              {/* Mobile-Friendly Action Bar */}
+              <div className="flex items-center justify-between gap-2 border-t border-[#F4ECFF] pt-2.5">
                 <button
                   type="button"
                   onClick={() => void toggleCategoryActive(cat)}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                    cat.isActive
-                      ? 'bg-[#F4EBFF] text-[#6A11CB]'
-                      : 'bg-gray-100 text-gray-500'
+                  className={`min-h-[34px] rounded-lg px-3 text-xs font-bold ${
+                    cat.isActive ? 'bg-[#F4EBFF] text-[#6A11CB]' : 'bg-gray-100 text-gray-500'
                   }`}
                 >
                   {cat.isActive ? 'Active' : 'Hidden'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => void handleDeleteCategory(cat)}
-                  aria-label={`Delete ${cat.name}`}
-                  className="rounded-lg border border-[#EBD8FF] p-1.5 text-[#7B6496] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="border-t border-[#F0E4FF] pt-3">
-              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#7B6496]">
-                <FolderTree className="h-3.5 w-3.5 text-[#FF4D8D]" />
-                <span>Subcategories ({cat.subcategories.length})</span>
-              </p>
-
-              {cat.subcategories.length > 0 && (
-                <div className="mb-3 flex flex-wrap gap-1.5">
-                  {cat.subcategories.map((sub) => (
-                    <span
-                      key={sub.id}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-[#EBD8FF] bg-[#FAF6FF] px-2.5 py-1 text-xs font-medium text-[#2A0E4D]"
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => openEditCategoryForm(cat)}
+                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#EBD8FF] px-3 text-xs font-bold text-[#6A11CB] active:bg-[#F4EBFF]"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                    <span>Edit</span>
+                  </button>
+                  {cat.id !== ALL_GIFTS_CATEGORY_ID && (
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteCategory(cat)}
+                      aria-label={`Delete ${cat.name}`}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#EBD8FF] text-rose-600 active:bg-rose-50"
                     >
-                      <span>{sub.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => void handleDeleteSubcategory(cat, sub.id, sub.name)}
-                        aria-label={`Delete ${sub.name}`}
-                        className="text-[#8C75A8] hover:text-rose-600"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
 
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newSubNames[cat.id] ?? ''}
-                  onChange={(e) =>
-                    setNewSubNames((prev) => ({ ...prev, [cat.id]: e.target.value }))
-                  }
-                  placeholder={`Add subcategory to ${cat.name}...`}
-                  className="flex-1 rounded-xl border border-[#EBD8FF] bg-[#FDFBFF] px-3 py-1.5 text-xs focus:border-[#6A11CB] focus:outline-none"
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="glass"
-                  onClick={() => void handleAddSubcategory(cat)}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Add</span>
-                </Button>
+              {/* Subcategories */}
+              <div className="border-t border-[#F4ECFF] pt-2.5">
+                <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-[#7B6496]">
+                  <FolderTree className="h-3.5 w-3.5 text-[#FF4D8D]" />
+                  <span>Subcategories ({cat.subcategories.length})</span>
+                </p>
+
+                {cat.subcategories.length > 0 && (
+                  <div className="mb-2.5 flex flex-wrap gap-1.5">
+                    {cat.subcategories.map((sub) => (
+                      <span
+                        key={sub.id}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#EBD8FF] bg-[#FAF6FF] px-2.5 py-1 text-[11.5px] font-medium text-[#2A0E4D]"
+                      >
+                        <span>{sub.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteSubcategory(cat, sub.id, sub.name)}
+                          aria-label={`Delete ${sub.name}`}
+                          className="ml-0.5 flex h-4 w-4 items-center justify-center rounded text-[#8C75A8] hover:text-rose-600"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newSubNames[cat.id] ?? ''}
+                    onChange={(e) =>
+                      setNewSubNames((prev) => ({ ...prev, [cat.id]: e.target.value }))
+                    }
+                    placeholder={`Add subcategory...`}
+                    className="h-10 min-w-0 flex-1 rounded-xl border border-[#EBD8FF] bg-[#FDFBFF] px-3 text-xs focus:border-[#6A11CB] focus:outline-none"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="glass"
+                    onClick={() => void handleAddSubcategory(cat)}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add</span>
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -1408,12 +1671,13 @@ export function AdminBannersPage() {
   const { data: settings } = useStoreSettings();
   const { pushToast } = useToast();
 
+  const [showAddForm, setShowAddForm] = useState(false);
   const [titlePrefix, setTitlePrefix] = useState('');
   const [titleHighlight, setTitleHighlight] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [ctaLabel, setCtaLabel] = useState('Shop Now');
   const [ctaHref, setCtaHref] = useState('/shop');
-  const [imageUrl, setImageUrl] = useState<string>(STUDIO_MEDIA.heroPersonalized);
+  const [imageUrl, setImageUrl] = useState<string>(HERO_BANNERS.welcome);
   const [occasionTag, setOccasionTag] = useState<OccasionTag>('Birthday');
 
   if (!settings) {
@@ -1442,7 +1706,8 @@ export function AdminBannersPage() {
     setTitlePrefix('');
     setTitleHighlight('');
     setSubtitle('');
-    pushToast({ title: 'Hero slide added', variant: 'success' });
+    setShowAddForm(false);
+    pushToast({ title: 'Hero banner added', variant: 'success' });
   }
 
   async function toggleSlide(slideId: string) {
@@ -1461,83 +1726,98 @@ export function AdminBannersPage() {
       ...settings,
       heroSlides: settings.heroSlides.filter((s) => s.id !== slideId),
     });
-    pushToast({ title: 'Hero slide removed', variant: 'info' });
+    pushToast({ title: 'Hero banner removed', variant: 'info' });
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">
-          Homepage Hero Slider Banners
-        </h1>
-        <p className="text-xs text-[#5F4B78]">
-          Control the rotating hero banners displayed on the GiftKart homepage.
-        </p>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-xl font-bold text-[#2A0E4D] sm:text-2xl">
+            Hero Banners ({settings.heroSlides.length})
+          </h1>
+          <p className="text-[11px] text-[#5F4B78] sm:text-xs">
+            Manage homepage promotional slider banners
+          </p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="primary"
+          onClick={() => setShowAddForm((prev) => !prev)}
+        >
+          {showAddForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          <span>{showAddForm ? 'Close' : 'Add Slide'}</span>
+        </Button>
       </div>
 
-      <form
-        onSubmit={(e) => void handleAddSlide(e)}
-        className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-4"
-      >
-        <h2 className="font-display text-base font-bold text-[#2A0E4D]">Add Hero Banner Slide</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <input
-            type="text"
-            required
-            placeholder="Heading Prefix (e.g. Personalized Gifts for)"
-            value={titlePrefix}
-            onChange={(e) => setTitlePrefix(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-          />
-          <input
-            type="text"
-            required
-            placeholder="Pink Highlight Text (e.g. Every Moment)"
-            value={titleHighlight}
-            onChange={(e) => setTitleHighlight(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-          />
-          <input
-            type="text"
-            placeholder="Subtitle copy"
-            value={subtitle}
-            onChange={(e) => setSubtitle(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-          />
-          <input
-            type="text"
-            placeholder="CTA Button Label"
-            value={ctaLabel}
-            onChange={(e) => setCtaLabel(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-          />
-          <input
-            type="text"
-            placeholder="CTA Path (e.g. /shop)"
-            value={ctaHref}
-            onChange={(e) => setCtaHref(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-xs focus:border-[#6A11CB] focus:outline-none"
-          />
-          <select
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-          >
-            {MEDIA_OPTIONS.map((m) => (
-              <option key={m.url} value={m.url}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </div>
+      {showAddForm && (
+        <form
+          onSubmit={(e) => void handleAddSlide(e)}
+          className="space-y-3 rounded-2xl border border-[#6A11CB]/25 bg-white p-4 shadow-md sm:p-5"
+        >
+          <h2 className="font-display text-base font-bold text-[#2A0E4D]">New Hero Banner Slide</h2>
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            <input
+              type="text"
+              required
+              placeholder="Heading Prefix (e.g. Personalized Gifts for)"
+              value={titlePrefix}
+              onChange={(e) => setTitlePrefix(e.target.value)}
+              className="h-11 rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
+            />
+            <input
+              type="text"
+              required
+              placeholder="Highlight Text (e.g. Every Moment)"
+              value={titleHighlight}
+              onChange={(e) => setTitleHighlight(e.target.value)}
+              className="h-11 rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
+            />
+            <input
+              type="text"
+              placeholder="Subtitle copy"
+              value={subtitle}
+              onChange={(e) => setSubtitle(e.target.value)}
+              className="h-11 rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
+            />
+            <input
+              type="text"
+              placeholder="CTA Button Label"
+              value={ctaLabel}
+              onChange={(e) => setCtaLabel(e.target.value)}
+              className="h-11 rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
+            />
+            <input
+              type="text"
+              placeholder="CTA Path (e.g. /shop)"
+              value={ctaHref}
+              onChange={(e) => setCtaHref(e.target.value)}
+              className="h-11 rounded-xl border border-[#EBD8FF] px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
+            />
+            <select
+              value={MEDIA_OPTIONS.some((m) => m.url === imageUrl) ? imageUrl : ''}
+              onChange={(e) => {
+                if (e.target.value) setImageUrl(e.target.value);
+              }}
+              className="h-11 rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs focus:border-[#6A11CB] focus:outline-none"
+            >
+              {!MEDIA_OPTIONS.some((m) => m.url === imageUrl) && (
+                <option value="">Uploaded Custom Banner</option>
+              )}
+              {MEDIA_OPTIONS.map((m) => (
+                <option key={m.url} value={m.url}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="font-semibold text-[#5F4B78]">Occasion Tag:</span>
+          <div className="grid grid-cols-2 gap-2.5 sm:flex sm:items-center sm:justify-between">
             <select
               value={occasionTag}
               onChange={(e) => setOccasionTag(e.target.value as OccasionTag)}
-              className="rounded-xl border border-[#EBD8FF] bg-white px-3 py-1.5 text-xs focus:border-[#6A11CB] focus:outline-none"
+              className="h-10 rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs focus:border-[#6A11CB] focus:outline-none"
             >
               {OFFICIAL_OCCASIONS.map((o) => (
                 <option key={o.id} value={o.tag}>
@@ -1545,15 +1825,37 @@ export function AdminBannersPage() {
                 </option>
               ))}
             </select>
-          </div>
-          <Button type="submit" size="sm" variant="primary">
-            <ImageIcon className="h-3.5 w-3.5" />
-            <span>Add Hero Slide</span>
-          </Button>
-        </div>
-      </form>
 
-      <div className="grid gap-4 md:grid-cols-2">
+            <label className="flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#6A11CB]/40 bg-[#FAF6FF] px-3 text-xs font-bold text-[#6A11CB]">
+              <Upload className="h-3.5 w-3.5" />
+              <span>Upload Banner</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || file.size > 1.5 * 1024 * 1024) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    if (typeof reader.result === 'string') setImageUrl(reader.result);
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+            </label>
+
+            <div className="col-span-2 sm:col-span-1">
+              <Button type="submit" size="sm" variant="primary" fullWidth>
+                <ImageIcon className="h-3.5 w-3.5" />
+                <span>Save Banner Slide</span>
+              </Button>
+            </div>
+          </div>
+        </form>
+      )}
+
+      <div className="grid gap-3.5 md:grid-cols-2">
         {settings.heroSlides.map((slide) => (
           <div
             key={slide.id}
@@ -1566,10 +1868,10 @@ export function AdminBannersPage() {
                 className="h-full w-full object-cover"
               />
             </div>
-            <div className="p-4 space-y-2">
+            <div className="space-y-2.5 p-3.5 sm:p-4">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-display text-base font-bold text-[#2A0E4D]">
+                <div className="min-w-0">
+                  <p className="font-display text-sm font-bold text-[#2A0E4D] sm:text-base">
                     {slide.titlePrefix}{' '}
                     <span className="text-[#FF4D8D]">{slide.titleHighlight}</span>
                   </p>
@@ -1578,7 +1880,7 @@ export function AdminBannersPage() {
                 <button
                   type="button"
                   onClick={() => void toggleSlide(slide.id)}
-                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                  className={`min-h-[32px] shrink-0 rounded-lg px-2.5 text-[11px] font-bold ${
                     slide.isActive ? 'bg-[#F4EBFF] text-[#6A11CB]' : 'bg-gray-100 text-gray-500'
                   }`}
                 >
@@ -1586,15 +1888,16 @@ export function AdminBannersPage() {
                 </button>
               </div>
               <div className="flex items-center justify-between border-t border-[#F0E4FF] pt-2.5 text-xs">
-                <span className="font-mono text-[#7B6496]">
-                  CTA: {slide.ctaLabel} → {slide.ctaHref}
+                <span className="truncate font-mono text-[11px] text-[#7B6496]">
+                  {slide.ctaLabel} → {slide.ctaHref}
                 </span>
                 <button
                   type="button"
                   onClick={() => void removeSlide(slide.id)}
-                  className="text-xs font-semibold text-rose-600 hover:underline"
+                  className="inline-flex min-h-[32px] items-center gap-1 px-2 text-xs font-semibold text-rose-600"
                 >
-                  Remove
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Remove</span>
                 </button>
               </div>
             </div>
@@ -1606,96 +1909,202 @@ export function AdminBannersPage() {
 }
 
 /* ============================================================================
- * 5. ADMIN INVENTORY CONTROL
+ * 5. ADMIN INVENTORY CONTROL (MOBILE CARDS + QUICK STOCK BUTTONS)
  * ========================================================================== */
 export function AdminInventoryPage() {
   const { data: products } = useProducts({ includeInactive: true });
   const { pushToast } = useToast();
+  const [search, setSearch] = useState('');
+  const [stockTab, setStockTab] = useState<'ALL' | 'LOW' | 'OUT'>('ALL');
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return products.filter((p) => {
+      if (stockTab === 'LOW' && (p.stockCount === 0 || p.stockCount > 12)) return false;
+      if (stockTab === 'OUT' && p.stockCount !== 0) return false;
+      if (!q) return true;
+      return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+    });
+  }, [products, search, stockTab]);
 
   async function adjustStock(product: Product, delta: number) {
     const nextStock = Math.max(0, product.stockCount + delta);
     await services.catalog.saveProduct({
       ...product,
       stockCount: nextStock,
+      availability: nextStock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
     });
     pushToast({
       title: 'Stock updated',
-      description: `${product.name} stock is now ${nextStock}.`,
+      description: `${product.name}: ${nextStock} units`,
       variant: 'info',
     });
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">
-          Inventory &amp; Stock Control
+        <h1 className="font-display text-xl font-bold text-[#2A0E4D] sm:text-2xl">
+          Inventory &amp; Stock
         </h1>
-        <p className="text-xs text-[#5F4B78]">
-          Quickly replenish or adjust unit counts. Items at or below 12 units are highlighted in GiftKart Pink.
+        <p className="text-[11px] text-[#5F4B78] sm:text-xs">
+          Adjust units in 1 tap. Items ≤ 12 units are highlighted.
         </p>
       </div>
 
-      <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs overflow-x-auto">
-        <table className="w-full min-w-[600px] text-left text-xs">
-          <thead>
-            <tr className="border-b border-[#F0E4FF] text-[#7B6496]">
-              <th className="pb-2.5 font-semibold">SKU</th>
-              <th className="pb-2.5 font-semibold">Product</th>
-              <th className="pb-2.5 font-semibold">Status</th>
-              <th className="pb-2.5 text-right font-semibold">Units Available</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#F5ECFF]">
-            {products.map((p) => {
-              const isLow = p.stockCount <= 12;
-              return (
-                <tr key={p.id} className="hover:bg-[#FAF6FF]">
-                  <td className="py-3 font-mono text-[#7B6496]">{p.sku}</td>
-                  <td className="py-3 font-semibold text-[#2A0E4D]">{p.name}</td>
-                  <td className="py-3">
-                    {p.stockCount === 0 ? (
-                      <span className="rounded-full bg-rose-50 px-2.5 py-0.5 font-bold text-rose-700">
-                        Out of Stock
-                      </span>
-                    ) : isLow ? (
-                      <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 font-bold text-[#FF4D8D]">
-                        Low Stock
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-[#F4EBFF] px-2.5 py-0.5 font-semibold text-[#6A11CB]">
-                        In Stock
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 text-right">
-                    <div className="inline-flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void adjustStock(p, -1)}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#EBD8FF] text-[#5F4B78] hover:bg-[#FAF6FF]"
-                        aria-label={`Decrease stock for ${p.name}`}
-                      >
-                        <Minus className="h-3.5 w-3.5" />
-                      </button>
-                      <span className="min-w-[36px] text-center font-mono text-sm font-bold tabular-nums text-[#2A0E4D]">
-                        {p.stockCount}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => void adjustStock(p, 5)}
-                        className="flex h-7 items-center justify-center gap-0.5 rounded-lg bg-[#6A11CB] px-2 text-[11px] font-bold text-white hover:bg-[#580DAC]"
-                        aria-label={`Add 5 stock for ${p.name}`}
-                      >
-                        <Plus className="h-3 w-3" />5
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="space-y-3 rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs sm:p-5">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex h-11 flex-1 items-center gap-2 rounded-xl border border-[#EBD8FF] bg-[#FAF6FF] px-3">
+            <Search className="h-4 w-4 text-[#6A11CB]" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search SKU or product..."
+              className="w-full bg-transparent text-sm text-[#2A0E4D] focus:outline-none sm:text-xs"
+            />
+          </div>
+          <div className="flex gap-1.5">
+            {(
+              [
+                ['ALL', `All (${products.length})`],
+                ['LOW', `Low (${products.filter((p) => p.stockCount > 0 && p.stockCount <= 12).length})`],
+                ['OUT', `Out (${products.filter((p) => p.stockCount === 0).length})`],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setStockTab(key)}
+                className={`min-h-[36px] flex-1 rounded-lg px-3 text-xs font-semibold sm:flex-initial ${
+                  stockTab === key
+                    ? 'bg-[#6A11CB] text-white'
+                    : 'bg-[#FAF6FF] text-[#5F4B78]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Inventory Cards */}
+        <div className="space-y-2.5 md:hidden">
+          {filtered.map((p) => {
+            const isLow = p.stockCount <= 12;
+            return (
+              <div
+                key={p.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-[#F0E4FF] bg-[#FDFBFF] p-3"
+              >
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-[#EBD8FF] bg-white">
+                    <ProductImage
+                      src={p.images[0]}
+                      alt={p.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-[#2A0E4D]">{p.name}</p>
+                    <p className="font-mono text-[10.5px] text-[#7B6496]">{p.sku}</p>
+                    <p
+                      className={`mt-0.5 text-[11px] font-bold ${
+                        p.stockCount === 0
+                          ? 'text-rose-600'
+                          : isLow
+                            ? 'text-[#FF4D8D]'
+                            : 'text-emerald-700'
+                      }`}
+                    >
+                      {p.stockCount === 0
+                        ? 'Out of Stock'
+                        : isLow
+                          ? `Low · ${p.stockCount} left`
+                          : `In Stock · ${p.stockCount}`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => void adjustStock(p, -1)}
+                    aria-label={`Decrease stock for ${p.name}`}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#EBD8FF] bg-white text-[#5F4B78] active:bg-[#F4EBFF]"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void adjustStock(p, 5)}
+                    aria-label={`Add 5 stock for ${p.name}`}
+                    className="flex h-9 items-center justify-center gap-0.5 rounded-lg bg-[#6A11CB] px-2.5 text-xs font-bold text-white active:scale-95"
+                  >
+                    <Plus className="h-3.5 w-3.5" />5
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[600px] text-left text-xs">
+            <thead>
+              <tr className="border-b border-[#F0E4FF] text-[#7B6496]">
+                <th className="pb-2.5 font-semibold">SKU</th>
+                <th className="pb-2.5 font-semibold">Product</th>
+                <th className="pb-2.5 font-semibold">Status</th>
+                <th className="pb-2.5 text-right font-semibold">Units Available</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#F5ECFF]">
+              {filtered.map((p) => {
+                const isLow = p.stockCount <= 12;
+                return (
+                  <tr key={p.id} className="hover:bg-[#FAF6FF]">
+                    <td className="py-3 font-mono text-[#7B6496]">{p.sku}</td>
+                    <td className="py-3 font-semibold text-[#2A0E4D]">{p.name}</td>
+                    <td className="py-3 font-bold">
+                      {p.stockCount === 0 ? (
+                        <span className="text-rose-700">Out of Stock</span>
+                      ) : isLow ? (
+                        <span className="text-[#FF4D8D]">Low Stock</span>
+                      ) : (
+                        <span className="text-[#6A11CB]">In Stock</span>
+                      )}
+                    </td>
+                    <td className="py-3 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void adjustStock(p, -1)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#EBD8FF] text-[#5F4B78] hover:bg-[#FAF6FF]"
+                          aria-label={`Decrease stock for ${p.name}`}
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="min-w-[36px] text-center font-mono text-sm font-bold tabular-nums text-[#2A0E4D]">
+                          {p.stockCount}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void adjustStock(p, 5)}
+                          className="flex h-8 items-center justify-center gap-0.5 rounded-lg bg-[#6A11CB] px-2.5 text-[11px] font-bold text-white hover:bg-[#580DAC]"
+                          aria-label={`Add 5 stock for ${p.name}`}
+                        >
+                          <Plus className="h-3 w-3" />5
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -1708,6 +2117,7 @@ export function AdminGiftWrappingPage() {
   const { data: config } = useGiftWrapConfig();
   const { pushToast } = useToast();
 
+  const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [chargeInr, setChargeInr] = useState('79');
@@ -1741,6 +2151,7 @@ export function AdminGiftWrappingPage() {
     setName('');
     setDescription('');
     setChargeInr('79');
+    setShowForm(false);
     pushToast({ title: 'Gift wrap style added', variant: 'success' });
   }
 
@@ -1754,102 +2165,116 @@ export function AdminGiftWrappingPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">
-            Gift Wrapping Configuration
+          <h1 className="font-display text-xl font-bold text-[#2A0E4D] sm:text-2xl">
+            Gift Wrapping
           </h1>
           <p className="mt-0.5 text-xs text-[#5F4B78]">
-            Enable or disable storefront gift wrapping and configure wrapping styles and INR charges.
+            Control checkout gift wrapping styles and INR charges
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => void handleToggleGlobal()}
-          className={`inline-flex min-h-[40px] items-center gap-2 rounded-full px-4 text-xs font-bold transition-colors ${
-            config.globallyEnabled
-              ? 'bg-[#6A11CB] text-white'
-              : 'border border-[#EBD8FF] bg-[#FAF6FF] text-[#5F4B78]'
-          }`}
-        >
-          <Gift className="h-4 w-4" />
-          <span>{config.globallyEnabled ? 'Globally Enabled' : 'Globally Disabled'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void handleToggleGlobal()}
+            className={`inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl px-4 text-xs font-bold transition-colors sm:flex-initial ${
+              config.globallyEnabled
+                ? 'bg-[#6A11CB] text-white'
+                : 'border border-[#EBD8FF] bg-[#FAF6FF] text-[#5F4B78]'
+            }`}
+          >
+            <Gift className="h-4 w-4" />
+            <span>{config.globallyEnabled ? 'Enabled' : 'Disabled'}</span>
+          </button>
+          <Button
+            type="button"
+            size="sm"
+            variant="accent"
+            onClick={() => setShowForm((p) => !p)}
+          >
+            {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            <span>{showForm ? 'Close' : 'Add Style'}</span>
+          </Button>
+        </div>
       </div>
 
-      <form
-        onSubmit={(e) => void handleAddStyle(e)}
-        className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-4"
-      >
-        <h2 className="font-display text-base font-bold text-[#2A0E4D]">Add Wrapping Style</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <input
-            type="text"
-            required
-            placeholder="Style Name (e.g. Festive Lavender Box)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-          />
-          <input
-            type="text"
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-          />
-          <div className="flex gap-2">
+      {showForm && (
+        <form
+          onSubmit={(e) => void handleAddStyle(e)}
+          className="space-y-3 rounded-2xl border border-[#6A11CB]/25 bg-white p-4 shadow-md sm:p-5"
+        >
+          <h2 className="font-display text-base font-bold text-[#2A0E4D]">Add Wrapping Style</h2>
+          <div className="grid gap-2.5 sm:grid-cols-3">
             <input
-              type="number"
-              min={0}
+              type="text"
               required
-              placeholder="Charge (₹)"
-              value={chargeInr}
-              onChange={(e) => setChargeInr(e.target.value)}
-              className="w-28 rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-xs focus:border-[#6A11CB] focus:outline-none"
+              placeholder="Style Name (e.g. Lavender Box)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-11 rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
             />
-            <Button type="submit" size="sm" variant="accent" fullWidth>
-              <Plus className="h-3.5 w-3.5" />
-              <span>Add Style</span>
-            </Button>
+            <input
+              type="text"
+              placeholder="Short description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="h-11 rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
+            />
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={0}
+                required
+                placeholder="Fee (₹)"
+                value={chargeInr}
+                onChange={(e) => setChargeInr(e.target.value)}
+                className="h-11 w-28 rounded-xl border border-[#EBD8FF] px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
+              />
+              <Button type="submit" size="sm" variant="primary" fullWidth>
+                <Check className="h-4 w-4" />
+                <span>Save</span>
+              </Button>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         {config.styles.map((style) => (
           <div
             key={style.id}
-            className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs flex flex-col justify-between gap-3"
+            className="flex flex-col justify-between gap-3 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs"
           >
             <div>
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-display text-base font-bold text-[#2A0E4D]">{style.name}</h3>
-                <span className="font-mono text-sm font-bold text-[#6A11CB]">
+                <span className="font-mono text-sm font-bold tabular-nums text-[#6A11CB]">
                   {formatInr(style.chargeInr)}
                 </span>
               </div>
               <p className="mt-1 text-xs text-[#5F4B78]">{style.description}</p>
             </div>
 
-            <div className="flex items-center justify-between border-t border-[#F0E4FF] pt-3">
+            <div className="flex items-center justify-between border-t border-[#F0E4FF] pt-2.5">
               <button
                 type="button"
                 onClick={() => void toggleStyle(style)}
-                className={`rounded-full px-3 py-1 text-[11px] font-bold ${
+                className={`min-h-[34px] rounded-lg px-3 text-xs font-bold ${
                   style.isActive ? 'bg-[#F4EBFF] text-[#6A11CB]' : 'bg-gray-100 text-gray-500'
                 }`}
               >
-                {style.isActive ? 'Active' : 'Inactive'}
+                {style.isActive ? 'Active' : 'Paused'}
               </button>
               <button
                 type="button"
                 onClick={() => void deleteStyle(style.id)}
-                className="text-xs font-semibold text-rose-600 hover:underline"
+                className="inline-flex min-h-[34px] items-center gap-1 px-2 text-xs font-semibold text-rose-600"
               >
-                Delete
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete</span>
               </button>
             </div>
           </div>

@@ -1,17 +1,25 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
+  ArrowLeft,
   CheckCircle2,
+  ChevronRight,
   Clock,
   Edit3,
   Gift,
+  Mail,
   MapPin,
+  MessageCircle,
+  Phone,
   Plug,
   Plus,
   RefreshCw,
+  Search,
   ShieldAlert,
   Tag,
   Trash2,
   Users,
+  X,
 } from 'lucide-react';
 import {
   useCategories,
@@ -44,30 +52,70 @@ const FULFILLMENT_STATUSES: OrderFulfillmentStatus[] = [
   'Cancelled',
 ];
 
+function cleanPhoneForWhatsApp(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 10) return `91${digits}`;
+  return digits;
+}
+
 /* ============================================================================
- * 1. ADMIN DEMO ORDERS & TIMESTAMPED STATUS HISTORY
+ * 1. ADMIN ORDERS & TIMESTAMPED STATUS HISTORY (MOBILE MASTER -> DETAIL)
  * ========================================================================== */
 export function AdminOrdersPage() {
   const { data: orders } = useOrders();
   const { pushToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
 
+  const initialOrderParam = searchParams.get('order') ?? '';
+  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [selectedOrderId, setSelectedOrderId] = useState<string>('');
+  const [selectedOrderId, setSelectedOrderId] = useState<string>(initialOrderParam);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState<boolean>(Boolean(initialOrderParam));
   const [nextStatus, setNextStatus] = useState<OrderFulfillmentStatus>('Confirmed');
   const [statusNote, setStatusNote] = useState('');
   const [updating, setUpdating] = useState(false);
 
   const filteredOrders = useMemo(() => {
-    if (statusFilter === 'ALL') return orders;
-    return orders.filter((o) => o.fulfillmentStatus === statusFilter);
-  }, [orders, statusFilter]);
+    const q = search.trim().toLowerCase();
+    return orders.filter((o) => {
+      if (statusFilter !== 'ALL' && o.fulfillmentStatus !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        o.orderNumber.toLowerCase().includes(q) ||
+        o.customer.fullName.toLowerCase().includes(q) ||
+        o.customer.phone.toLowerCase().includes(q) ||
+        o.customer.deliveryZoneNameSnapshot.toLowerCase().includes(q)
+      );
+    });
+  }, [orders, statusFilter, search]);
 
   const selectedOrder: DemoOrder | undefined = useMemo(() => {
     return (
       filteredOrders.find((o) => o.id === selectedOrderId) ??
+      orders.find((o) => o.id === selectedOrderId) ??
       filteredOrders[0]
     );
-  }, [filteredOrders, selectedOrderId]);
+  }, [filteredOrders, orders, selectedOrderId]);
+
+  useEffect(() => {
+    if (selectedOrder) {
+      setNextStatus(selectedOrder.fulfillmentStatus);
+    }
+  }, [selectedOrder?.id, selectedOrder?.fulfillmentStatus]);
+
+  function openOrder(order: DemoOrder) {
+    setSelectedOrderId(order.id);
+    setNextStatus(order.fulfillmentStatus);
+    setMobileDetailOpen(true);
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }
+
+  function closeMobileDetail() {
+    setMobileDetailOpen(false);
+    if (searchParams.has('order')) {
+      setSearchParams({}, { replace: true });
+    }
+  }
 
   async function handleStatusUpdate(e: React.FormEvent) {
     e.preventDefault();
@@ -82,7 +130,7 @@ export function AdminOrdersPage() {
       setStatusNote('');
       pushToast({
         title: `Order ${selectedOrder.orderNumber} updated`,
-        description: `Status recorded as "${nextStatus}" in timestamped history.`,
+        description: `Status recorded as "${nextStatus}".`,
         variant: 'success',
       });
     } finally {
@@ -91,37 +139,72 @@ export function AdminOrdersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">
-            Demo Orders &amp; Status History
-          </h1>
-          <p className="text-xs text-[#5F4B78]">
-            Inspect immutable product, SKU, price, and gift-wrapping snapshots. Every status change logs a timestamped history entry.
-          </p>
-        </div>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header (Hidden on mobile when inspecting a single order for maximum focus) */}
+      <div className={mobileDetailOpen ? 'hidden lg:block' : 'block'}>
+        <h1 className="font-display text-xl font-bold text-[#2A0E4D] sm:text-2xl">
+          Orders ({orders.length})
+        </h1>
+        <p className="text-[11px] text-[#5F4B78] sm:text-xs">
+          Tap any order to inspect items, custom photos, customer contact &amp; update status
+        </p>
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-xl border border-[#EBD8FF] bg-white px-3.5 py-2 text-xs font-semibold text-[#4A3862] focus:border-[#6A11CB] focus:outline-none"
-        >
-          <option value="ALL">All Statuses ({orders.length})</option>
-          {FULFILLMENT_STATUSES.map((st) => (
-            <option key={st} value={st}>
-              {st}
-            </option>
-          ))}
-        </select>
+        {/* Search + Horizontal Status Filter Bar */}
+        <div className="mt-3 space-y-2.5">
+          <div className="flex h-11 items-center gap-2 rounded-xl border border-[#EBD8FF] bg-white px-3 shadow-xs">
+            <Search className="h-4 w-4 shrink-0 text-[#6A11CB]" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search order #, customer name, or phone..."
+              className="w-full bg-transparent text-sm text-[#2A0E4D] focus:outline-none sm:text-xs"
+            />
+          </div>
+
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('ALL')}
+              className={`min-h-[34px] shrink-0 rounded-lg px-3 text-xs font-semibold whitespace-nowrap ${
+                statusFilter === 'ALL'
+                  ? 'bg-[#6A11CB] text-white'
+                  : 'border border-[#EBD8FF] bg-white text-[#5F4B78]'
+              }`}
+            >
+              All ({orders.length})
+            </button>
+            {FULFILLMENT_STATUSES.map((st) => {
+              const count = orders.filter((o) => o.fulfillmentStatus === st).length;
+              return (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setStatusFilter(st)}
+                  className={`min-h-[34px] shrink-0 rounded-lg px-3 text-xs font-semibold whitespace-nowrap ${
+                    statusFilter === st
+                      ? 'bg-[#6A11CB] text-white'
+                      : 'border border-[#EBD8FF] bg-white text-[#5F4B78]'
+                  }`}
+                >
+                  {st} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Orders List */}
-        <div className="space-y-3 lg:col-span-5">
+      <div className="grid gap-5 lg:grid-cols-12">
+        {/* Orders List (Visible on desktop always, visible on mobile when !mobileDetailOpen) */}
+        <div
+          className={`space-y-2.5 lg:col-span-5 ${
+            mobileDetailOpen ? 'hidden lg:block' : 'block'
+          }`}
+        >
           {filteredOrders.length === 0 ? (
-            <div className="rounded-2xl border border-[#EBD8FF] bg-white p-6 text-center text-xs text-[#5F4B78]">
-              No demo orders match the selected status filter.
+            <div className="rounded-2xl border border-[#EBD8FF] bg-white p-8 text-center text-xs text-[#5F4B78]">
+              No orders match your filter.
             </div>
           ) : (
             filteredOrders.map((order) => {
@@ -130,13 +213,10 @@ export function AdminOrdersPage() {
                 <button
                   key={order.id}
                   type="button"
-                  onClick={() => {
-                    setSelectedOrderId(order.id);
-                    setNextStatus(order.fulfillmentStatus);
-                  }}
-                  className={`w-full rounded-2xl border p-4 text-left transition-all ${
+                  onClick={() => openOrder(order)}
+                  className={`w-full rounded-2xl border p-3.5 text-left transition-all active:scale-[0.99] sm:p-4 ${
                     active
-                      ? 'border-[#6A11CB] bg-[#F8F2FF] shadow-sm'
+                      ? 'border-[#6A11CB] bg-[#F8F2FF] shadow-xs'
                       : 'border-[#EBD8FF] bg-white hover:bg-[#FAF6FF]'
                   }`}
                 >
@@ -144,84 +224,165 @@ export function AdminOrdersPage() {
                     <span className="font-mono text-sm font-bold text-[#6A11CB]">
                       {order.orderNumber}
                     </span>
-                    <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#FF4D8D] ring-1 ring-[#EBD8FF]">
+                    <span className="text-[11px] font-bold text-[#FF4D8D]">
                       {order.fulfillmentStatus}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-sm font-semibold text-[#2A0E4D]">
-                    {order.customer.fullName}
-                  </p>
-                  <div className="mt-1 flex items-center justify-between text-xs text-[#5F4B78]">
-                    <span>
-                      {order.customer.deliveryZoneNameSnapshot} · {order.paymentMethod || 'Cash on Delivery (COD)'}
-                    </span>
-                    <span className="font-mono font-bold text-[#2A0E4D]">
-                      {formatInr(order.grandTotalInr)}
-                    </span>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className="truncate text-sm font-bold text-[#2A0E4D]">
+                      {order.customer.fullName}
+                    </p>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <span className="font-mono text-sm font-bold tabular-nums text-[#2A0E4D]">
+                        {formatInr(order.grandTotalInr)}
+                      </span>
+                      <ChevronRight className="h-4 w-4 text-[#8C75A8] lg:hidden" />
+                    </div>
                   </div>
+                  <p className="mt-1 truncate text-[11.5px] text-[#5F4B78]">
+                    {order.customer.deliveryZoneNameSnapshot} · {order.items.length} item(s) ·{' '}
+                    {order.paymentMethod || 'COD'}
+                  </p>
                 </button>
               );
             })
           )}
         </div>
 
-        {/* Selected Order Snapshot & History */}
-        <div className="lg:col-span-7">
+        {/* Order Detail Panel (Visible on desktop always, visible on mobile when mobileDetailOpen) */}
+        <div
+          className={`lg:col-span-7 ${
+            mobileDetailOpen ? 'block' : 'hidden lg:block'
+          }`}
+        >
+          {mobileDetailOpen && (
+            <button
+              type="button"
+              onClick={closeMobileDetail}
+              className="mb-3 inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-bold text-[#6A11CB] shadow-xs active:bg-[#F4EBFF] lg:hidden"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to All Orders</span>
+            </button>
+          )}
+
           {!selectedOrder ? (
             <div className="rounded-2xl border border-[#EBD8FF] bg-white p-8 text-center text-sm text-[#5F4B78]">
-              Select an order to inspect its immutable snapshot and status history.
+              Select an order to inspect details and update status.
             </div>
           ) : (
-            <div className="rounded-2xl border border-[#EBD8FF] bg-white p-6 shadow-xs space-y-5">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#F0E4FF] pb-4">
-                <div>
-                  <span className="rounded-full bg-[#F4EBFF] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#6A11CB]">
+            <div className="space-y-4 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs sm:p-6">
+              {/* Order Top Header */}
+              <div className="flex items-start justify-between gap-3 border-b border-[#F0E4FF] pb-3.5">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-[#6A11CB]">
                     {selectedOrder.paymentMethod || 'Cash on Delivery (COD)'}
-                  </span>
-                  <h2 className="mt-1.5 font-mono text-xl font-bold text-[#2A0E4D]">
+                  </p>
+                  <h2 className="mt-0.5 font-mono text-lg font-bold text-[#2A0E4D] sm:text-xl">
                     {selectedOrder.orderNumber}
                   </h2>
-                  <p className="text-xs text-[#5F4B78]">
-                    Placed {formatDateTime(selectedOrder.createdAt)} · Status:{' '}
-                    <strong className="text-[#6A11CB]">{selectedOrder.fulfillmentStatus}</strong>
+                  <p className="text-[11.5px] text-[#5F4B78]">
+                    {formatDateTime(selectedOrder.createdAt)} ·{' '}
+                    <strong className="text-[#FF4D8D]">{selectedOrder.fulfillmentStatus}</strong>
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-[#7B6496]">Grand Total</p>
-                  <p className="font-mono text-xl font-bold text-[#6A11CB]">
+                <div className="shrink-0 text-right">
+                  <p className="text-[11px] text-[#7B6496]">Grand Total</p>
+                  <p className="font-mono text-lg font-bold tabular-nums text-[#6A11CB] sm:text-xl">
                     {formatInr(selectedOrder.grandTotalInr)}
                   </p>
                 </div>
               </div>
 
-              {/* Customer & Delivery Address */}
-              <div className="grid gap-4 rounded-2xl bg-[#FAF6FF] p-4 text-xs sm:grid-cols-2">
-                <div>
-                  <p className="font-bold uppercase tracking-wider text-[#8C75A8]">Customer</p>
-                  <p className="mt-1 font-semibold text-[#2A0E4D]">
-                    {selectedOrder.customer.fullName}
-                  </p>
-                  <p className="text-[#5F4B78]">{selectedOrder.customer.phone}</p>
-                  <p className="text-[#5F4B78]">{selectedOrder.customer.email}</p>
+              {/* Quick 1-Tap Owner Status Update (Placed high for fast mobile workflow!) */}
+              <form
+                onSubmit={(e) => void handleStatusUpdate(e)}
+                className="space-y-3 rounded-2xl border border-[#6A11CB]/20 bg-[#FAF6FF] p-3.5 sm:p-4"
+              >
+                <p className="text-xs font-bold text-[#2A0E4D]">Update Order Status</p>
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                  {FULFILLMENT_STATUSES.map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setNextStatus(st)}
+                      className={`min-h-[38px] rounded-xl px-2.5 text-[11.5px] font-bold transition-colors ${
+                        nextStatus === st
+                          ? 'bg-[#6A11CB] text-white shadow-xs'
+                          : 'border border-[#EBD8FF] bg-white text-[#4A3862] hover:bg-[#F4EBFF]'
+                      }`}
+                    >
+                      {st}
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <p className="font-bold uppercase tracking-wider text-[#8C75A8]">
-                    Delivery Zone &amp; Address
-                  </p>
-                  <p className="mt-1 font-semibold text-[#6A11CB]">
-                    {selectedOrder.customer.deliveryZoneNameSnapshot} ({selectedOrder.customer.state})
-                  </p>
-                  <p className="text-[#5F4B78]">{selectedOrder.customer.addressLine1}</p>
-                  <p className="text-[#5F4B78]">
-                    {selectedOrder.customer.city} — {selectedOrder.customer.pincode}
-                  </p>
+                <input
+                  type="text"
+                  placeholder="Optional note (e.g. Dispatched with courier)"
+                  value={statusNote}
+                  onChange={(e) => setStatusNote(e.target.value)}
+                  className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs focus:border-[#6A11CB] focus:outline-none"
+                />
+                <Button type="submit" size="sm" variant="primary" fullWidth disabled={updating}>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>{updating ? 'Updating...' : `Set Status: ${nextStatus}`}</span>
+                </Button>
+              </form>
+
+              {/* Customer Contact + 1-Tap Call & WhatsApp */}
+              <div className="space-y-3 rounded-2xl bg-[#FAF6FF] p-3.5 text-xs sm:p-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[10.5px] font-bold tracking-wide text-[#8C75A8]">Customer</p>
+                    <p className="mt-1 text-sm font-bold text-[#2A0E4D]">
+                      {selectedOrder.customer.fullName}
+                    </p>
+                    <p className="text-[#5F4B78]">{selectedOrder.customer.phone}</p>
+                    <p className="truncate text-[#5F4B78]">{selectedOrder.customer.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10.5px] font-bold tracking-wide text-[#8C75A8]">
+                      Delivery Address
+                    </p>
+                    <p className="mt-1 font-bold text-[#6A11CB]">
+                      {selectedOrder.customer.deliveryZoneNameSnapshot} (
+                      {selectedOrder.customer.state})
+                    </p>
+                    <p className="text-[#5F4B78]">{selectedOrder.customer.addressLine1}</p>
+                    <p className="text-[#5F4B78]">
+                      {selectedOrder.customer.city} — {selectedOrder.customer.pincode}
+                    </p>
+                  </div>
                 </div>
+
+                {selectedOrder.customer.phone && (
+                  <div className="grid grid-cols-2 gap-2 border-t border-[#EBD8FF] pt-2.5">
+                    <a
+                      href={`tel:${selectedOrder.customer.phone}`}
+                      className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-bold text-[#6A11CB] active:bg-[#F4EBFF]"
+                    >
+                      <Phone className="h-3.5 w-3.5" />
+                      <span>Call Customer</span>
+                    </a>
+                    <a
+                      href={`https://wa.me/${cleanPhoneForWhatsApp(selectedOrder.customer.phone)}?text=${encodeURIComponent(
+                        `Hello ${selectedOrder.customer.fullName}, update for your GiftKart Order ${selectedOrder.orderNumber}: Status is currently "${selectedOrder.fulfillmentStatus}".`
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-bold text-white active:scale-[0.98]"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      <span>WhatsApp</span>
+                    </a>
+                  </div>
+                )}
               </div>
 
-              {/* Frozen Item Snapshots */}
+              {/* Ordered Items */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#8C75A8]">
-                  Frozen Product Snapshots ({selectedOrder.items.length})
+                <h3 className="text-xs font-bold text-[#8C75A8]">
+                  Ordered Items ({selectedOrder.items.length})
                 </h3>
                 <div className="mt-2 space-y-2">
                   {selectedOrder.items.map((item, idx) => (
@@ -230,35 +391,32 @@ export function AdminOrdersPage() {
                       className="rounded-xl border border-[#F0E4FF] p-3 text-xs"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-[#2A0E4D]">
-                            {item.productNameSnapshot}
-                          </p>
+                        <div className="min-w-0">
+                          <p className="font-bold text-[#2A0E4D]">{item.productNameSnapshot}</p>
                           <p className="font-mono text-[11px] text-[#7B6496]">
-                            SKU: {item.productSkuSnapshot} · {formatInr(item.unitPriceInrSnapshot)} ×{' '}
+                            {item.productSkuSnapshot} · {formatInr(item.unitPriceInrSnapshot)} ×{' '}
                             {item.quantity}
                           </p>
                         </div>
-                        <span className="font-mono font-bold text-[#2A0E4D]">
+                        <span className="shrink-0 font-mono font-bold tabular-nums text-[#2A0E4D]">
                           {formatInr(item.lineTotalInr)}
                         </span>
                       </div>
                       {Object.keys(item.selectedVariants).length > 0 && (
                         <p className="mt-1 text-[#5F4B78]">
-                          Variants:{' '}
                           {Object.entries(item.selectedVariants)
                             .map(([k, v]) => `${k}: ${v}`)
                             .join(' · ')}
                         </p>
                       )}
                       {item.personalizationDetails && (
-                        <p className="mt-1 font-medium text-[#6A11CB]">
-                          Personalization: {item.personalizationDetails}
+                        <p className="mt-1.5 rounded-lg bg-[#FAF6FF] px-2.5 py-1.5 font-medium text-[#6A11CB]">
+                          Custom Text: {item.personalizationDetails}
                         </p>
                       )}
                       {item.customPhotoFileName && (
-                        <p className="mt-0.5 text-[#FF4D8D]">
-                          Custom Photo (Client Preview): {item.customPhotoFileName}
+                        <p className="mt-1 rounded-lg bg-[#FFF0F6] px-2.5 py-1.5 font-semibold text-[#FF4D8D]">
+                          Custom Photo: {item.customPhotoFileName}
                         </p>
                       )}
                     </div>
@@ -266,110 +424,83 @@ export function AdminOrdersPage() {
                 </div>
               </div>
 
-              {/* Gift Wrapping Snapshot + Totals */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              {/* Gift Wrap & Price Breakdown */}
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-[#EBD8FF] bg-[#FFF8FB] p-3.5 text-xs">
                   <p className="flex items-center gap-1.5 font-bold text-[#6A11CB]">
                     <Gift className="h-3.5 w-3.5 text-[#FF4D8D]" />
-                    <span>Gift Wrapping Snapshot</span>
+                    <span>Gift Wrapping</span>
                   </p>
                   {selectedOrder.giftWrap.enabled ? (
-                    <div className="mt-2 space-y-1 text-[#5F4B78]">
+                    <div className="mt-1.5 space-y-1 text-[#5F4B78]">
                       <p>
-                        Style:{' '}
                         <strong className="text-[#2A0E4D]">
                           {selectedOrder.giftWrap.styleNameSnapshot}
                         </strong>{' '}
                         ({formatInr(selectedOrder.giftWrap.chargeInrSnapshot)})
                       </p>
                       {selectedOrder.giftWrap.recipientName && (
-                        <p>Recipient: {selectedOrder.giftWrap.recipientName}</p>
+                        <p>For: {selectedOrder.giftWrap.recipientName}</p>
                       )}
                       {selectedOrder.giftWrap.giftMessage && (
                         <p className="italic">&ldquo;{selectedOrder.giftWrap.giftMessage}&rdquo;</p>
                       )}
                     </div>
                   ) : (
-                    <p className="mt-1.5 text-[#7B6496]">No gift wrapping selected.</p>
+                    <p className="mt-1 text-[#7B6496]">No gift wrapping selected.</p>
                   )}
                 </div>
 
-                <div className="rounded-xl border border-[#EBD8FF] bg-[#FAF6FF] p-3.5 text-xs space-y-1">
+                <div className="space-y-1 rounded-xl border border-[#EBD8FF] bg-[#FAF6FF] p-3.5 text-xs">
                   <div className="flex justify-between text-[#5F4B78]">
                     <span>Subtotal</span>
-                    <span className="font-mono">{formatInr(selectedOrder.subtotalInr)}</span>
+                    <span className="font-mono tabular-nums">
+                      {formatInr(selectedOrder.subtotalInr)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-[#5F4B78]">
-                    <span>Gift Wrapping</span>
-                    <span className="font-mono">{formatInr(selectedOrder.giftWrapChargeInr)}</span>
+                    <span>Gift Wrap</span>
+                    <span className="font-mono tabular-nums">
+                      {formatInr(selectedOrder.giftWrapChargeInr)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-[#5F4B78]">
-                    <span>Discount {selectedOrder.couponCode ? `(${selectedOrder.couponCode})` : ''}</span>
-                    <span className="font-mono text-[#FF4D8D]">
+                    <span>
+                      Discount {selectedOrder.couponCode ? `(${selectedOrder.couponCode})` : ''}
+                    </span>
+                    <span className="font-mono tabular-nums text-[#FF4D8D]">
                       -{formatInr(selectedOrder.discountInr)}
                     </span>
                   </div>
                   <div className="flex justify-between text-[#5F4B78]">
                     <span>Delivery</span>
-                    <span className="font-mono">{formatInr(selectedOrder.deliveryChargeInr)}</span>
+                    <span className="font-mono tabular-nums">
+                      {formatInr(selectedOrder.deliveryChargeInr)}
+                    </span>
                   </div>
                   <div className="flex justify-between border-t border-[#EBD8FF] pt-1.5 font-bold text-[#2A0E4D]">
                     <span>Grand Total</span>
-                    <span className="font-mono text-[#6A11CB]">
+                    <span className="font-mono tabular-nums text-[#6A11CB]">
                       {formatInr(selectedOrder.grandTotalInr)}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Status Update Form */}
-              <form
-                onSubmit={(e) => void handleStatusUpdate(e)}
-                className="rounded-2xl border border-[#6A11CB]/20 bg-[#FAF6FF] p-4 space-y-3"
-              >
-                <p className="text-xs font-bold text-[#2A0E4D]">Update Fulfillment Status</p>
-                <div className="grid gap-2.5 sm:grid-cols-3">
-                  <select
-                    value={nextStatus}
-                    onChange={(e) => setNextStatus(e.target.value as OrderFulfillmentStatus)}
-                    className="rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs font-semibold text-[#2A0E4D] focus:border-[#6A11CB] focus:outline-none"
-                  >
-                    {FULFILLMENT_STATUSES.map((st) => (
-                      <option key={st} value={st}>
-                        {st}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="Optional status note (logged with timestamp)"
-                    value={statusNote}
-                    onChange={(e) => setStatusNote(e.target.value)}
-                    className="sm:col-span-2 rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button type="submit" size="sm" variant="primary" disabled={updating}>
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>{updating ? 'Recording...' : 'Record Status Update'}</span>
-                  </Button>
-                </div>
-              </form>
-
-              {/* Timestamped Status History */}
+              {/* Status Timeline */}
               <div>
-                <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8C75A8]">
+                <h3 className="flex items-center gap-1.5 text-xs font-bold text-[#8C75A8]">
                   <Clock className="h-3.5 w-3.5 text-[#6A11CB]" />
-                  <span>Timestamped Status History ({selectedOrder.statusHistory.length})</span>
+                  <span>Status History ({selectedOrder.statusHistory.length})</span>
                 </h3>
-                <ol className="mt-2.5 space-y-2 border-l-2 border-[#EBD8FF] pl-4">
+                <ol className="mt-2.5 space-y-2.5 border-l-2 border-[#EBD8FF] pl-4">
                   {selectedOrder.statusHistory.map((entry, idx) => (
                     <li key={`${entry.timestamp}-${idx}`} className="relative text-xs">
                       <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-[#6A11CB]" />
-                      <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center justify-between gap-1">
                         <span className="font-bold text-[#2A0E4D]">{entry.status}</span>
-                        <span className="font-mono text-[11px] text-[#7B6496]">
-                          {formatDateTime(entry.timestamp)} · {entry.updatedBy}
+                        <span className="font-mono text-[10.5px] text-[#7B6496]">
+                          {formatDateTime(entry.timestamp)}
                         </span>
                       </div>
                       {entry.note && <p className="mt-0.5 text-[#5F4B78]">{entry.note}</p>}
@@ -392,6 +523,7 @@ export function AdminCouponsPage() {
   const { data: coupons } = useCoupons();
   const { pushToast } = useToast();
 
+  const [showForm, setShowForm] = useState(false);
   const [editingCouponId, setEditingCouponId] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [description, setDescription] = useState('');
@@ -410,6 +542,7 @@ export function AdminCouponsPage() {
     setMinOrderInr('599');
     setValidFrom('');
     setValidUntil('');
+    setShowForm(false);
   }
 
   function startEditCoupon(cpn: Coupon) {
@@ -421,6 +554,8 @@ export function AdminCouponsPage() {
     setMinOrderInr(String(cpn.minOrderInr));
     setValidFrom(cpn.validFrom ? cpn.validFrom.slice(0, 10) : '');
     setValidUntil(cpn.validUntil ? cpn.validUntil.slice(0, 10) : '');
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleSaveCoupon(e: React.FormEvent) {
@@ -443,7 +578,7 @@ export function AdminCouponsPage() {
     await services.promotions.upsertCoupon(coupon);
     resetForm();
     pushToast({
-      title: existing ? `Coupon ${coupon.code} updated` : `Coupon ${coupon.code} saved`,
+      title: existing ? `Coupon ${coupon.code} updated` : `Coupon ${coupon.code} created`,
       variant: 'success',
     });
   }
@@ -461,128 +596,128 @@ export function AdminCouponsPage() {
   const todayIso = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">Coupons &amp; Offers</h1>
-        <p className="text-xs text-[#5F4B78]">
-          Create or edit percentage/flat INR promo codes with validity dates and minimum order rules.
-        </p>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-xl font-bold text-[#2A0E4D] sm:text-2xl">
+            Coupons ({coupons.length})
+          </h1>
+          <p className="text-[11px] text-[#5F4B78] sm:text-xs">
+            Create &amp; manage percentage or flat ₹ promo codes
+          </p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="primary"
+          onClick={() => {
+            if (showForm) resetForm();
+            else setShowForm(true);
+          }}
+        >
+          {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          <span>{showForm ? 'Close' : 'New Coupon'}</span>
+        </Button>
       </div>
 
-      <form
-        onSubmit={(e) => void handleSaveCoupon(e)}
-        className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-4"
-      >
-        <div className="flex items-center justify-between gap-2">
+      {showForm && (
+        <form
+          onSubmit={(e) => void handleSaveCoupon(e)}
+          className="space-y-3 rounded-2xl border border-[#6A11CB]/25 bg-white p-4 shadow-md sm:p-5"
+        >
           <h2 className="font-display text-base font-bold text-[#2A0E4D]">
-            {editingCouponId ? `Edit Coupon (${code.toUpperCase()})` : 'Create Promo Coupon'}
+            {editingCouponId ? `Edit ${code.toUpperCase()}` : 'Create Promo Coupon'}
           </h2>
-          {editingCouponId && (
-            <button
-              type="button"
-              onClick={resetForm}
-              className="text-xs font-semibold text-[#7B6496] hover:text-[#2A0E4D]"
+          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+            <input
+              type="text"
+              required
+              placeholder="Code (e.g. FESTIVE15)"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="col-span-2 h-11 rounded-xl border border-[#EBD8FF] px-3 font-mono text-sm uppercase focus:border-[#6A11CB] focus:outline-none sm:col-span-1"
+            />
+            <select
+              value={discountType}
+              onChange={(e) => setDiscountType(e.target.value as CouponDiscountType)}
+              className="col-span-2 h-11 rounded-xl border border-[#EBD8FF] bg-white px-3 text-sm focus:border-[#6A11CB] focus:outline-none sm:col-span-1"
             >
-              Cancel Edit
-            </button>
-          )}
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <option value="PERCENTAGE">Percentage (%)</option>
+              <option value="FLAT_INR">Flat INR (₹)</option>
+            </select>
+            <input
+              type="number"
+              min={1}
+              required
+              placeholder="Discount Value"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              className="h-11 rounded-xl border border-[#EBD8FF] px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
+            />
+            <input
+              type="number"
+              min={0}
+              required
+              placeholder="Min Order (₹)"
+              value={minOrderInr}
+              onChange={(e) => setMinOrderInr(e.target.value)}
+              className="h-11 rounded-xl border border-[#EBD8FF] px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="block text-[11px] font-semibold text-[#5F4B78]">Valid From</label>
+              <input
+                type="date"
+                value={validFrom}
+                onChange={(e) => setValidFrom(e.target.value)}
+                className="mt-1 h-10 w-full rounded-xl border border-[#EBD8FF] px-2.5 text-xs focus:border-[#6A11CB] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-[#5F4B78]">Valid Until</label>
+              <input
+                type="date"
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
+                className="mt-1 h-10 w-full rounded-xl border border-[#EBD8FF] px-2.5 text-xs focus:border-[#6A11CB] focus:outline-none"
+              />
+            </div>
+          </div>
+
           <input
             type="text"
-            required
-            placeholder="Code (e.g. FESTIVE15)"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-xs uppercase focus:border-[#6A11CB] focus:outline-none"
+            placeholder="Short description shown to customers"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="h-11 w-full rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
           />
-          <select
-            value={discountType}
-            onChange={(e) => setDiscountType(e.target.value as CouponDiscountType)}
-            className="rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-          >
-            <option value="PERCENTAGE">Percentage (%)</option>
-            <option value="FLAT_INR">Flat INR (₹)</option>
-          </select>
-          <input
-            type="number"
-            min={1}
-            required
-            placeholder="Discount Value"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-xs focus:border-[#6A11CB] focus:outline-none"
-          />
-          <input
-            type="number"
-            min={0}
-            required
-            placeholder="Min Order (₹)"
-            value={minOrderInr}
-            onChange={(e) => setMinOrderInr(e.target.value)}
-            className="rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-xs focus:border-[#6A11CB] focus:outline-none"
-          />
-        </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div>
-            <label className="block text-[11px] font-semibold text-[#5F4B78]">
-              Valid From (Optional)
-            </label>
-            <input
-              type="date"
-              value={validFrom}
-              onChange={(e) => setValidFrom(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-semibold text-[#5F4B78]">
-              Valid Until (Optional)
-            </label>
-            <input
-              type="date"
-              value={validUntil}
-              onChange={(e) => setValidUntil(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-            />
-          </div>
-          <div className="flex items-end">
-            <Button type="submit" size="sm" variant="primary" fullWidth>
-              <Plus className="h-3.5 w-3.5" />
-              <span>{editingCouponId ? 'Update Coupon' : 'Save Coupon'}</span>
-            </Button>
-          </div>
-        </div>
+          <Button type="submit" size="sm" variant="primary" fullWidth>
+            <Plus className="h-4 w-4" />
+            <span>{editingCouponId ? 'Update Coupon' : 'Save Coupon'}</span>
+          </Button>
+        </form>
+      )}
 
-        <input
-          type="text"
-          placeholder="Short description shown to customers"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-        />
-      </form>
-
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         {coupons.map((cpn) => {
           const isExpired = Boolean(cpn.validUntil && todayIso > cpn.validUntil.slice(0, 10));
           return (
             <div
               key={cpn.id}
-              className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-3"
+              className="space-y-2.5 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Tag className="h-4 w-4 text-[#FF4D8D]" />
                   <span className="font-mono text-base font-bold text-[#6A11CB]">{cpn.code}</span>
                   {isExpired && (
-                    <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
-                      Expired
-                    </span>
+                    <span className="text-[11px] font-bold text-rose-600">· Expired</span>
                   )}
                 </div>
-                <span className="rounded-full bg-[#FAF6FF] px-2.5 py-0.5 font-mono text-xs font-bold text-[#2A0E4D]">
+                <span className="font-mono text-xs font-bold tabular-nums text-[#2A0E4D]">
                   {cpn.discountType === 'PERCENTAGE'
                     ? `${cpn.value}% OFF`
                     : `${formatInr(cpn.value)} OFF`}
@@ -591,30 +726,23 @@ export function AdminCouponsPage() {
               <p className="text-xs text-[#5F4B78]">{cpn.description}</p>
               <p className="text-[11px] text-[#7B6496]">
                 Min order: {formatInr(cpn.minOrderInr)}
-                {cpn.maxDiscountInr ? ` · Max discount: ${formatInr(cpn.maxDiscountInr)}` : ''}
-                {(cpn.validFrom || cpn.validUntil) && (
-                  <span>
-                    {' '}
-                    · Valid: {cpn.validFrom?.slice(0, 10) || 'Anytime'} to{' '}
-                    {cpn.validUntil?.slice(0, 10) || 'No expiry'}
-                  </span>
-                )}
+                {cpn.maxDiscountInr ? ` · Max: ${formatInr(cpn.maxDiscountInr)}` : ''}
               </p>
-              <div className="flex items-center justify-between border-t border-[#F0E4FF] pt-3">
+              <div className="flex items-center justify-between border-t border-[#F0E4FF] pt-2.5">
                 <button
                   type="button"
                   onClick={() => void toggleCoupon(cpn)}
-                  className={`rounded-full px-3 py-1 text-[11px] font-bold ${
+                  className={`min-h-[34px] rounded-lg px-3 text-xs font-bold ${
                     cpn.isActive ? 'bg-[#F4EBFF] text-[#6A11CB]' : 'bg-gray-100 text-gray-500'
                   }`}
                 >
                   {cpn.isActive ? 'Active' : 'Disabled'}
                 </button>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => startEditCoupon(cpn)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#6A11CB] hover:underline"
+                    className="inline-flex min-h-[34px] items-center gap-1 rounded-lg border border-[#EBD8FF] px-2.5 text-xs font-bold text-[#6A11CB]"
                   >
                     <Edit3 className="h-3.5 w-3.5" />
                     <span>Edit</span>
@@ -622,10 +750,10 @@ export function AdminCouponsPage() {
                   <button
                     type="button"
                     onClick={() => void deleteCoupon(cpn.id)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:underline"
+                    aria-label={`Delete ${cpn.code}`}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#EBD8FF] text-rose-600"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span>Delete</span>
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -638,11 +766,12 @@ export function AdminCouponsPage() {
 }
 
 /* ============================================================================
- * 3. ADMIN CUSTOMERS (DERIVED FROM DEMO ORDERS & ACTIVE DEMO SESSION)
+ * 3. ADMIN CUSTOMERS (MOBILE CARDS WITH CALL/WHATSAPP + DESKTOP TABLE)
  * ========================================================================== */
 export function AdminCustomersPage() {
   const { data: orders } = useOrders();
   const { customerAccount } = useAuth();
+  const [search, setSearch] = useState('');
 
   const customers = useMemo(() => {
     const map = new Map<
@@ -686,56 +815,132 @@ export function AdminCustomersPage() {
       });
     }
 
-    return Array.from(map.values());
-  }, [orders, customerAccount]);
+    const q = search.trim().toLowerCase();
+    return Array.from(map.values()).filter(
+      (c) =>
+        !q ||
+        c.fullName.toLowerCase().includes(q) ||
+        c.email.toLowerCase().includes(q) ||
+        c.phone.toLowerCase().includes(q)
+    );
+  }, [orders, customerAccount, search]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">
-          Customer Records (Local Demo)
+        <h1 className="font-display text-xl font-bold text-[#2A0E4D] sm:text-2xl">
+          Customers ({customers.length})
         </h1>
-        <p className="text-xs text-[#5F4B78]">
-          Derived from local Demo Orders and active browser demo accounts. Replaceable with Supabase Auth &amp; Database in future phase.
+        <p className="text-[11px] text-[#5F4B78] sm:text-xs">
+          Customer directory from placed orders and active storefront accounts
         </p>
       </div>
 
-      <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs overflow-x-auto">
+      <div className="space-y-3 rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs sm:p-5">
+        <div className="flex h-11 items-center gap-2 rounded-xl border border-[#EBD8FF] bg-[#FAF6FF] px-3">
+          <Search className="h-4 w-4 text-[#6A11CB]" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search customer name, phone, or email..."
+            className="w-full bg-transparent text-sm text-[#2A0E4D] focus:outline-none sm:text-xs"
+          />
+        </div>
+
         {customers.length === 0 ? (
-          <p className="py-8 text-center text-xs text-[#5F4B78]">No customer records yet.</p>
+          <p className="py-8 text-center text-xs text-[#5F4B78]">No customer records found.</p>
         ) : (
-          <table className="w-full min-w-[560px] text-left text-xs">
-            <thead>
-              <tr className="border-b border-[#F0E4FF] text-[#7B6496]">
-                <th className="pb-2.5 font-semibold">Customer</th>
-                <th className="pb-2.5 font-semibold">Contact</th>
-                <th className="pb-2.5 font-semibold">Primary Zone</th>
-                <th className="pb-2.5 font-semibold">Demo Orders</th>
-                <th className="pb-2.5 text-right font-semibold">Demo Spend</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F5ECFF]">
+          <>
+            {/* Mobile Customer Cards */}
+            <div className="space-y-2.5 md:hidden">
               {customers.map((c) => (
-                <tr key={c.email} className="hover:bg-[#FAF6FF]">
-                  <td className="py-3 font-semibold text-[#2A0E4D]">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5 text-[#6A11CB]" />
-                      <span>{c.fullName}</span>
+                <div
+                  key={c.email}
+                  className="space-y-2.5 rounded-xl border border-[#F0E4FF] bg-[#FDFBFF] p-3.5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-[#2A0E4D]">{c.fullName}</p>
+                      <p className="truncate text-[11px] text-[#5F4B78]">{c.email}</p>
+                      <p className="text-[11px] text-[#7B6496]">
+                        {c.city} · {c.orderCount} order(s)
+                      </p>
                     </div>
-                  </td>
-                  <td className="py-3 text-[#5F4B78]">
-                    <p>{c.email}</p>
-                    <p className="text-[11px] text-[#7B6496]">{c.phone}</p>
-                  </td>
-                  <td className="py-3 text-[#4A3862]">{c.city}</td>
-                  <td className="py-3 font-mono font-bold text-[#6A11CB]">{c.orderCount}</td>
-                  <td className="py-3 text-right font-mono font-bold tabular-nums text-[#2A0E4D]">
-                    {formatInr(c.totalSpentInr)}
-                  </td>
-                </tr>
+                    <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-[#6A11CB]">
+                      {formatInr(c.totalSpentInr)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 border-t border-[#F0E4FF] pt-2">
+                    {c.phone ? (
+                      <a
+                        href={`tel:${c.phone}`}
+                        className="flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-[#EBD8FF] bg-white text-xs font-bold text-[#6A11CB]"
+                      >
+                        <Phone className="h-3.5 w-3.5" />
+                        <span>Call</span>
+                      </a>
+                    ) : (
+                      <a
+                        href={`mailto:${c.email}`}
+                        className="flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-[#EBD8FF] bg-white text-xs font-bold text-[#6A11CB]"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        <span>Email</span>
+                      </a>
+                    )}
+                    {c.phone && (
+                      <a
+                        href={`https://wa.me/${cleanPhoneForWhatsApp(c.phone)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg bg-emerald-600 text-xs font-bold text-white"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        <span>WhatsApp</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[560px] text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#F0E4FF] text-[#7B6496]">
+                    <th className="pb-2.5 font-semibold">Customer</th>
+                    <th className="pb-2.5 font-semibold">Contact</th>
+                    <th className="pb-2.5 font-semibold">Primary Zone</th>
+                    <th className="pb-2.5 font-semibold">Orders</th>
+                    <th className="pb-2.5 text-right font-semibold">Total Spend</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F5ECFF]">
+                  {customers.map((c) => (
+                    <tr key={c.email} className="hover:bg-[#FAF6FF]">
+                      <td className="py-3 font-semibold text-[#2A0E4D]">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-3.5 w-3.5 text-[#6A11CB]" />
+                          <span>{c.fullName}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 text-[#5F4B78]">
+                        <p>{c.email}</p>
+                        <p className="text-[11px] text-[#7B6496]">{c.phone}</p>
+                      </td>
+                      <td className="py-3 text-[#4A3862]">{c.city}</td>
+                      <td className="py-3 font-mono font-bold text-[#6A11CB]">{c.orderCount}</td>
+                      <td className="py-3 text-right font-mono font-bold tabular-nums text-[#2A0E4D]">
+                        {formatInr(c.totalSpentInr)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -749,6 +954,20 @@ export function AdminReportsPage() {
   const { data: orders } = useOrders();
   const { data: products } = useProducts({ includeInactive: true });
   const { data: categories } = useCategories(true);
+
+  const nonCancelledOrders = useMemo(
+    () => orders.filter((o) => o.fulfillmentStatus !== 'Cancelled'),
+    [orders]
+  );
+
+  const totalRevenue = useMemo(
+    () => nonCancelledOrders.reduce((s, o) => s + o.grandTotalInr, 0),
+    [nonCancelledOrders]
+  );
+
+  const avgOrderValue = nonCancelledOrders.length
+    ? Math.round(totalRevenue / nonCancelledOrders.length)
+    : 0;
 
   const zoneBreakdown = useMemo(() => {
     const map = new Map<string, { count: number; totalInr: number }>();
@@ -771,25 +990,53 @@ export function AdminReportsPage() {
   }, [orders]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">
-          Demo Store Reports
+        <h1 className="font-display text-xl font-bold text-[#2A0E4D] sm:text-2xl">
+          Store Analytics &amp; Reports
         </h1>
-        <p className="text-xs text-[#5F4B78]">
-          Computed directly from local browser Demo Orders and catalog data (no fabricated metrics).
+        <p className="text-[11px] text-[#5F4B78] sm:text-xs">
+          Live breakdown calculated from store orders and catalog
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-3">
+      {/* 2x2 Summary KPIs */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
+        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs">
+          <p className="text-[11px] font-semibold text-[#7B6496]">Net Revenue</p>
+          <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[#6A11CB]">
+            {formatInr(totalRevenue)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs">
+          <p className="text-[11px] font-semibold text-[#7B6496]">Avg Order Value</p>
+          <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[#2A0E4D]">
+            {formatInr(avgOrderValue)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs">
+          <p className="text-[11px] font-semibold text-[#7B6496]">Total Orders</p>
+          <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[#2A0E4D]">
+            {orders.length}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-3.5 shadow-xs">
+          <p className="text-[11px] font-semibold text-[#7B6496]">Catalog Size</p>
+          <p className="mt-1 font-mono text-lg font-bold tabular-nums text-[#2A0E4D]">
+            {products.length} items
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-3 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs sm:p-5">
           <h2 className="font-display text-base font-bold text-[#2A0E4D]">
-            Demo Orders by Delivery Zone
+            Orders by Delivery Zone
           </h2>
           {zoneBreakdown.length === 0 ? (
-            <p className="text-xs text-[#5F4B78]">No demo order data yet.</p>
+            <p className="text-xs text-[#5F4B78]">No order data yet.</p>
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {zoneBreakdown.map(([zone, stats]) => (
                 <div
                   key={zone}
@@ -797,9 +1044,9 @@ export function AdminReportsPage() {
                 >
                   <div>
                     <p className="font-bold text-[#2A0E4D]">{zone}</p>
-                    <p className="text-[11px] text-[#7B6496]">{stats.count} demo order(s)</p>
+                    <p className="text-[11px] text-[#7B6496]">{stats.count} order(s)</p>
                   </div>
-                  <span className="font-mono text-sm font-bold text-[#6A11CB]">
+                  <span className="font-mono text-sm font-bold tabular-nums text-[#6A11CB]">
                     {formatInr(stats.totalInr)}
                   </span>
                 </div>
@@ -808,31 +1055,29 @@ export function AdminReportsPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-3">
+        <div className="space-y-3 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs sm:p-5">
           <h2 className="font-display text-base font-bold text-[#2A0E4D]">
-            Fulfillment Status Breakdown
+            Fulfillment Status
           </h2>
           <div className="space-y-2">
             {statusBreakdown.map(([st, count]) => (
               <div
                 key={st}
-                className="flex items-center justify-between rounded-xl border border-[#F0E4FF] px-3.5 py-2 text-xs"
+                className="flex items-center justify-between rounded-xl border border-[#F0E4FF] px-3.5 py-2.5 text-xs"
               >
                 <span className="font-semibold text-[#2A0E4D]">{st}</span>
-                <span className="rounded-full bg-[#F4EBFF] px-2.5 py-0.5 font-mono font-bold text-[#6A11CB]">
-                  {count}
-                </span>
+                <span className="font-mono font-bold tabular-nums text-[#6A11CB]">{count}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs">
+      <div className="rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs sm:p-5">
         <h2 className="font-display text-base font-bold text-[#2A0E4D]">
           Catalog Coverage Across {categories.length} Official Categories
         </h2>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {categories.map((cat) => {
             const count = isAllGiftsCategory(cat)
               ? products.length
@@ -842,8 +1087,8 @@ export function AdminReportsPage() {
                 key={cat.id}
                 className="rounded-xl border border-[#F0E4FF] bg-[#FDFBFF] p-3 text-xs"
               >
-                <p className="truncate font-semibold text-[#2A0E4D]">{cat.name}</p>
-                <p className="mt-1 font-mono text-[11px] text-[#6A11CB]">
+                <p className="truncate font-bold text-[#2A0E4D]">{cat.name}</p>
+                <p className="mt-0.5 font-mono text-[11px] tabular-nums text-[#6A11CB]">
                   {count} product(s) · {cat.subcategories.length} sub
                 </p>
               </div>
@@ -856,12 +1101,13 @@ export function AdminReportsPage() {
 }
 
 /* ============================================================================
- * 5. ADMIN STORE SETTINGS & EDITABLE DELIVERY ZONES (JALCHAK)
+ * 5. ADMIN STORE SETTINGS & EDITABLE DELIVERY ZONES
  * ========================================================================== */
 export function AdminSettingsPage() {
   const { data: settings } = useStoreSettings();
   const { pushToast } = useToast();
 
+  const [showAddZone, setShowAddZone] = useState(false);
   const [zoneName, setZoneName] = useState('');
   const [zoneState, setZoneState] = useState('West Bengal');
   const [chargeInr, setChargeInr] = useState('69');
@@ -900,6 +1146,7 @@ export function AdminSettingsPage() {
     };
     await services.settings.upsertDeliveryZone(zone);
     setZoneName('');
+    setShowAddZone(false);
     pushToast({
       title: `Delivery zone "${zone.name}" added`,
       variant: 'success',
@@ -916,14 +1163,14 @@ export function AdminSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">
-            Store Settings &amp; Delivery Zones
+          <h1 className="font-display text-xl font-bold text-[#2A0E4D] sm:text-2xl">
+            Store Settings
           </h1>
-          <p className="text-xs text-[#5F4B78]">
-            Initial launch zone is strictly Jalchak, West Bengal. You may edit rates or add future zones here.
+          <p className="text-[11px] text-[#5F4B78] sm:text-xs">
+            Contact details, delivery zones &amp; shipping fees
           </p>
         </div>
 
@@ -937,14 +1184,14 @@ export function AdminSettingsPage() {
           }}
         >
           <RefreshCw className="h-3.5 w-3.5" />
-          <span>Reset Seed Defaults</span>
+          <span>Reset</span>
         </Button>
       </div>
 
       {/* Store Contact Settings */}
       <form
         onSubmit={(e) => void handleSaveSupport(e)}
-        className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-4"
+        className="space-y-3 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs sm:p-5"
       >
         <h2 className="font-display text-base font-bold text-[#2A0E4D]">Store Contact Details</h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -954,7 +1201,7 @@ export function AdminSettingsPage() {
               type="email"
               defaultValue={settings.supportEmail}
               onChange={(e) => setSupportEmail(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
+              className="mt-1 h-11 w-full rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
             />
           </div>
           <div>
@@ -963,49 +1210,113 @@ export function AdminSettingsPage() {
               type="text"
               defaultValue={settings.supportPhone}
               onChange={(e) => setSupportPhone(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
+              className="mt-1 h-11 w-full rounded-xl border border-[#EBD8FF] px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
             />
           </div>
         </div>
-        <Button type="submit" size="sm" variant="primary">
-          Save Store Settings
+        <Button type="submit" size="sm" variant="primary" fullWidth>
+          Save Contact Details
         </Button>
       </form>
 
       {/* Delivery Zones */}
-      <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-4">
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-[#FF4D8D]" />
-          <h2 className="font-display text-base font-bold text-[#2A0E4D]">
-            Serviceable Delivery Zones ({settings.deliveryZones.length})
-          </h2>
+      <div className="space-y-3.5 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs sm:p-5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-[#FF4D8D]" />
+            <h2 className="font-display text-base font-bold text-[#2A0E4D]">
+              Delivery Zones ({settings.deliveryZones.length})
+            </h2>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="accent"
+            onClick={() => setShowAddZone((p) => !p)}
+          >
+            {showAddZone ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            <span>{showAddZone ? 'Close' : 'Add Zone'}</span>
+          </Button>
         </div>
+
+        {showAddZone && (
+          <form
+            onSubmit={(e) => void handleAddZone(e)}
+            className="space-y-2.5 rounded-xl border border-[#6A11CB]/25 bg-[#FAF6FF] p-3.5"
+          >
+            <p className="text-xs font-bold text-[#2A0E4D]">Add Serviceable Delivery Zone</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              <input
+                type="text"
+                required
+                placeholder="City / Zone Name *"
+                value={zoneName}
+                onChange={(e) => setZoneName(e.target.value)}
+                className="col-span-2 h-11 rounded-xl border border-[#EBD8FF] bg-white px-3 text-sm focus:border-[#6A11CB] focus:outline-none sm:col-span-1"
+              />
+              <input
+                type="text"
+                placeholder="State"
+                value={zoneState}
+                onChange={(e) => setZoneState(e.target.value)}
+                className="col-span-2 h-11 rounded-xl border border-[#EBD8FF] bg-white px-3 text-sm focus:border-[#6A11CB] focus:outline-none sm:col-span-1"
+              />
+              <input
+                type="number"
+                min={0}
+                placeholder="Fee (₹)"
+                value={chargeInr}
+                onChange={(e) => setChargeInr(e.target.value)}
+                className="h-11 rounded-xl border border-[#EBD8FF] bg-white px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
+              />
+              <input
+                type="number"
+                min={0}
+                placeholder="Free Above (₹)"
+                value={freeAboveInr}
+                onChange={(e) => setFreeAboveInr(e.target.value)}
+                className="h-11 rounded-xl border border-[#EBD8FF] bg-white px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
+              />
+            </div>
+            <input
+              type="text"
+              placeholder="Estimated delivery (e.g. 1–2 business days)"
+              value={estimatedDays}
+              onChange={(e) => setEstimatedDays(e.target.value)}
+              className="h-11 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
+            />
+            <Button type="submit" size="sm" variant="primary" fullWidth>
+              <Plus className="h-4 w-4" />
+              <span>Save Delivery Zone</span>
+            </Button>
+          </form>
+        )}
 
         <div className="grid gap-3 md:grid-cols-2">
           {settings.deliveryZones.map((zone) => (
             <div
               key={zone.id}
-              className="rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-4 space-y-2"
+              className="space-y-2 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-3.5"
             >
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-display text-base font-bold text-[#2A0E4D]">{zone.name}</p>
                   <p className="text-xs text-[#5F4B78]">
                     {zone.state} · {zone.estimatedDays}
                   </p>
                 </div>
-                <span className="font-mono text-sm font-bold text-[#6A11CB]">
+                <span className="font-mono text-sm font-bold tabular-nums text-[#6A11CB]">
                   {formatInr(zone.chargeInr)}
                 </span>
               </div>
               <p className="text-[11px] text-[#7B6496]">
-                Free delivery on orders above {formatInr(zone.freeDeliveryAboveInr)}
+                Free delivery above {formatInr(zone.freeDeliveryAboveInr)}
               </p>
               <div className="flex items-center justify-between border-t border-[#EBD8FF] pt-2.5">
                 <button
                   type="button"
                   onClick={() => void toggleZone(zone)}
-                  className={`rounded-full px-3 py-0.5 text-[11px] font-bold ${
+                  className={`min-h-[34px] rounded-lg px-3 text-xs font-bold ${
                     zone.isActive ? 'bg-white text-[#6A11CB]' : 'bg-gray-200 text-gray-600'
                   }`}
                 >
@@ -1014,69 +1325,22 @@ export function AdminSettingsPage() {
                 <button
                   type="button"
                   onClick={() => void removeZone(zone.id)}
-                  className="text-xs font-semibold text-rose-600 hover:underline"
+                  className="inline-flex min-h-[34px] items-center gap-1 px-2 text-xs font-semibold text-rose-600"
                 >
-                  Remove
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Remove</span>
                 </button>
               </div>
             </div>
           ))}
         </div>
-
-        <form onSubmit={(e) => void handleAddZone(e)} className="border-t border-[#F0E4FF] pt-4 space-y-3">
-          <p className="text-xs font-bold text-[#2A0E4D]">Add Serviceable Delivery Zone</p>
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
-            <input
-              type="text"
-              required
-              placeholder="City / Zone Name"
-              value={zoneName}
-              onChange={(e) => setZoneName(e.target.value)}
-              className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-            />
-            <input
-              type="text"
-              placeholder="State"
-              value={zoneState}
-              onChange={(e) => setZoneState(e.target.value)}
-              className="rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-            />
-            <input
-              type="number"
-              min={0}
-              placeholder="Fee (₹)"
-              value={chargeInr}
-              onChange={(e) => setChargeInr(e.target.value)}
-              className="rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-xs focus:border-[#6A11CB] focus:outline-none"
-            />
-            <input
-              type="number"
-              min={0}
-              placeholder="Free Above (₹)"
-              value={freeAboveInr}
-              onChange={(e) => setFreeAboveInr(e.target.value)}
-              className="rounded-xl border border-[#EBD8FF] px-3 py-2 font-mono text-xs focus:border-[#6A11CB] focus:outline-none"
-            />
-            <Button type="submit" size="sm" variant="accent">
-              <Plus className="h-3.5 w-3.5" />
-              <span>Add Zone</span>
-            </Button>
-          </div>
-          <input
-            type="text"
-            placeholder="Estimated delivery timeframe (e.g. 1–2 business days)"
-            value={estimatedDays}
-            onChange={(e) => setEstimatedDays(e.target.value)}
-            className="w-full max-w-sm rounded-xl border border-[#EBD8FF] px-3 py-2 text-xs focus:border-[#6A11CB] focus:outline-none"
-          />
-        </form>
       </div>
     </div>
   );
 }
 
 /* ============================================================================
- * 6. ADMIN FUTURE INTEGRATIONS READINESS (ALL 7 UNCONNECTED)
+ * 6. ADMIN FUTURE INTEGRATIONS READINESS
  * ========================================================================== */
 export function AdminIntegrationsPage() {
   const cashfree = services.paymentGateway.getDescriptor();
@@ -1084,73 +1348,70 @@ export function AdminIntegrationsPage() {
 
   const integrations = [
     {
-      name: 'Supabase Authentication',
+      name: 'Cloud Authentication',
       status: supabaseSchema.statusLabel,
-      summary:
-        'Prepared behind replaceable ICustomerAuthService and IAdminAuthService interfaces to replace LocalStorage demo auth with production security.',
+      summary: 'Prepared to replace LocalStorage auth with production role-based security.',
     },
     {
-      name: 'Supabase Database (PostgreSQL)',
+      name: 'Cloud Database',
       status: supabaseSchema.statusLabel,
-      summary: `Prepared for ${supabaseSchema.expectedTables.length} normalized tables (${supabaseSchema.expectedTables.slice(0, 5).join(', ')}...). Currently running LocalStorage demo adapter.`,
+      summary: `Ready for ${supabaseSchema.expectedTables.length} normalized collections/tables across products, categories, and orders.`,
     },
     {
-      name: 'Supabase Storage',
+      name: 'Media Storage',
       status: supabaseSchema.statusLabel,
-      summary:
-        'Prepared for persistent product galleries and customer custom-gift photo uploads (currently browser-only preview).',
+      summary: 'Ready for permanent product galleries and customer custom photo uploads.',
     },
     {
-      name: 'Cashfree Payment Gateway (INR)',
+      name: 'Online Payment Gateway (INR)',
       status: cashfree.statusLabel,
       summary: cashfree.description,
     },
     {
       name: 'WhatsApp Business API',
       status: services.whatsapp.statusLabel,
-      summary:
-        'Prepared for automated order confirmation and delivery status template updates for Jalchak customers.',
+      summary: 'Ready for automated order confirmations and delivery alerts for Jalchak buyers.',
     },
     {
       name: 'Email Notifications',
       status: services.email.statusLabel,
-      summary:
-        'Prepared for transactional order confirmation emails, gift receipts, and admin alerts.',
+      summary: 'Ready for automated order receipts and admin alerts.',
     },
     {
       name: 'Storefront Analytics',
       status: services.analytics.statusLabel,
-      summary:
-        'Prepared for event tracking across category browsing, customization engagement, and checkout conversion.',
+      summary: 'Ready for category browsing and conversion tracking.',
     },
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs flex items-start gap-3">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-start gap-3 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs sm:p-5">
         <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#FF4D8D]" />
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#2A0E4D]">
-            Future Integrations Architecture
+          <h1 className="font-display text-lg font-bold text-[#2A0E4D] sm:text-xl">
+            System Integrations
           </h1>
-          <p className="mt-1 text-xs leading-relaxed text-[#5F4B78]">
-            All 7 external production services below are modeled via clean TypeScript interfaces and placeholder adapters. None are connected yet; GiftKart is currently running in transparent Local Demo Mode.
+          <p className="mt-0.5 text-xs leading-relaxed text-[#5F4B78]">
+            All store operations work locally right now. Connect live cloud services anytime without changing the UI.
           </p>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         {integrations.map((item) => (
           <div
             key={item.name}
-            className="rounded-2xl border border-[#EBD8FF] bg-white p-5 shadow-xs space-y-2.5"
+            className="space-y-2 rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xs"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Plug className="h-4 w-4 text-[#6A11CB]" />
-                <h2 className="font-display text-base font-bold text-[#2A0E4D]">{item.name}</h2>
+                <Plug className="h-4 w-4 shrink-0 text-[#6A11CB]" />
+                <h2 className="font-display text-sm font-bold text-[#2A0E4D] sm:text-base">
+                  {item.name}
+                </h2>
               </div>
-              <span className="shrink-0 rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[10px] font-bold text-[#FF4D8D]">
+              <span className="shrink-0 text-[10.5px] font-bold text-[#FF4D8D]">
                 {item.status}
               </span>
             </div>
