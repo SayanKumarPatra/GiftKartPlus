@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import type { Category, OrderFulfillmentStatus, Product, SavedAddress } from '../types';
 import { STUDIO_MEDIA } from '../config/appConfig';
-import { ALL_GIFTS_CATEGORY_ID } from '../data/seedData';
+import { ALL_GIFTS_CATEGORY_ID } from '../config/seedData';
 
 /* ============================================================================
  * 1. CENTRALIZED STOREFRONT CATEGORY ENGINE (Single Source of Truth)

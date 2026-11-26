@@ -5,7 +5,7 @@ import {
   getLiveStore,
   saveAdminCollection,
 } from '../../storage/serverSync';
-import { ALL_GIFTS_CATEGORY_ID } from '../../data/seedData';
+import { ALL_GIFTS_CATEGORY_ID } from '../../config/seedData';
 import { filterStorefrontProducts, getProductAvailability } from '../../utils/productCatalog';
 
 export class LocalCatalogService implements ICatalogService {

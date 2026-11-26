@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useCategories, useProducts } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
-import { ALL_GIFTS_CATEGORY_ID } from '../../data/seedData';
+import { ALL_GIFTS_CATEGORY_ID } from '../../config/seedData';
 import { formatInr, slugify } from '../../utils/format';
 import type { Product } from '../../types';
 import {

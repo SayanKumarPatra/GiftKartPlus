@@ -2,7 +2,7 @@ import {
   SEED_CATEGORIES,
   SEED_GIFT_WRAP_CONFIG,
   SEED_STORE_SETTINGS,
-} from '../data/seedData';
+} from '../config/seedData';
 import type {
   AdminActivityLog,
   AdminDemoSession,
