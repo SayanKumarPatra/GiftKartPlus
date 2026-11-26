@@ -23,6 +23,7 @@ import {
   useStoreSettings,
 } from '../../hooks/useStoreData';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { STUDIO_MEDIA } from '../../config/appConfig';
 import type { DemoOrder, SavedAddress } from '../../types';
 import { formatDateTime, formatInr } from '../../utils/format';
@@ -60,6 +61,7 @@ const ORDER_DETAIL_STAGES = [
  * ========================================================================== */
 export function OrderDetailsPage() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
+  const { t } = useLanguage();
   const [order, setOrder] = useState<DemoOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -116,12 +118,12 @@ export function OrderDetailsPage() {
     return (
       <div className="mx-auto max-w-xl py-10">
         <EmptyState
-          title="Order not found"
-          description={`We could not find an order matching "${orderNumber ?? ''}".`}
+          title={t('noOrdersYet')}
+          description={t('noOrdersDesc')}
           icon={<Package className="h-5 w-5" />}
           action={
             <Link to="/my-orders">
-              <Button size="sm">View My Orders</Button>
+              <Button size="sm">{t('myOrders')}</Button>
             </Link>
           }
         />
@@ -138,9 +140,9 @@ export function OrderDetailsPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-[#6E5B85]">
-        <Link to="/" className="hover:text-[#6A11CB]">Home</Link>
+        <Link to="/" className="hover:text-[#6A11CB]">{t('home')}</Link>
         <span>/</span>
-        <Link to="/my-orders" className="hover:text-[#6A11CB]">My Orders</Link>
+        <Link to="/my-orders" className="hover:text-[#6A11CB]">{t('myOrders')}</Link>
         <span>/</span>
         <span className="font-bold text-[#1E1035]">{order.orderNumber}</span>
       </nav>
@@ -211,9 +213,9 @@ export function OrderDetailsPage() {
             </ol>
           </div>
         ) : (
-          <div className="mt-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50/70 px-3.5 py-2.5 text-xs font-semibold text-rose-700">
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#FFD1E5] bg-[#FFF0F6] px-3.5 py-2.5 text-xs font-semibold text-[#C81E68]">
             <XCircle className="h-4 w-4 shrink-0" />
-            <span>This order was cancelled before processing started.</span>
+            <span>{t('orderCancelled')}</span>
           </div>
         )}
       </div>
@@ -221,7 +223,7 @@ export function OrderDetailsPage() {
       {/* Ordered Items */}
       <div className="space-y-4 rounded-2xl border border-[#EFE3FF] bg-white p-6 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.1)]">
         <h2 className="text-base font-extrabold text-[#1E1035]">
-          Ordered Items ({order.items.reduce((s, i) => s + i.quantity, 0)})
+          {t('orderItems')} ({order.items.reduce((s, i) => s + i.quantity, 0)})
         </h2>
         <div className="divide-y divide-[#F0E4FF]">
           {order.items.map((item, idx) => (
@@ -279,7 +281,7 @@ export function OrderDetailsPage() {
         <div className="space-y-1.5 rounded-2xl border border-[#EFE3FF] bg-white p-5 text-xs">
           <p className="flex items-center gap-1.5 font-extrabold text-[#1E1035]">
             <MapPin className="h-4 w-4 text-[#FF4D8D]" />
-            <span>Delivery Address</span>
+            <span>{t('deliveryAddress')}</span>
           </p>
           <p className="font-bold text-[#1E1035]">{order.customer.fullName}</p>
           <p className="text-[#594A6B]">{order.customer.addressLine1}</p>
@@ -298,7 +300,7 @@ export function OrderDetailsPage() {
         <div className="space-y-1.5 rounded-2xl border border-[#EFE3FF] bg-white p-5 text-xs">
           <p className="flex items-center gap-1.5 font-extrabold text-[#1E1035]">
             <Gift className="h-4 w-4 text-[#FF4D8D]" />
-            <span>Gift Wrapping</span>
+            <span>{t('giftWrapCharge')}</span>
           </p>
           {order.giftWrap.enabled ? (
             <>
@@ -308,7 +310,7 @@ export function OrderDetailsPage() {
               </p>
               {order.giftWrap.recipientName && (
                 <p className="text-[#594A6B]">
-                  Recipient:{' '}
+                  {t('fullName')}:{' '}
                   <strong className="text-[#1E1035]">
                     {order.giftWrap.recipientName}
                   </strong>
@@ -326,39 +328,39 @@ export function OrderDetailsPage() {
         </div>
 
         <div className="space-y-1.5 rounded-2xl border border-[#EFE3FF] bg-white p-5 text-xs">
-          <p className="font-extrabold text-[#1E1035]">Order Totals</p>
+          <p className="font-extrabold text-[#1E1035]">{t('orderSummary')}</p>
           <div className="flex justify-between text-[#594A6B]">
-            <span>Subtotal</span>
+            <span>{t('subtotal')}</span>
             <span className="font-mono">{formatInr(order.subtotalInr)}</span>
           </div>
           {order.giftWrapChargeInr > 0 && (
             <div className="flex justify-between text-[#594A6B]">
-              <span>Gift Wrapping</span>
+              <span>{t('giftWrapCharge')}</span>
               <span className="font-mono">{formatInr(order.giftWrapChargeInr)}</span>
             </div>
           )}
           {order.discountInr > 0 && (
             <div className="flex justify-between text-emerald-700">
-              <span>Discount {order.couponCode ? `(${order.couponCode})` : ''}</span>
+              <span>{t('discount')} {order.couponCode ? `(${order.couponCode})` : ''}</span>
               <span className="font-mono">-{formatInr(order.discountInr)}</span>
             </div>
           )}
           <div className="flex justify-between text-[#594A6B]">
-            <span>Delivery</span>
+            <span>{t('deliveryCharge')}</span>
             <span className="font-mono">
               {order.deliveryChargeInr === 0
-                ? 'FREE'
+                ? t('free')
                 : formatInr(order.deliveryChargeInr)}
             </span>
           </div>
           <div className="flex justify-between text-[#594A6B]">
-            <span>Payment Method</span>
+            <span>{t('paymentMethod')}</span>
             <span className="font-bold text-[#1E1035]">
-              {order.paymentMethod || 'Cash on Delivery (COD)'}
+              {order.paymentMethod || t('codLabel')}
             </span>
           </div>
           <div className="flex justify-between border-t border-[#EFE3FF] pt-2 text-sm font-extrabold text-[#1E1035]">
-            <span>Grand Total</span>
+            <span>{t('grandTotal')}</span>
             <span className="font-mono text-[#6A11CB]">
               {formatInr(order.grandTotalInr)}
             </span>
@@ -390,7 +392,7 @@ export function OrderDetailsPage() {
         </ol>
 
         {cancelError && (
-          <p className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-semibold text-rose-700">
+          <p className="rounded-xl border border-[#FFD1E5] bg-[#FFF0F6] px-3.5 py-2 text-xs font-semibold text-[#C81E68]">
             {cancelError}
           </p>
         )}
@@ -399,30 +401,30 @@ export function OrderDetailsPage() {
           <Link to="/my-orders">
             <Button variant="glass" size="sm">
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back to My Orders</span>
+              <span>{t('myOrders')}</span>
             </Button>
           </Link>
 
           {cancellable &&
             (confirmCancel ? (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-rose-800">
-                  Confirm cancellation?
+                <span className="text-xs font-bold text-[#9D174D]">
+                  {t('cancelOrder')}?
                 </span>
                 <button
                   type="button"
                   disabled={cancelling}
                   onClick={() => void handleCancelOrder()}
-                  className="cursor-pointer rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50"
+                  className="cursor-pointer rounded-lg bg-[#C81E68] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#9D174D] disabled:opacity-50"
                 >
-                  {cancelling ? 'Cancelling...' : 'Yes, Cancel Order'}
+                  {cancelling ? '...' : t('cancelOrder')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmCancel(false)}
                   className="cursor-pointer rounded-lg border border-[#DFD2F2] bg-white px-3 py-1.5 text-xs font-bold text-[#2B0B4E]"
                 >
-                  Keep Order
+                  {t('cancel')}
                 </button>
               </div>
             ) : (
@@ -431,9 +433,9 @@ export function OrderDetailsPage() {
                 variant="glass"
                 size="sm"
                 onClick={() => setConfirmCancel(true)}
-                className="border-rose-200 text-rose-700 hover:border-rose-300 hover:bg-rose-50"
+                className="border-[#FFD1E5] text-[#C81E68] hover:border-[#FF85B3] hover:bg-[#FFF0F6]"
               >
-                Cancel Order
+                {t('cancelOrder')}
               </Button>
             ))}
 
@@ -465,6 +467,7 @@ export function SavedAddressesPage() {
   const { data: addresses } = useSavedAddresses();
   const { data: settings } = useStoreSettings();
   const { customerAccount } = useAuth();
+  const { t } = useLanguage();
 
   const activeZones = (settings?.deliveryZones ?? []).filter((z) => z.isActive);
 
@@ -600,20 +603,20 @@ export function SavedAddressesPage() {
             className="flex items-center gap-1.5 text-xs text-[#7A6894]"
           >
             <Link to="/" className="hover:text-[#6A11CB]">
-              Home
+              {t('home')}
             </Link>
             <span>/</span>
             <Link to="/account" className="hover:text-[#6A11CB]">
-              Account
+              {t('account')}
             </Link>
             <span>/</span>
-            <span className="font-semibold text-[#1E1035]">Saved Addresses</span>
+            <span className="font-semibold text-[#1E1035]">{t('savedAddresses')}</span>
           </nav>
           <h1 className="mt-1.5 font-display text-2xl font-bold text-[#1E1035]">
-            Saved Delivery Addresses
+            {t('savedAddresses')}
           </h1>
           <p className="mt-0.5 text-[13px] text-[#685782]">
-            Save and manage your delivery addresses for faster one-step GiftKart checkout.
+            {t('manageProfile')}
           </p>
         </div>
 
@@ -622,7 +625,7 @@ export function SavedAddressesPage() {
           <div className="space-y-3.5 lg:col-span-6">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-extrabold text-[#1E1035]">
-                Your Addresses ({addresses.length})
+                {t('savedAddresses')} ({addresses.length})
               </h2>
               {editingId && (
                 <button
@@ -630,15 +633,15 @@ export function SavedAddressesPage() {
                   onClick={resetForm}
                   className="cursor-pointer text-xs font-bold text-[#6A11CB] hover:underline"
                 >
-                  + Add New Instead
+                  + {t('addNewAddress')}
                 </button>
               )}
             </div>
 
             {addresses.length === 0 ? (
               <EmptyState
-                title="No saved addresses yet"
-                description="Add your delivery address using the form to skip typing during checkout."
+                title={t('noSavedAddresses')}
+                description={t('deliveryAddress')}
                 icon={<MapPin className="h-5 w-5" />}
               />
             ) : (
@@ -675,7 +678,7 @@ export function SavedAddressesPage() {
                           </span>
                           {addr.isDefault && (
                             <span className="rounded bg-[#6A11CB] px-2 py-0.5 text-[10px] font-bold text-white">
-                              Default
+                              {t('defaultAddress')}
                             </span>
                           )}
                         </div>
@@ -705,7 +708,7 @@ export function SavedAddressesPage() {
                       className="inline-flex cursor-pointer items-center gap-1.5 text-[#6A11CB] hover:text-[#FF4D8D]"
                     >
                       <PencilLine className="h-3.5 w-3.5" />
-                      <span>Edit</span>
+                      <span>{t('edit')}</span>
                     </button>
                     <span className="h-3.5 w-px bg-[#EBD8FF]" />
                     <button
@@ -714,10 +717,10 @@ export function SavedAddressesPage() {
                         if (editingId === addr.id) resetForm();
                         void services.community.deleteAddress(addr.id);
                       }}
-                      className="inline-flex cursor-pointer items-center gap-1.5 text-[#7A6894] hover:text-rose-600"
+                      className="inline-flex cursor-pointer items-center gap-1.5 text-[#7A6894] hover:text-[#C81E68]"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      <span>Remove</span>
+                      <span>{t('remove')}</span>
                     </button>
                   </div>
                 </div>
@@ -733,7 +736,7 @@ export function SavedAddressesPage() {
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-base font-extrabold text-[#1E1035]">
                 <Plus className="h-4 w-4 text-[#FF4D8D]" />
-                <span>{editingId ? 'Edit Saved Address' : 'Add New Address'}</span>
+                <span>{editingId ? t('editAddress') : t('addNewAddress')}</span>
               </h2>
               {editingId && (
                 <button
@@ -741,7 +744,7 @@ export function SavedAddressesPage() {
                   onClick={resetForm}
                   className="cursor-pointer text-xs font-bold text-[#7A6894] hover:text-[#1E1035]"
                 >
-                  Cancel Edit
+                  {t('cancel')}
                 </button>
               )}
             </div>
@@ -886,10 +889,16 @@ export function SavedAddressesPage() {
 
             {/* Address Type */}
             <div>
-              <p className="text-xs font-bold text-[#2B0B4E]">Address Type *</p>
+              <p className="text-xs font-bold text-[#2B0B4E]">{t('deliveryAddress')} *</p>
               <div className="mt-1.5 grid grid-cols-3 gap-2">
-                {DESKTOP_ADDRESS_TYPES.map(({ value, label, Icon }) => {
+                {DESKTOP_ADDRESS_TYPES.map(({ value, Icon }) => {
                   const active = addressType === value;
+                  const labelText =
+                    value === 'Home'
+                      ? t('homeLabel')
+                      : value === 'Work'
+                        ? t('workLabel')
+                        : t('otherLabel');
                   return (
                     <button
                       key={value}
@@ -902,7 +911,7 @@ export function SavedAddressesPage() {
                       }`}
                     >
                       <Icon className="h-3.5 w-3.5" />
-                      <span>{label}</span>
+                      <span>{labelText}</span>
                     </button>
                   );
                 })}
@@ -918,7 +927,7 @@ export function SavedAddressesPage() {
                   onChange={(e) => setIsDefault(e.target.checked)}
                   className="h-4 w-4 accent-[#6A11CB]"
                 />
-                <span>Set as Default Address</span>
+                <span>{t('setAsDefault')}</span>
               </label>
               <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#4B3963]">
                 <input
@@ -927,12 +936,12 @@ export function SavedAddressesPage() {
                   onChange={(e) => setSaveForFuture(e.target.checked)}
                   className="h-4 w-4 accent-[#6A11CB]"
                 />
-                <span>Save this address for future orders</span>
+                <span>{t('saveAddress')}</span>
               </label>
             </div>
 
             {error && (
-              <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+              <p className="rounded-xl bg-[#FFF0F6] px-3 py-2 text-xs font-semibold text-[#C81E68]">
                 {error}
               </p>
             )}
@@ -947,7 +956,7 @@ export function SavedAddressesPage() {
               type="submit"
               className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] transition-opacity hover:opacity-95"
             >
-              {editingId ? 'Update Address' : 'Save Address'}
+              {editingId ? t('saveChanges') : t('saveAddress')}
             </button>
           </form>
         </div>
@@ -961,6 +970,7 @@ export function SavedAddressesPage() {
  * ========================================================================== */
 export function CustomizationGuidePage() {
   const { data: settings } = useStoreSettings();
+  const { t } = useLanguage();
 
   const steps = [
     {
@@ -997,10 +1007,10 @@ export function CustomizationGuidePage() {
         className="flex items-center gap-1.5 text-[12px] text-neutral-500"
       >
         <Link to="/" className="transition-colors hover:text-neutral-900">
-          Home
+          {t('home')}
         </Link>
         <span aria-hidden="true">/</span>
-        <span className="text-neutral-800">Customization Guide</span>
+        <span className="text-neutral-800">{t('customizationStudio')}</span>
       </nav>
 
       {/* Clean Editorial Header */}

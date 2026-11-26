@@ -34,6 +34,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   useCategories,
   useCoupons,
@@ -122,17 +123,12 @@ function UpiWordmarkIcon() {
   );
 }
 
-const STEP_LABELS: { step: CheckoutStep; label: string }[] = [
-  { step: 1, label: 'Address' },
-  { step: 2, label: 'Confirm Details' },
-  { step: 3, label: 'Payment' },
-];
-
 export function MobileCheckoutPage() {
   const { items, itemCount, subtotalInr, giftWrap, giftWrapChargeInr, clearCart } =
     useCart();
   const { customerAccount } = useAuth();
   const { pushToast } = useToast();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const routeState = (location.state as CheckoutRouterState | null) ?? null;
@@ -539,7 +535,7 @@ export function MobileCheckoutPage() {
           >
             <ArrowLeft className="h-5 w-5 stroke-[2.3]" />
           </button>
-          <h1 className="text-[17.5px] font-extrabold text-[#2B0B4E]">Checkout</h1>
+          <h1 className="text-[17.5px] font-extrabold text-[#2B0B4E]">{t('checkout')}</h1>
         </div>
 
         <div className="mt-6 flex flex-col items-center rounded-[20px] border border-[#EBD8FF] bg-white px-5 py-7 text-center shadow-[0_8px_24px_-12px_rgba(106,17,203,0.14)]">
@@ -547,17 +543,17 @@ export function MobileCheckoutPage() {
             <ShoppingBag className="h-7 w-7 stroke-[1.9]" />
           </div>
           <h2 className="mt-3 text-[17px] font-extrabold text-[#2B0B4E]">
-            Your Cart is Empty
+            {t('cartEmptyTitle')}
           </h2>
           <p className="mt-1 max-w-[260px] text-[12.5px] leading-relaxed text-[#6A5782]">
-            Add a gift to your cart before starting checkout.
+            {t('cartEmptyDesc')}
           </p>
           <Link
             to="/shop"
             className="mt-4 inline-flex h-[44px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[13.5px] font-extrabold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] active:scale-[0.98]"
           >
             <Gift className="h-4 w-4 stroke-[2.2]" />
-            <span>Explore Gifts</span>
+            <span>{t('exploreGifts')}</span>
           </Link>
         </div>
       </div>
@@ -571,6 +567,12 @@ export function MobileCheckoutPage() {
     return `${city}, ${state}`;
   })();
 
+  const localizedStepLabels: { step: CheckoutStep; label: string }[] = [
+    { step: 1, label: t('deliveryAddress') },
+    { step: 2, label: t('orderSummary') },
+    { step: 3, label: t('paymentMethod') },
+  ];
+
   return (
     <div className="min-h-[calc(100dvh-128px)] w-full overflow-x-clip bg-gradient-to-b from-[#FDF9FF] via-[#FAF5FF] to-[#F6EEFF] pb-3">
       {/* TOP CHECKOUT BAR */}
@@ -578,13 +580,13 @@ export function MobileCheckoutPage() {
         <button
           type="button"
           onClick={handleBack}
-          aria-label="Go back"
+          aria-label={t('back')}
           className="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#2B0B4E] transition-colors active:bg-[#EBD8FF]/60"
         >
           <ArrowLeft className="h-[19px] w-[19px] stroke-[2.3]" />
         </button>
         <h1 className="text-[17px] font-extrabold tracking-[-0.015em] text-[#2B0B4E]">
-          Checkout
+          {t('checkout')}
         </h1>
       </div>
 
@@ -607,7 +609,7 @@ export function MobileCheckoutPage() {
             }}
           />
 
-          {STEP_LABELS.map((item) => {
+          {localizedStepLabels.map((item) => {
             const isCompleted = step > item.step;
             const isCurrent = step === item.step;
             const canClick = isCompleted;
@@ -673,7 +675,7 @@ export function MobileCheckoutPage() {
                 className="h-[17px] w-[17px] shrink-0 text-[#6A11CB] stroke-[2.2]"
               />
               <h2 className="text-[15px] font-extrabold text-[#5B10B8]">
-                Add Delivery Address
+                {t('deliveryAddress')}
               </h2>
             </div>
 
@@ -706,7 +708,7 @@ export function MobileCheckoutPage() {
                 <label
                   htmlFor="mc-full-name"
                   className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-1.5 transition-colors focus-within:border-[#6A11CB] ${
-                    formErrors.fullName ? 'border-rose-400' : 'border-[#DEC9FA]'
+                    formErrors.fullName ? 'border-[#FF4D8D]' : 'border-[#DEC9FA]'
                   }`}
                 >
                   <User
@@ -715,7 +717,7 @@ export function MobileCheckoutPage() {
                   />
                   <div className="min-w-0 flex-1">
                     <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
-                      Full Name <span className="text-[#FF247A]">*</span>
+                      {t('fullName')} <span className="text-[#FF247A]">*</span>
                     </span>
                     <input
                       id="mc-full-name"
@@ -728,13 +730,13 @@ export function MobileCheckoutPage() {
                           setFormErrors((prev) => ({ ...prev, fullName: '' }));
                         }
                       }}
-                      placeholder="Enter your full name"
+                      placeholder={t('fullName')}
                       className="mt-0.5 w-full bg-transparent text-[13.5px] font-bold text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
                     />
                   </div>
                 </label>
                 {formErrors.fullName && (
-                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-rose-600">
+                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-[#C81E68]">
                     {formErrors.fullName}
                   </p>
                 )}
@@ -745,7 +747,7 @@ export function MobileCheckoutPage() {
                 <label
                   htmlFor="mc-phone"
                   className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-1.5 transition-colors focus-within:border-[#6A11CB] ${
-                    formErrors.phone ? 'border-rose-400' : 'border-[#DEC9FA]'
+                    formErrors.phone ? 'border-[#FF4D8D]' : 'border-[#DEC9FA]'
                   }`}
                 >
                   <Phone
@@ -754,7 +756,7 @@ export function MobileCheckoutPage() {
                   />
                   <div className="min-w-0 flex-1">
                     <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
-                      Mobile Number <span className="text-[#FF247A]">*</span>
+                      {t('phoneNumber')} <span className="text-[#FF247A]">*</span>
                     </span>
                     <input
                       id="mc-phone"
@@ -769,13 +771,13 @@ export function MobileCheckoutPage() {
                           setFormErrors((prev) => ({ ...prev, phone: '' }));
                         }
                       }}
-                      placeholder="10-digit mobile number"
+                      placeholder={t('phoneNumber')}
                       className="mt-0.5 w-full bg-transparent text-[13.5px] font-bold tabular-nums text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
                     />
                   </div>
                 </label>
                 {formErrors.phone && (
-                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-rose-600">
+                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-[#C81E68]">
                     {formErrors.phone}
                   </p>
                 )}
@@ -786,7 +788,7 @@ export function MobileCheckoutPage() {
                 <label
                   htmlFor="mc-email"
                   className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-1.5 transition-colors focus-within:border-[#6A11CB] ${
-                    formErrors.email ? 'border-rose-400' : 'border-[#DEC9FA]'
+                    formErrors.email ? 'border-[#FF4D8D]' : 'border-[#DEC9FA]'
                   }`}
                 >
                   <Mail
@@ -795,7 +797,7 @@ export function MobileCheckoutPage() {
                   />
                   <div className="min-w-0 flex-1">
                     <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
-                      Email Address
+                      {t('emailAddress')}
                     </span>
                     <input
                       id="mc-email"
@@ -813,7 +815,7 @@ export function MobileCheckoutPage() {
                   </div>
                 </label>
                 {formErrors.email && (
-                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-rose-600">
+                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-[#C81E68]">
                     {formErrors.email}
                   </p>
                 )}
@@ -824,7 +826,7 @@ export function MobileCheckoutPage() {
                 <label
                   htmlFor="mc-address"
                   className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-1.5 transition-colors focus-within:border-[#6A11CB] ${
-                    formErrors.addressLine1 ? 'border-rose-400' : 'border-[#DEC9FA]'
+                    formErrors.addressLine1 ? 'border-[#FF4D8D]' : 'border-[#DEC9FA]'
                   }`}
                 >
                   <Home
@@ -833,7 +835,7 @@ export function MobileCheckoutPage() {
                   />
                   <div className="min-w-0 flex-1">
                     <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
-                      House / Flat / Building / Street{' '}
+                      {t('addressLine')}{' '}
                       <span className="text-[#FF247A]">*</span>
                     </span>
                     <input
@@ -847,13 +849,13 @@ export function MobileCheckoutPage() {
                           setFormErrors((prev) => ({ ...prev, addressLine1: '' }));
                         }
                       }}
-                      placeholder="House no., street, locality"
+                      placeholder={t('addressLine')}
                       className="mt-0.5 w-full bg-transparent text-[13.5px] font-bold text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
                     />
                   </div>
                 </label>
                 {formErrors.addressLine1 && (
-                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-rose-600">
+                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-[#C81E68]">
                     {formErrors.addressLine1}
                   </p>
                 )}
@@ -871,14 +873,14 @@ export function MobileCheckoutPage() {
                   />
                   <div className="min-w-0 flex-1">
                     <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
-                      Landmark (Optional)
+                      {t('landmarkOptional')}
                     </span>
                     <input
                       id="mc-landmark"
                       type="text"
                       value={landmark}
                       onChange={(e) => setLandmark(e.target.value)}
-                      placeholder="Near school, temple, or market"
+                      placeholder={t('landmarkOptional')}
                       className="mt-0.5 w-full bg-transparent text-[13.5px] font-bold text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
                     />
                   </div>
@@ -890,7 +892,7 @@ export function MobileCheckoutPage() {
                 <label
                   htmlFor="mc-pincode"
                   className={`flex items-center gap-2.5 rounded-xl border bg-white px-3 py-1.5 transition-colors focus-within:border-[#6A11CB] ${
-                    formErrors.pincode ? 'border-rose-400' : 'border-[#DEC9FA]'
+                    formErrors.pincode ? 'border-[#FF4D8D]' : 'border-[#DEC9FA]'
                   }`}
                 >
                   <LayoutGrid
@@ -899,7 +901,7 @@ export function MobileCheckoutPage() {
                   />
                   <div className="min-w-0 flex-1">
                     <span className="block text-[10.5px] font-semibold leading-none text-[#5E4B78]">
-                      PIN Code <span className="text-[#FF247A]">*</span>
+                      {t('pincode')} <span className="text-[#FF247A]">*</span>
                     </span>
                     <input
                       id="mc-pincode"
@@ -914,13 +916,13 @@ export function MobileCheckoutPage() {
                           setFormErrors((prev) => ({ ...prev, pincode: '' }));
                         }
                       }}
-                      placeholder="6-digit PIN code"
+                      placeholder={t('pincode')}
                       className="mt-0.5 w-full bg-transparent text-[13.5px] font-bold tabular-nums text-[#2B0B4E] placeholder:font-normal placeholder:text-[#9D8CB5] focus:outline-none"
                     />
                   </div>
                 </label>
                 {formErrors.pincode && (
-                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-rose-600">
+                  <p className="mt-0.5 pl-1 text-[11px] font-semibold text-[#C81E68]">
                     {formErrors.pincode}
                   </p>
                 )}
@@ -943,7 +945,7 @@ export function MobileCheckoutPage() {
                 {saveForFuture && <Check className="h-3 w-3 stroke-[3]" />}
               </button>
               <span className="text-[12.5px] font-semibold text-[#2B0B4E]">
-                Save this address for future orders
+                {t('saveAddress')}
               </span>
             </label>
           </section>
@@ -954,7 +956,7 @@ export function MobileCheckoutPage() {
               type="submit"
               className="flex h-[46px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[15px] font-extrabold text-white shadow-[0_6px_18px_-4px_rgba(162,28,175,0.45)] transition-transform active:scale-[0.985]"
             >
-              <span>Continue</span>
+              <span>{t('continueBtn')}</span>
               <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.5]" />
             </button>
           </div>
@@ -968,7 +970,7 @@ export function MobileCheckoutPage() {
         <div className="space-y-2 px-3">
           {/* Delivering To Card */}
           <section
-            aria-label="Delivering to"
+            aria-label={t('deliveryAddress')}
             className="rounded-[16px] border border-[#EBD8FF] bg-white p-2.5 shadow-[0_4px_14px_-10px_rgba(106,17,203,0.14)]"
           >
             <div className="flex items-center justify-between gap-2">
@@ -978,7 +980,7 @@ export function MobileCheckoutPage() {
                   className="h-[16px] w-[16px] shrink-0 text-[#6A11CB] stroke-[2.2]"
                 />
                 <h2 className="text-[14px] font-extrabold text-[#2B0B4E]">
-                  Delivering to
+                  {t('deliveryAddress')}
                 </h2>
               </div>
 
@@ -987,7 +989,7 @@ export function MobileCheckoutPage() {
                 onClick={() => setStep(1)}
                 className="shrink-0 whitespace-nowrap rounded-lg border border-[#DEC7FF] bg-[#FAF6FF] px-2.5 py-1 text-[11.5px] font-extrabold text-[#5B10B8] transition-transform active:scale-95"
               >
-                Change
+                {t('change')}
               </button>
             </div>
 
@@ -1107,7 +1109,7 @@ export function MobileCheckoutPage() {
                     </div>
                   ) : (
                     <span className="text-[13.5px] font-extrabold text-[#2B0B4E]">
-                      Apply Coupon
+                      {t('applyCoupon')}
                     </span>
                   )}
                 </div>
@@ -1136,8 +1138,8 @@ export function MobileCheckoutPage() {
                         setCouponInput(e.target.value.toUpperCase());
                         if (couponError) setCouponError('');
                       }}
-                      placeholder="Enter coupon code"
-                      aria-label="Coupon code"
+                      placeholder={t('enterPromoCode')}
+                      aria-label={t('promoCode')}
                       className="h-[38px] min-w-0 flex-1 rounded-xl border border-[#E6D4FF] bg-[#FAF6FF] px-3 font-mono text-[12.5px] font-bold uppercase text-[#2B0B4E] placeholder:font-sans placeholder:font-medium placeholder:normal-case placeholder:text-[#84729B] focus:border-[#6A11CB] focus:outline-none"
                     />
                     <button
@@ -1145,12 +1147,12 @@ export function MobileCheckoutPage() {
                       disabled={couponValidating}
                       className="h-[38px] shrink-0 whitespace-nowrap rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] px-3.5 text-[12.5px] font-extrabold text-white shadow-sm active:scale-95 disabled:opacity-50"
                     >
-                      {couponValidating ? '...' : 'Apply'}
+                      {couponValidating ? '...' : t('apply')}
                     </button>
                   </form>
 
                   {couponError && (
-                    <p className="mt-1.5 text-[11.5px] font-semibold text-rose-600">
+                    <p className="mt-1.5 text-[11.5px] font-semibold text-[#C81E68]">
                       {couponError}
                     </p>
                   )}
@@ -1158,15 +1160,14 @@ export function MobileCheckoutPage() {
                   {appliedCouponCode && (
                     <div className="mt-2 flex items-center justify-between rounded-xl bg-[#ECFDF5] px-2.5 py-1.5 text-[11.5px]">
                       <span className="font-bold text-[#15803D]">
-                        Code {appliedCouponCode} saves{' '}
-                        {formatInr(couponDiscount)}
+                        {appliedCouponCode} (-{formatInr(couponDiscount)})
                       </span>
                       <button
                         type="button"
                         onClick={handleClearCoupon}
-                        className="font-extrabold text-rose-600"
+                        className="font-extrabold text-[#C81E68]"
                       >
-                        Remove
+                        {t('remove')}
                       </button>
                     </div>
                   )}
@@ -1221,16 +1222,16 @@ export function MobileCheckoutPage() {
                 className="h-[17px] w-[17px] shrink-0 text-[#5B10B8] stroke-[2]"
               />
               <h2 className="text-[14px] font-extrabold text-[#2B0B4E]">
-                Price Details{' '}
+                {t('priceDetails')}{' '}
                 <span className="font-semibold text-[#5E477A]">
-                  ({itemCount} {itemCount === 1 ? 'Item' : 'Items'})
+                  ({itemCount} {itemCount === 1 ? t('item') : t('items')})
                 </span>
               </h2>
             </div>
 
             <dl className="mt-2 space-y-1.5 text-[13px]">
               <div className="flex items-center justify-between gap-2">
-                <dt className="font-medium text-[#2B0B4E]">Product Price</dt>
+                <dt className="font-medium text-[#2B0B4E]">{t('productPrice')}</dt>
                 <dd className="font-bold tabular-nums text-[#2B0B4E]">
                   {formatInr(pricing.totalProductPriceInr)}
                 </dd>
@@ -1238,7 +1239,7 @@ export function MobileCheckoutPage() {
 
               <div className="flex items-center justify-between gap-2">
                 <dt className="font-semibold text-[#16A34A]">
-                  Product Discount
+                  {t('productDiscount')}
                 </dt>
                 <dd className="font-bold tabular-nums text-[#16A34A]">
                   - {formatInr(pricing.catalogDiscountInr)}
@@ -1248,7 +1249,7 @@ export function MobileCheckoutPage() {
               {couponDiscount > 0 && appliedCouponCode && (
                 <div className="flex items-center justify-between gap-2">
                   <dt className="font-semibold text-[#16A34A]">
-                    Coupon Discount ({appliedCouponCode})
+                    {t('couponDiscount')} ({appliedCouponCode})
                   </dt>
                   <dd className="font-bold tabular-nums text-[#16A34A]">
                     - {formatInr(couponDiscount)}
@@ -1258,7 +1259,7 @@ export function MobileCheckoutPage() {
 
               {giftWrap.enabled && giftWrapChargeInr > 0 && (
                 <div className="flex items-center justify-between gap-2">
-                  <dt className="font-medium text-[#5A4575]">Gift Wrapping</dt>
+                  <dt className="font-medium text-[#5A4575]">{t('giftWrapCharge')}</dt>
                   <dd className="font-bold tabular-nums text-[#2B0B4E]">
                     + {formatInr(giftWrapChargeInr)}
                   </dd>
@@ -1270,7 +1271,7 @@ export function MobileCheckoutPage() {
 
             <div className="flex items-center justify-between gap-2">
               <span className="text-[15px] font-extrabold text-[#2B0B4E]">
-                Order Total
+                {t('grandTotal')}
               </span>
               <span className="text-[17px] font-extrabold tabular-nums text-[#5B10B8]">
                 {formatInr(pricing.orderTotalInr)}
@@ -1284,8 +1285,7 @@ export function MobileCheckoutPage() {
                   className="h-[17px] w-[17px] shrink-0 fill-[#16A34A] text-white"
                 />
                 <span>
-                  Yay! Your total discount is{' '}
-                  {formatInr(pricing.totalDiscountInr)}
+                  {t('discount')}: {formatInr(pricing.totalDiscountInr)}
                 </span>
               </div>
             )}
@@ -1298,7 +1298,7 @@ export function MobileCheckoutPage() {
               onClick={() => setStep(3)}
               className="flex h-[46px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[15px] font-extrabold text-white shadow-[0_6px_18px_-4px_rgba(162,28,175,0.45)] transition-transform active:scale-[0.985]"
             >
-              <span>Continue</span>
+              <span>{t('continueBtn')}</span>
               <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.5]" />
             </button>
           </div>
@@ -1319,7 +1319,7 @@ export function MobileCheckoutPage() {
               className="flex min-h-[44px] w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left"
             >
               <span className="inline-flex items-center gap-1.5 text-[14.5px] font-extrabold text-[#5B10B8]">
-                <span>Total Amount</span>
+                <span>{t('grandTotal')}</span>
                 <ChevronDown
                   aria-hidden="true"
                   className={`h-4 w-4 stroke-[2.5] transition-transform duration-200 ${
@@ -1336,8 +1336,8 @@ export function MobileCheckoutPage() {
               <div className="space-y-1.5 border-t border-[#E6D4FF] bg-white px-3.5 py-2.5 text-[12.5px]">
                 <div className="flex justify-between text-[#4B3568]">
                   <span>
-                    Product Price ({itemCount}{' '}
-                    {itemCount === 1 ? 'Item' : 'Items'})
+                    {t('productPrice')} ({itemCount}{' '}
+                    {itemCount === 1 ? t('item') : t('items')})
                   </span>
                   <span className="font-bold tabular-nums text-[#2B0B4E]">
                     {formatInr(pricing.totalProductPriceInr)}
@@ -1345,14 +1345,14 @@ export function MobileCheckoutPage() {
                 </div>
                 {pricing.totalDiscountInr > 0 && (
                   <div className="flex justify-between font-semibold text-[#16A34A]">
-                    <span>Total Discount</span>
+                    <span>{t('discount')}</span>
                     <span className="tabular-nums">
                       - {formatInr(pricing.totalDiscountInr)}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between border-t border-[#F2E6FF] pt-1.5 font-extrabold text-[#2B0B4E]">
-                  <span>Order Total</span>
+                  <span>{t('grandTotal')}</span>
                   <span className="tabular-nums text-[#5B10B8]">
                     {formatInr(pricing.orderTotalInr)}
                   </span>
@@ -1362,14 +1362,14 @@ export function MobileCheckoutPage() {
           </div>
 
           {/* Select Payment Method */}
-          <section aria-label="Select payment method" className="space-y-2">
+          <section aria-label={t('paymentMethod')} className="space-y-2">
             <div className="flex items-center gap-1.5 pt-0.5">
               <CreditCard
                 aria-hidden="true"
                 className="h-[18px] w-[18px] shrink-0 text-[#5B10B8] stroke-[2.2]"
               />
               <h2 className="text-[15px] font-extrabold text-[#2B0B4E]">
-                Select Payment Method
+                {t('paymentMethod')}
               </h2>
             </div>
 
@@ -1382,16 +1382,16 @@ export function MobileCheckoutPage() {
 
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] font-extrabold leading-tight text-[#847D8F]">
-                  UPI Payment
+                  {t('onlinePaymentLabel')} (UPI)
                 </p>
-                <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#E53935]">
+                <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#C81E68]">
                   UPI payment is currently not available.
                 </p>
               </div>
 
               <Ban
                 aria-hidden="true"
-                className="h-5 w-5 shrink-0 text-[#E59A9A] stroke-[2]"
+                className="h-5 w-5 shrink-0 text-[#FF85B3] stroke-[2]"
               />
             </div>
 
@@ -1408,10 +1408,10 @@ export function MobileCheckoutPage() {
 
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] font-extrabold leading-tight text-[#2B0B4E]">
-                  Cash on Delivery (COD)
+                  {t('codLabel')}
                 </p>
                 <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#5B4775]">
-                  Pay when you receive your order
+                  {t('codDesc')}
                 </p>
               </div>
 
@@ -1434,11 +1434,10 @@ export function MobileCheckoutPage() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[14px] font-extrabold text-[#2B0B4E]">
-                Safe &amp; Secure Order
+                {t('reliableDelivery')}
               </p>
               <p className="mt-0.5 text-[12px] leading-snug text-[#533F6E]">
-                Your order is protected and will be delivered to your given
-                address.
+                {t('reliableDeliveryDesc')}
               </p>
             </div>
           </section>
@@ -1452,7 +1451,7 @@ export function MobileCheckoutPage() {
               className="flex h-[46px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[15px] font-extrabold text-white shadow-[0_6px_18px_-4px_rgba(162,28,175,0.45)] transition-transform active:scale-[0.985] disabled:opacity-60"
             >
               <Lock className="h-[17px] w-[17px] shrink-0 stroke-[2.4]" />
-              <span>{submitting ? 'Placing Order...' : 'Place Order'}</span>
+              <span>{submitting ? t('placingOrder') : t('placeOrder')}</span>
             </button>
           </div>
         </div>

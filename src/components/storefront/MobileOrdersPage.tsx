@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useOrders } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
 import type { DemoOrder, OrderFulfillmentStatus } from '../../types';
@@ -269,7 +270,7 @@ function getStatusBadgeClasses(status: DisplayOrderStatus): string {
     case 'Delivered':
       return 'bg-[#E8F8EE] text-[#15803D] border border-[#C6EED3]';
     case 'Cancelled':
-      return 'bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]';
+      return 'bg-[#FFF0F6] text-[#C81E68] border border-[#FFD1E5]';
   }
 }
 
@@ -363,6 +364,7 @@ function MobileOrderDetailsView({
   onOrderCancelled: () => void;
 }) {
   const { pushToast } = useToast();
+  const { t } = useLanguage();
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -404,7 +406,7 @@ function MobileOrderDetailsView({
         className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[12px] font-bold text-[#6A11CB] shadow-[0_2px_8px_rgba(106,17,203,0.08)] active:scale-[0.98]"
       >
         <ArrowLeft className="h-3.5 w-3.5 stroke-[2.4]" />
-        <span>Back to My Orders</span>
+        <span>{t('myOrders')}</span>
       </button>
 
       <div className="space-y-3">
@@ -416,7 +418,7 @@ function MobileOrderDetailsView({
                 {order.orderIdLabel}
               </h1>
               <p className="mt-0.5 text-[11.5px] font-medium text-[#6F5C88]">
-                Order Date: {order.placedOn}
+                {t('orderDate')}: {order.placedOn}
               </p>
             </div>
             <span
@@ -460,14 +462,14 @@ function MobileOrderDetailsView({
 
         {/* Order Status / Tracking Timeline */}
         {order.displayStatus === 'Cancelled' ? (
-          <div className="rounded-[22px] border border-[#FECACA] bg-[#FEF2F2] p-4 shadow-[0_6px_18px_rgba(220,38,38,0.06)]">
+          <div className="rounded-[22px] border border-[#FFD1E5] bg-[#FFF0F6] p-4 shadow-[0_6px_18px_rgba(255,77,141,0.08)]">
             <div className="flex items-start gap-2.5">
-              <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#DC2626]" />
+              <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#C81E68]" />
               <div>
-                <h2 className="text-[14px] font-extrabold text-[#991B1B]">
-                  Order Cancelled
+                <h2 className="text-[14px] font-extrabold text-[#9D174D]">
+                  {t('orderCancelled')}
                 </h2>
-                <p className="mt-0.5 text-[12px] leading-snug text-[#B91C1C]">
+                <p className="mt-0.5 text-[12px] leading-snug text-[#C81E68]">
                   {order.cancellationNote ||
                     'This order was cancelled before processing started.'}
                 </p>
@@ -479,7 +481,7 @@ function MobileOrderDetailsView({
             <div className="mb-3 flex items-center gap-2">
               <Truck className="h-4 w-4 text-[#6A11CB]" />
               <h2 className="text-[13.5px] font-extrabold text-[#2B0B4E]">
-                Order Status &amp; Timeline
+                {t('orderStatus')}
               </h2>
             </div>
 
@@ -550,7 +552,7 @@ function MobileOrderDetailsView({
           <div className="mb-2 flex items-center gap-2">
             <MapPin className="h-4 w-4 text-[#FF4D8D]" />
             <h2 className="text-[13.5px] font-extrabold text-[#2B0B4E]">
-              Delivery Address
+              {t('deliveryAddress')}
             </h2>
           </div>
           <p className="text-[13px] font-bold text-[#2B0B4E]">
@@ -566,7 +568,7 @@ function MobileOrderDetailsView({
             {order.deliveryAddress.cityStatePin}
           </p>
           <p className="mt-1 text-[11.5px] font-medium text-[#6F5C88]">
-            Phone: {order.deliveryAddress.phone}
+            {t('phoneNumber')}: {order.deliveryAddress.phone}
           </p>
         </div>
 
@@ -576,7 +578,7 @@ function MobileOrderDetailsView({
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-[#6A11CB]" />
               <h2 className="text-[13.5px] font-extrabold text-[#2B0B4E]">
-                Payment Method
+                {t('paymentMethod')}
               </h2>
             </div>
             <span className="rounded-full bg-[#F5ECFF] px-2.5 py-0.5 text-[10.5px] font-bold text-[#6A11CB]">
@@ -591,18 +593,18 @@ function MobileOrderDetailsView({
         {/* Price Summary Section */}
         <div className="rounded-[22px] border border-[#EFE2FF] bg-white p-4 shadow-[0_6px_18px_rgba(106,17,203,0.06)]">
           <h2 className="mb-2.5 text-[13.5px] font-extrabold text-[#2B0B4E]">
-            Price Summary
+            {t('priceDetails')}
           </h2>
           <div className="space-y-2 text-[12.5px]">
             <div className="flex items-center justify-between text-[#5E4A77]">
-              <span>Items Subtotal</span>
+              <span>{t('subtotal')}</span>
               <span className="font-semibold tabular-nums text-[#2B0B4E]">
                 {formatInr(order.subtotalInr)}
               </span>
             </div>
             {order.giftWrapChargeInr > 0 && (
               <div className="flex items-center justify-between text-[#5E4A77]">
-                <span>Gift Wrapping</span>
+                <span>{t('giftWrapCharge')}</span>
                 <span className="font-semibold tabular-nums text-[#2B0B4E]">
                   + {formatInr(order.giftWrapChargeInr)}
                 </span>
@@ -610,22 +612,22 @@ function MobileOrderDetailsView({
             )}
             {order.discountInr > 0 && (
               <div className="flex items-center justify-between text-[#15803D]">
-                <span>Coupon Discount</span>
+                <span>{t('couponDiscount')}</span>
                 <span className="font-semibold tabular-nums">
                   - {formatInr(order.discountInr)}
                 </span>
               </div>
             )}
             <div className="flex items-center justify-between text-[#5E4A77]">
-              <span>Shipping Charge</span>
+              <span>{t('deliveryCharge')}</span>
               <span className="font-semibold text-[#15803D]">
                 {order.shippingChargeInr === 0
-                  ? 'Free'
+                  ? t('free')
                   : formatInr(order.shippingChargeInr)}
               </span>
             </div>
             <div className="flex items-center justify-between border-t border-[#F0E4FF] pt-2.5 text-[14px] font-extrabold text-[#2B0B4E]">
-              <span>Grand Total</span>
+              <span>{t('grandTotal')}</span>
               <span className="tabular-nums text-[#6A11CB]">
                 {formatInr(order.grandTotalInr)}
               </span>
@@ -648,14 +650,14 @@ function MobileOrderDetailsView({
 
         {/* Inline Cancel Confirmation Box (ONLY available before Processing) */}
         {order.canCancel && confirmCancelOpen && (
-          <div className="rounded-[20px] border border-[#FECACA] bg-[#FFF5F5] p-4 shadow-[0_6px_16px_rgba(220,38,38,0.08)]">
+          <div className="rounded-[20px] border border-[#FFD1E5] bg-[#FFF0F6] p-4 shadow-[0_6px_16px_rgba(255,77,141,0.1)]">
             <div className="flex items-start gap-2.5">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#DC2626]" />
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#C81E68]" />
               <div className="min-w-0 flex-1">
-                <p className="text-[13.5px] font-extrabold text-[#991B1B]">
-                  Cancel this order?
+                <p className="text-[13.5px] font-extrabold text-[#9D174D]">
+                  {t('cancelOrder')}?
                 </p>
-                <p className="mt-0.5 text-[12px] leading-snug text-[#B91C1C]">
+                <p className="mt-0.5 text-[12px] leading-snug text-[#C81E68]">
                   You can cancel this order now because processing has not
                   started yet.
                 </p>
@@ -666,15 +668,15 @@ function MobileOrderDetailsView({
                     disabled={cancelling}
                     className="flex h-[40px] items-center justify-center rounded-full border border-[#E5D3FF] bg-white px-3 text-[12.5px] font-bold text-[#3B0764] active:scale-[0.98]"
                   >
-                    Keep Order
+                    {t('cancel')}
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleConfirmCancel()}
                     disabled={cancelling}
-                    className="flex h-[40px] items-center justify-center rounded-full bg-[#DC2626] px-3 text-[12.5px] font-bold text-white shadow-xs active:scale-[0.98] disabled:opacity-60"
+                    className="flex h-[40px] items-center justify-center rounded-full bg-[#C81E68] px-3 text-[12.5px] font-bold text-white shadow-xs active:scale-[0.98] disabled:opacity-60"
                   >
-                    {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+                    {cancelling ? '...' : t('cancelOrder')}
                   </button>
                 </div>
               </div>
@@ -692,10 +694,10 @@ function MobileOrderDetailsView({
             <button
               type="button"
               onClick={() => setConfirmCancelOpen(true)}
-              className="flex min-h-[46px] items-center justify-center gap-1.5 rounded-full border border-[#FCA5A5] bg-white px-3 text-[13px] font-bold text-[#DC2626] shadow-[0_3px_10px_rgba(220,38,38,0.08)] active:scale-[0.98]"
+              className="flex min-h-[46px] items-center justify-center gap-1.5 rounded-full border border-[#FFB8D4] bg-white px-3 text-[13px] font-bold text-[#C81E68] shadow-[0_3px_10px_rgba(255,77,141,0.1)] active:scale-[0.98]"
             >
               <XCircle className="h-4 w-4 shrink-0" />
-              <span>Cancel Order</span>
+              <span>{t('cancelOrder')}</span>
             </button>
           )}
 
@@ -704,7 +706,7 @@ function MobileOrderDetailsView({
             className="flex min-h-[46px] items-center justify-center gap-1.5 rounded-full border border-[#E6D3FF] bg-white px-3 text-[13px] font-bold text-[#6A11CB] shadow-[0_3px_10px_rgba(106,17,203,0.08)] active:scale-[0.98]"
           >
             <Headset className="h-4 w-4 shrink-0" />
-            <span>Contact Support</span>
+            <span>{t('contactSupport')}</span>
           </Link>
         </div>
       </div>
@@ -713,6 +715,7 @@ function MobileOrderDetailsView({
 }
 
 function MobileEmptyOrdersState() {
+  const { t } = useLanguage();
   return (
     <div className="px-4 pb-8 pt-6 text-center">
       <div className="mx-auto max-w-[340px] rounded-[26px] border border-[#EFE2FF] bg-white/90 px-5 py-7 shadow-[0_8px_24px_rgba(106,17,203,0.07)]">
@@ -720,17 +723,16 @@ function MobileEmptyOrdersState() {
           <Gift className="h-10 w-10 stroke-[1.8]" />
         </div>
         <h2 className="mt-4 text-[21px] font-extrabold tracking-[-0.015em] text-[#2B0B4E]">
-          No Orders Yet!
+          {t('noOrdersYet')}
         </h2>
         <p className="mt-2 text-[13px] leading-[1.5] text-[#5C4875]">
-          You haven&apos;t placed any orders yet. Explore our collection and
-          find the perfect gift.
+          {t('noOrdersDesc')}
         </p>
         <Link
           to="/shop"
           className="mt-5 inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#9C1FC0] to-[#FF4D8D] px-6 text-[14px] font-bold text-white shadow-[0_8px_20px_rgba(106,17,203,0.26)] active:scale-[0.98]"
         >
-          <span>Explore Gifts</span>
+          <span>{t('exploreGifts')}</span>
           <ArrowRight className="h-4 w-4 stroke-[2.3]" />
         </Link>
       </div>
@@ -742,6 +744,7 @@ export function MobileOrdersPage() {
   const { customerAccount } = useAuth();
   const { data: rawOrders, refresh: reloadOrders } = useOrders();
   const { pushToast } = useToast();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -802,24 +805,24 @@ export function MobileOrdersPage() {
 
   const filterTabs: Array<{ key: FilterTabKey; label: string; count: number }> =
     [
-      { key: 'all', label: 'All Orders', count: statusCounts.all },
+      { key: 'all', label: t('allOrders'), count: statusCounts.all },
       {
         key: 'Order Placed',
-        label: 'Order Placed',
+        label: t('statusConfirmed'),
         count: statusCounts['Order Placed'],
       },
       {
         key: 'Processing',
-        label: 'Processing',
+        label: t('statusPacked'),
         count: statusCounts.Processing,
       },
-      { key: 'Shipped', label: 'Shipped', count: statusCounts.Shipped },
-      { key: 'Delivered', label: 'Delivered', count: statusCounts.Delivered },
+      { key: 'Shipped', label: t('statusShipped'), count: statusCounts.Shipped },
+      { key: 'Delivered', label: t('statusDelivered'), count: statusCounts.Delivered },
       ...(statusCounts.Cancelled > 0
         ? [
             {
               key: 'Cancelled' as const,
-              label: 'Cancelled',
+              label: t('statusCancelled'),
               count: statusCounts.Cancelled,
             },
           ]
@@ -831,24 +834,23 @@ export function MobileOrdersPage() {
       {/* STATE 1: LOGGED-OUT SCREEN */}
       {!isLoggedInView ? (
         <section
-          aria-label="Login Required to View Orders"
+          aria-label={t('myOrders')}
           className="flex flex-col items-center px-4 pb-4 pt-1.5 text-center"
         >
           <div className="flex w-full items-center justify-center py-1">
             <img
               src={VIEW_ORDERS_ILLUSTRATION}
-              alt="View Your Orders Illustration"
+              alt={t('myOrders')}
               className="mx-auto h-auto w-full max-w-[172px] object-contain drop-shadow-[0_10px_22px_rgba(106,17,203,0.12)] min-[390px]:max-w-[192px]"
             />
           </div>
 
           <h1 className="mt-1.5 text-[21px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[23px]">
-            View Your Orders
+            {t('myOrders')}
           </h1>
 
           <p className="mt-1.5 max-w-[295px] text-[12.5px] leading-[1.45] text-[#523D6D]">
-            Please <span className="font-bold text-[#2B0B4E]">log in</span> to
-            see your order history, live progress and order details.
+            {t('signInPrompt')}
           </p>
 
           <div className="mt-3.5 w-full max-w-[348px] space-y-2">
@@ -859,7 +861,7 @@ export function MobileOrdersPage() {
             >
               <span className="flex items-center gap-2.5">
                 <User className="h-[19px] w-[19px] shrink-0 stroke-[2]" />
-                <span>Login / Sign In</span>
+                <span>{t('signIn')}</span>
               </span>
               <ChevronRight className="h-[19px] w-[19px] shrink-0 stroke-[2.2]" />
             </Link>
@@ -870,7 +872,7 @@ export function MobileOrdersPage() {
               className="flex min-h-[44px] w-full items-center justify-start gap-2.5 rounded-full border border-[#EBD8FF] bg-white px-5 text-[14px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
             >
               <UserPlus className="h-[19px] w-[19px] shrink-0 text-[#6A11CB] stroke-[2]" />
-              <span>Create New Account</span>
+              <span>{t('createAccount')}</span>
             </Link>
           </div>
 
@@ -925,10 +927,10 @@ export function MobileOrdersPage() {
             </div>
             <div className="min-w-0">
               <h1 className="text-[18.5px] font-extrabold leading-tight tracking-[-0.015em] text-[#2B0B4E] min-[390px]:text-[20px]">
-                My Orders
+                {t('myOrders')}
               </h1>
               <p className="text-[11.5px] font-medium text-[#5A4476]">
-                Manage and view all your orders in one place.
+                {t('trackYourOrder')}
               </p>
             </div>
           </div>
@@ -971,7 +973,7 @@ export function MobileOrdersPage() {
                 onClick={() => setActiveFilter('all')}
                 className="mt-2.5 rounded-full bg-[#F5ECFF] px-4 py-1.5 text-[12px] font-bold text-[#6A11CB]"
               >
-                Show All Orders
+                {t('allOrders')}
               </button>
             </div>
           ) : (
@@ -1047,9 +1049,9 @@ export function MobileOrdersPage() {
 
                   {/* Cancelled Notice OR Horizontal 4-Step Timeline */}
                   {order.displayStatus === 'Cancelled' ? (
-                    <div className="mt-3 flex items-center gap-2 rounded-xl bg-[#FEF2F2] px-3 py-2 text-[11.5px] font-semibold text-[#DC2626]">
+                    <div className="mt-3 flex items-center gap-2 rounded-xl bg-[#FFF0F6] px-3 py-2 text-[11.5px] font-semibold text-[#C81E68]">
                       <XCircle className="h-3.5 w-3.5 shrink-0" />
-                      <span>Order cancelled before processing</span>
+                      <span>{t('orderCancelled')}</span>
                     </div>
                   ) : (
                     <HorizontalOrderTimeline steps={order.timeline} />

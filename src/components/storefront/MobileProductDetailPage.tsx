@@ -240,8 +240,6 @@ export function MobileProductDetailPage({
     toggleWishlist(targetProductId);
   }
 
-  const descriptionText = product.description?.trim() || product.shortDescription?.trim();
-
   return (
     <div className="min-h-screen w-full bg-white pb-[86px] text-[#2B0B4E]">
       {/* 1. MAIN PRODUCT IMAGE GALLERY (Sharp Square-Corner Box, No Arrows, No Zoom) */}

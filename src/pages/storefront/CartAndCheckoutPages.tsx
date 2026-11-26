@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   useCoupons,
   useGiftWrapConfig,
@@ -75,6 +76,7 @@ export function CartPage() {
     selectGiftWrapStyle,
     updateGiftWrapDetails,
   } = useCart();
+  const { t } = useLanguage();
   const { data: giftWrapConfig } = useGiftWrapConfig();
   const { data: products } = useProducts();
   const { data: coupons } = useCoupons();
@@ -160,12 +162,12 @@ export function CartPage() {
       <div className="hidden lg:block">
         {items.length === 0 ? (
           <EmptyState
-            title="Your Gift Bag is empty"
-            description="Add personalized mugs, printed T-shirts, photo frames, LED lamps, or curated gift boxes to start your order."
+            title={t('cartEmptyTitle')}
+            description={t('cartEmptyDesc')}
             icon={<ShoppingBag className="h-5 w-5" />}
             action={
               <Link to="/shop">
-                <Button size="md">Explore GiftKart Shop</Button>
+                <Button size="md">{t('exploreGifts')}</Button>
               </Link>
             }
           />
@@ -174,19 +176,18 @@ export function CartPage() {
             <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#EFE3FF] pb-4">
               <div>
                 <h1 className="font-display text-2xl font-bold text-[#1E1035]">
-                  Your Shopping Cart
+                  {t('yourCart')}
                 </h1>
                 <p className="mt-0.5 text-[13px] text-[#685782]">
                   {items.reduce((sum, i) => sum + i.quantity, 0)}{' '}
-                  {items.reduce((sum, i) => sum + i.quantity, 0) === 1 ? 'item' : 'items'} in
-                  your bag · Review items, apply coupons, or add boutique gift wrapping.
+                  {items.reduce((sum, i) => sum + i.quantity, 0) === 1 ? t('item') : t('items')} · {t('orderSummary')}
                 </p>
               </div>
               <Link
                 to="/shop"
                 className="text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
               >
-                Continue Shopping →
+                {t('continueShopping')} →
               </Link>
             </div>
 
@@ -227,8 +228,8 @@ export function CartPage() {
                             <button
                               type="button"
                               onClick={() => removeItem(item.cartItemId)}
-                              aria-label={`Remove ${item.productName}`}
-                              className="cursor-pointer rounded-lg p-1 text-[#8B7AA0] hover:bg-rose-50 hover:text-rose-700"
+                              aria-label={`${t('remove')} ${item.productName}`}
+                              className="cursor-pointer rounded-lg p-1 text-[#8B7AA0] hover:bg-[#FFF0F6] hover:text-[#C81E68]"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -307,10 +308,10 @@ export function CartPage() {
                         </div>
                         <div>
                           <h2 className="text-sm font-extrabold text-[#1E1035]">
-                            Boutique Gift Wrapping
+                            {t('giftWrapAvailable')}
                           </h2>
                           <p className="text-xs text-[#685782]">
-                            Add curated gift wrapping, recipient name &amp; a printed message card.
+                            {t('giftWrapAvailableDesc')}
                           </p>
                         </div>
                       </div>
@@ -323,7 +324,7 @@ export function CartPage() {
                           }
                           className="h-4 w-4 accent-[#6A11CB]"
                         />
-                        <span>{giftWrap.enabled ? 'Enabled' : 'Add Gift Wrap'}</span>
+                        <span>{giftWrap.enabled ? t('giftWrap') : t('addGiftWrap')}</span>
                       </label>
                     </div>
 
@@ -408,7 +409,7 @@ export function CartPage() {
 
               {/* Right: Order Summary & Coupons */}
               <div className="space-y-5 rounded-2xl border border-[#EFE3FF] bg-white p-6 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.12)] lg:col-span-5 lg:sticky lg:top-28">
-                <h2 className="text-lg font-extrabold text-[#1E1035]">Price Details</h2>
+                <h2 className="text-lg font-extrabold text-[#1E1035]">{t('priceDetails')}</h2>
 
                 {/* Coupon Input + Quick Chips */}
                 <div className="space-y-2.5">
@@ -419,7 +420,7 @@ export function CartPage() {
                         type="text"
                         value={couponInput}
                         onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                        placeholder="Enter coupon code"
+                        placeholder={t('enterPromoCode')}
                         className="h-10 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] pl-9 pr-3 font-mono text-xs font-bold text-[#2B0B4E] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
                       />
                     </div>
@@ -430,11 +431,11 @@ export function CartPage() {
                         size="sm"
                         onClick={handleRemoveCoupon}
                       >
-                        Remove
+                        {t('remove')}
                       </Button>
                     ) : (
                       <Button type="submit" variant="glass" size="sm">
-                        Apply
+                        {t('apply')}
                       </Button>
                     )}
                   </form>
@@ -464,7 +465,7 @@ export function CartPage() {
                       className={`text-xs font-semibold ${
                         couponFeedback.type === 'success'
                           ? 'text-emerald-700'
-                          : 'text-rose-600'
+                          : 'text-[#C81E68]'
                       }`}
                     >
                       {couponFeedback.message}
@@ -476,13 +477,13 @@ export function CartPage() {
                   {pricing.productSavings > 0 && (
                     <>
                       <div className="flex justify-between text-[#594A6B]">
-                        <span>Total MRP</span>
+                        <span>{t('productPrice')}</span>
                         <span className="font-mono font-semibold tabular-nums text-[#2B0B4E]">
                           {formatInr(pricing.totalMrp)}
                         </span>
                       </div>
                       <div className="flex justify-between text-emerald-700">
-                        <span>Discount on MRP</span>
+                        <span>{t('productDiscount')}</span>
                         <span className="font-mono font-bold tabular-nums">
                           -{formatInr(pricing.productSavings)}
                         </span>
@@ -490,14 +491,14 @@ export function CartPage() {
                     </>
                   )}
                   <div className="flex justify-between text-[#594A6B]">
-                    <span>Items Subtotal</span>
+                    <span>{t('subtotal')}</span>
                     <span className="font-mono font-bold tabular-nums text-[#2B0B4E]">
                       {formatInr(subtotalInr)}
                     </span>
                   </div>
                   {giftWrap.enabled && (
                     <div className="flex justify-between text-[#594A6B]">
-                      <span>Gift Wrapping ({giftWrap.styleNameSnapshot})</span>
+                      <span>{t('giftWrapCharge')} ({giftWrap.styleNameSnapshot})</span>
                       <span className="font-mono font-bold tabular-nums text-[#2B0B4E]">
                         {formatInr(giftWrapChargeInr)}
                       </span>
@@ -505,18 +506,18 @@ export function CartPage() {
                   )}
                   {couponDiscount > 0 && (
                     <div className="flex justify-between text-emerald-700">
-                      <span>Coupon Discount ({appliedCouponCode})</span>
+                      <span>{t('couponDiscount')} ({appliedCouponCode})</span>
                       <span className="font-mono font-bold tabular-nums">
                         -{formatInr(couponDiscount)}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-[#594A6B]">
-                    <span>Delivery Charges</span>
-                    <span className="font-bold text-emerald-700">FREE</span>
+                    <span>{t('deliveryCharge')}</span>
+                    <span className="font-bold text-emerald-700">{t('free')}</span>
                   </div>
                   <div className="flex justify-between border-t border-[#EFE3FF] pt-3 text-base font-extrabold text-[#1E1035]">
-                    <span>Order Total</span>
+                    <span>{t('grandTotal')}</span>
                     <span className="font-mono tabular-nums text-[#6A11CB]">
                       {formatInr(pricing.totalPayable)}
                     </span>
@@ -527,7 +528,7 @@ export function CartPage() {
                   <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5 text-xs font-bold text-emerald-800">
                     <BadgePercent className="h-4 w-4 shrink-0" />
                     <span>
-                      You will save {formatInr(pricing.totalSavings)} on this order.
+                      {t('discount')}: {formatInr(pricing.totalSavings)}
                     </span>
                   </div>
                 )}
@@ -537,17 +538,17 @@ export function CartPage() {
                   state={{ couponCode: appliedCouponCode, couponDiscount }}
                   className="flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] text-sm font-bold text-white shadow-[0_10px_24px_-8px_rgba(106,17,203,0.45)] transition-all hover:opacity-95"
                 >
-                  Proceed to Checkout →
+                  {t('proceedToCheckout')} →
                 </Link>
 
                 <div className="flex items-center justify-center gap-4 text-[11px] font-medium text-[#6E5B85]">
                   <span className="inline-flex items-center gap-1">
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                    Secure Checkout
+                    {t('checkout')}
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <Truck className="h-3.5 w-3.5 text-[#6A11CB]" />
-                    Cash on Delivery Available
+                    {t('codLabel')}
                   </span>
                 </div>
               </div>
@@ -580,6 +581,7 @@ const DESKTOP_ADDRESS_TYPE_OPTIONS: Array<{
 export function CheckoutPage() {
   const { items, giftWrap, subtotalInr, giftWrapChargeInr, clearCart } = useCart();
   const { customerAccount } = useAuth();
+  const { t } = useLanguage();
   const { data: settings } = useStoreSettings();
   const { data: savedAddresses } = useSavedAddresses();
   const { data: products } = useProducts();
@@ -860,9 +862,9 @@ export function CheckoutPage() {
   });
 
   const STEPS: Array<{ num: DesktopCheckoutStep; label: string }> = [
-    { num: 1, label: 'Delivery Address' },
-    { num: 2, label: 'Confirm Details' },
-    { num: 3, label: 'Payment' },
+    { num: 1, label: t('deliveryAddress') },
+    { num: 2, label: t('orderSummary') },
+    { num: 3, label: t('paymentMethod') },
   ];
 
   return (
@@ -876,12 +878,12 @@ export function CheckoutPage() {
       <div className="hidden lg:block">
         {items.length === 0 ? (
           <EmptyState
-            title="Your cart is empty"
-            description="Add a gift to your cart before starting checkout."
+            title={t('cartEmptyTitle')}
+            description={t('cartEmptyDesc')}
             icon={<ShoppingBag className="h-5 w-5" />}
             action={
               <Link to="/shop">
-                <Button size="sm">Return to Shop</Button>
+                <Button size="sm">{t('exploreGifts')}</Button>
               </Link>
             }
           />
@@ -895,10 +897,10 @@ export function CheckoutPage() {
                   className="inline-flex items-center gap-1 text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  <span>Back to Cart</span>
+                  <span>{t('myCart')}</span>
                 </Link>
                 <h1 className="mt-1 font-display text-2xl font-bold text-[#1E1035]">
-                  Checkout
+                  {t('checkout')}
                 </h1>
               </div>
 
@@ -960,17 +962,17 @@ export function CheckoutPage() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <h2 className="text-lg font-extrabold text-[#1E1035]">
-                          Step 1 · Delivery Address
+                          1 · {t('deliveryAddress')}
                         </h2>
                         <p className="text-xs text-[#685782]">
-                          Enter where your GiftKart order should be delivered.
+                          {t('contactDetails')}
                         </p>
                       </div>
                       <Link
                         to="/addresses"
                         className="text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
                       >
-                        Manage Saved Addresses →
+                        {t('savedAddresses')} →
                       </Link>
                     </div>
 
@@ -979,7 +981,7 @@ export function CheckoutPage() {
                       <div className="rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] p-3.5">
                         <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#6A11CB]">
                           <MapPin className="h-3.5 w-3.5 text-[#FF4D8D]" />
-                          <span>Select a Saved Address</span>
+                          <span>{t('useSavedAddress')}</span>
                         </p>
                         <div className="grid gap-2.5 sm:grid-cols-2">
                           {savedAddresses.map((addr) => {
@@ -1020,23 +1022,23 @@ export function CheckoutPage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <label className="block text-xs font-bold text-[#2B0B4E]">
-                          Full Name *
+                          {t('fullName')} *
                         </label>
                         <input
                           type="text"
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
-                          placeholder="Enter recipient full name"
+                          placeholder={t('fullName')}
                           className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:outline-none"
                         />
                         {formErrors.fullName && (
-                          <p className="mt-1 text-xs text-rose-600">{formErrors.fullName}</p>
+                          <p className="mt-1 text-xs text-[#C81E68]">{formErrors.fullName}</p>
                         )}
                       </div>
 
                       <div>
                         <label className="block text-xs font-bold text-[#2B0B4E]">
-                          Mobile Number *
+                          {t('phoneNumber')} *
                         </label>
                         <div className="mt-1 flex h-10 items-center overflow-hidden rounded-xl border border-[#DFD2F2] bg-white focus-within:border-[#6A11CB]">
                           <span className="flex h-full items-center border-r border-[#EFE3FF] bg-[#FAF6FF] px-3 text-xs font-bold text-[#6A11CB]">
@@ -1049,18 +1051,18 @@ export function CheckoutPage() {
                             onChange={(e) =>
                               setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
                             }
-                            placeholder="10-digit mobile"
+                            placeholder={t('phoneNumber')}
                             className="h-full w-full px-3 text-sm text-[#1E1035] focus:outline-none"
                           />
                         </div>
                         {formErrors.phone && (
-                          <p className="mt-1 text-xs text-rose-600">{formErrors.phone}</p>
+                          <p className="mt-1 text-xs text-[#C81E68]">{formErrors.phone}</p>
                         )}
                       </div>
 
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-bold text-[#2B0B4E]">
-                          Email Address
+                          {t('emailAddress')}
                         </label>
                         <input
                           type="email"
@@ -1070,23 +1072,23 @@ export function CheckoutPage() {
                           className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:outline-none"
                         />
                         {formErrors.email && (
-                          <p className="mt-1 text-xs text-rose-600">{formErrors.email}</p>
+                          <p className="mt-1 text-xs text-[#C81E68]">{formErrors.email}</p>
                         )}
                       </div>
 
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-bold text-[#2B0B4E]">
-                          House / Flat / Building / Street *
+                          {t('addressLine')} *
                         </label>
                         <input
                           type="text"
                           value={addressLine1}
                           onChange={(e) => setAddressLine1(e.target.value)}
-                          placeholder="e.g., Mukherjee Road, House No. 12"
+                          placeholder={t('addressLine')}
                           className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:outline-none"
                         />
                         {formErrors.addressLine1 && (
-                          <p className="mt-1 text-xs text-rose-600">
+                          <p className="mt-1 text-xs text-[#C81E68]">
                             {formErrors.addressLine1}
                           </p>
                         )}
@@ -1094,37 +1096,37 @@ export function CheckoutPage() {
 
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-bold text-[#2B0B4E]">
-                          Landmark (Optional)
+                          {t('landmarkOptional')}
                         </label>
                         <input
                           type="text"
                           value={landmark}
                           onChange={(e) => setLandmark(e.target.value)}
-                          placeholder="e.g., Near Jalchak High School"
+                          placeholder={t('landmarkOptional')}
                           className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:outline-none"
                         />
                       </div>
 
                       <div>
                         <label className="block text-xs font-bold text-[#2B0B4E]">
-                          PIN Code *
+                          {t('pincode')} *
                         </label>
                         <input
                           type="text"
                           maxLength={6}
                           value={pincode}
                           onChange={(e) => handlePinChange(e.target.value)}
-                          placeholder="e.g., 721155"
+                          placeholder="721155"
                           className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 font-mono text-sm text-[#1E1035] focus:border-[#6A11CB] focus:outline-none"
                         />
                         {formErrors.pincode && (
-                          <p className="mt-1 text-xs text-rose-600">{formErrors.pincode}</p>
+                          <p className="mt-1 text-xs text-[#C81E68]">{formErrors.pincode}</p>
                         )}
                       </div>
 
                       <div>
                         <label className="block text-xs font-bold text-[#2B0B4E]">
-                          State *
+                          {t('state')} *
                         </label>
                         <select
                           value={stateName}
@@ -1138,49 +1140,55 @@ export function CheckoutPage() {
                           ))}
                         </select>
                         {formErrors.state && (
-                          <p className="mt-1 text-xs text-rose-600">{formErrors.state}</p>
+                          <p className="mt-1 text-xs text-[#C81E68]">{formErrors.state}</p>
                         )}
                       </div>
 
                       <div>
                         <label className="block text-xs font-bold text-[#2B0B4E]">
-                          City / District *
+                          {t('city')} *
                         </label>
                         <input
                           type="text"
                           value={city}
                           onChange={(e) => setCity(e.target.value)}
-                          placeholder="e.g., Paschim Medinipur"
+                          placeholder={t('city')}
                           className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:outline-none"
                         />
                         {formErrors.city && (
-                          <p className="mt-1 text-xs text-rose-600">{formErrors.city}</p>
+                          <p className="mt-1 text-xs text-[#C81E68]">{formErrors.city}</p>
                         )}
                       </div>
 
                       <div>
                         <label className="block text-xs font-bold text-[#2B0B4E]">
-                          Area / Locality *
+                          {t('areaLocality')} *
                         </label>
                         <input
                           type="text"
                           value={area}
                           onChange={(e) => setArea(e.target.value)}
-                          placeholder="e.g., Jalchak"
+                          placeholder={t('areaLocality')}
                           className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:outline-none"
                         />
                         {formErrors.area && (
-                          <p className="mt-1 text-xs text-rose-600">{formErrors.area}</p>
+                          <p className="mt-1 text-xs text-[#C81E68]">{formErrors.area}</p>
                         )}
                       </div>
                     </div>
 
                     {/* Address Type */}
                     <div>
-                      <p className="text-xs font-bold text-[#2B0B4E]">Address Type *</p>
+                      <p className="text-xs font-bold text-[#2B0B4E]">{t('deliveryAddress')} *</p>
                       <div className="mt-2 grid grid-cols-3 gap-2.5">
-                        {DESKTOP_ADDRESS_TYPE_OPTIONS.map(({ value, label, Icon }) => {
+                        {DESKTOP_ADDRESS_TYPE_OPTIONS.map(({ value, Icon }) => {
                           const active = addressType === value;
+                          const labelText =
+                            value === 'Home'
+                              ? t('homeLabel')
+                              : value === 'Work'
+                                ? t('workLabel')
+                                : t('otherLabel');
                           return (
                             <button
                               key={value}
@@ -1193,7 +1201,7 @@ export function CheckoutPage() {
                               }`}
                             >
                               <Icon className="h-3.5 w-3.5" />
-                              <span>{label}</span>
+                              <span>{labelText}</span>
                             </button>
                           );
                         })}
@@ -1207,14 +1215,14 @@ export function CheckoutPage() {
                         onChange={(e) => setSaveForFuture(e.target.checked)}
                         className="h-4 w-4 accent-[#6A11CB]"
                       />
-                      <span>Save this address for future orders</span>
+                      <span>{t('saveAddress')}</span>
                     </label>
 
                     <button
                       type="submit"
                       className="flex h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] text-sm font-bold text-white shadow-[0_10px_24px_-8px_rgba(106,17,203,0.45)] transition-all hover:opacity-95"
                     >
-                      Continue to Confirm Details →
+                      {t('continueBtn')} →
                     </button>
                   </form>
                 )}
@@ -1232,7 +1240,7 @@ export function CheckoutPage() {
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="text-xs font-bold uppercase tracking-wider text-[#7A6894]">
-                                Delivering To
+                                {t('deliveryAddress')}
                               </p>
                               <span className="rounded bg-[#F4EBFF] px-2 py-0.5 text-[10px] font-bold text-[#6A11CB]">
                                 {addressType}
@@ -1255,7 +1263,7 @@ export function CheckoutPage() {
                           onClick={() => setStep(1)}
                           className="cursor-pointer rounded-lg border border-[#DFD2F2] bg-[#FAF6FF] px-3 py-1.5 text-xs font-bold text-[#6A11CB] hover:bg-[#F1E4FF]"
                         >
-                          Change
+                          {t('change')}
                         </button>
                       </div>
                     </div>
@@ -1263,7 +1271,7 @@ export function CheckoutPage() {
                     {/* Ordered Items Review */}
                     <div className="rounded-2xl border border-[#EFE3FF] bg-white p-5 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.12)]">
                       <h2 className="mb-3.5 text-base font-extrabold text-[#1E1035]">
-                        Review Items ({items.reduce((s, i) => s + i.quantity, 0)})
+                        {t('orderItems')} ({items.reduce((s, i) => s + i.quantity, 0)})
                       </h2>
                       <div className="divide-y divide-[#EFE3FF]">
                         {items.map((item) => (
@@ -1333,14 +1341,14 @@ export function CheckoutPage() {
                     {/* Apply Coupon Card */}
                     <div className="rounded-2xl border border-[#EFE3FF] bg-white p-5 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.12)]">
                       <h3 className="text-sm font-extrabold text-[#1E1035]">
-                        Apply Coupon
+                        {t('applyCoupon')}
                       </h3>
                       <div className="mt-2.5 flex gap-2">
                         <input
                           type="text"
                           value={couponInput}
                           onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                          placeholder="Enter coupon code"
+                          placeholder={t('enterPromoCode')}
                           className="h-10 flex-1 rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] px-3.5 font-mono text-xs font-bold text-[#2B0B4E] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
                         />
                         <Button
@@ -1349,7 +1357,7 @@ export function CheckoutPage() {
                           size="sm"
                           onClick={() => void handleApplyCoupon(couponInput)}
                         >
-                          Apply
+                          {t('apply')}
                         </Button>
                       </div>
                       {activeCoupons.length > 0 && (
@@ -1376,7 +1384,7 @@ export function CheckoutPage() {
                           className={`mt-2 text-xs font-semibold ${
                             couponFeedback.type === 'success'
                               ? 'text-emerald-700'
-                              : 'text-rose-600'
+                              : 'text-[#C81E68]'
                           }`}
                         >
                           {couponFeedback.message}
@@ -1392,7 +1400,7 @@ export function CheckoutPage() {
                       }}
                       className="flex h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] text-sm font-bold text-white shadow-[0_10px_24px_-8px_rgba(106,17,203,0.45)] transition-all hover:opacity-95"
                     >
-                      Continue to Payment →
+                      {t('continueBtn')} →
                     </button>
                   </div>
                 )}
@@ -1403,10 +1411,10 @@ export function CheckoutPage() {
                     <div className="flex items-center justify-between gap-2">
                       <div>
                         <h2 className="text-lg font-extrabold text-[#1E1035]">
-                          Step 3 · Choose Payment Method
+                          3 · {t('paymentMethod')}
                         </h2>
                         <p className="text-xs text-[#685782]">
-                          Select how you would like to pay for your GiftKart order.
+                          {t('codDesc')}
                         </p>
                       </div>
                       <button
@@ -1414,7 +1422,7 @@ export function CheckoutPage() {
                         onClick={() => setStep(2)}
                         className="cursor-pointer text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
                       >
-                        ← Back to Review
+                        ← {t('back')}
                       </button>
                     </div>
 
@@ -1429,14 +1437,14 @@ export function CheckoutPage() {
                             <div className="flex items-center gap-2">
                               <PackageCheck className="h-4 w-4 text-[#6A11CB]" />
                               <span className="text-sm font-extrabold text-[#1E1035]">
-                                Cash on Delivery (COD)
+                                {t('codLabel')}
                               </span>
                               <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                                Available
+                                {t('available')}
                               </span>
                             </div>
                             <p className="mt-1 text-xs leading-relaxed text-[#594A6B]">
-                              Pay in cash at your doorstep when your GiftKart order arrives. No extra COD charges.
+                              {t('codDesc')}
                             </p>
                           </div>
                         </div>
@@ -1455,7 +1463,7 @@ export function CheckoutPage() {
                             <div className="flex items-center gap-2">
                               <CreditCard className="h-4 w-4 text-[#7A6894]" />
                               <span className="text-sm font-bold text-[#4B3963]">
-                                UPI Payment (GPay / PhonePe / Paytm)
+                                {t('onlinePaymentLabel')} (UPI)
                               </span>
                               <span className="rounded bg-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-700">
                                 Coming Soon
@@ -1473,7 +1481,7 @@ export function CheckoutPage() {
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-[#EFE3FF] bg-[#FCFAFF] px-4 py-3 text-xs">
                       <div className="min-w-0">
                         <p className="font-bold text-[#1E1035]">
-                          Delivering to {fullName} ({addressType})
+                          {t('deliveryAddress')}: {fullName} ({addressType})
                         </p>
                         <p className="truncate text-[#685782]">{formattedAddressPreview}</p>
                       </div>
@@ -1482,7 +1490,7 @@ export function CheckoutPage() {
                         onClick={() => setStep(1)}
                         className="shrink-0 cursor-pointer font-bold text-[#6A11CB] hover:underline"
                       >
-                        Edit
+                        {t('edit')}
                       </button>
                     </div>
 
@@ -1495,8 +1503,8 @@ export function CheckoutPage() {
                       <Lock className="h-4 w-4" />
                       <span>
                         {submitting
-                          ? 'Placing Order...'
-                          : `Place Order (COD) · ${formatInr(pricing.grandTotalInr)}`}
+                          ? t('placingOrder')
+                          : `${t('placeOrder')} · ${formatInr(pricing.grandTotalInr)}`}
                       </span>
                     </button>
                   </div>
@@ -1506,7 +1514,7 @@ export function CheckoutPage() {
               {/* Right Sticky Order Price Summary */}
               <aside className="space-y-4 rounded-2xl border border-[#EFE3FF] bg-white p-6 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.12)] lg:col-span-5 lg:sticky lg:top-28">
                 <h2 className="text-base font-extrabold text-[#1E1035]">
-                  Order Summary ({items.reduce((s, i) => s + i.quantity, 0)} items)
+                  {t('orderSummary')} ({items.reduce((s, i) => s + i.quantity, 0)} {t('items')})
                 </h2>
 
                 <ul className="divide-y divide-[#F3EAFF] text-xs">
@@ -1535,21 +1543,21 @@ export function CheckoutPage() {
                 <dl className="space-y-2 border-t border-[#EFE3FF] pt-3.5 text-sm">
                   {pricing.productSavings > 0 && (
                     <div className="flex justify-between text-emerald-700">
-                      <span>Product Savings</span>
+                      <span>{t('productDiscount')}</span>
                       <span className="font-mono font-bold tabular-nums">
                         -{formatInr(pricing.productSavings)}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-[#594A6B]">
-                    <span>Items Subtotal</span>
+                    <span>{t('subtotal')}</span>
                     <span className="font-mono font-bold tabular-nums text-[#1E1035]">
                       {formatInr(subtotalInr)}
                     </span>
                   </div>
                   {giftWrap.enabled && (
                     <div className="flex justify-between text-[#594A6B]">
-                      <span>Gift Wrapping</span>
+                      <span>{t('giftWrapCharge')}</span>
                       <span className="font-mono font-bold tabular-nums text-[#1E1035]">
                         {formatInr(giftWrapChargeInr)}
                       </span>
@@ -1557,18 +1565,18 @@ export function CheckoutPage() {
                   )}
                   {couponDiscount > 0 && (
                     <div className="flex justify-between text-emerald-700">
-                      <span>Coupon ({appliedCouponCode})</span>
+                      <span>{t('couponDiscount')} ({appliedCouponCode})</span>
                       <span className="font-mono font-bold tabular-nums">
                         -{formatInr(couponDiscount)}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-[#594A6B]">
-                    <span>Delivery</span>
-                    <span className="font-bold text-emerald-700">FREE</span>
+                    <span>{t('deliveryCharge')}</span>
+                    <span className="font-bold text-emerald-700">{t('free')}</span>
                   </div>
                   <div className="flex justify-between border-t border-[#EFE3FF] pt-3 text-base font-extrabold text-[#1E1035]">
-                    <span>Order Total</span>
+                    <span>{t('grandTotal')}</span>
                     <span className="font-mono tabular-nums text-[#6A11CB]">
                       {formatInr(pricing.grandTotalInr)}
                     </span>
@@ -1578,7 +1586,7 @@ export function CheckoutPage() {
                 {pricing.totalSavings > 0 && (
                   <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-xs font-bold text-emerald-800">
                     <BadgePercent className="h-4 w-4 shrink-0" />
-                    <span>Saving {formatInr(pricing.totalSavings)} on this order</span>
+                    <span>{t('discount')}: {formatInr(pricing.totalSavings)}</span>
                   </div>
                 )}
               </aside>
@@ -1609,6 +1617,7 @@ const ORDER_BURST_PARTICLES: {
 
 export function OrderConfirmationPage() {
   const { orderNumber } = useParams();
+  const { t } = useLanguage();
   const [order, setOrder] = useState<DemoOrder | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -1644,11 +1653,11 @@ export function OrderConfirmationPage() {
     return (
       <div className="mx-auto max-w-md px-4 py-12">
         <EmptyState
-          title="Order details unavailable"
-          description="You can view all your orders and live status directly inside My Orders."
+          title={t('noOrdersYet')}
+          description={t('noOrdersDesc')}
           action={
             <Link to="/my-orders">
-              <Button size="sm">My Orders</Button>
+              <Button size="sm">{t('myOrders')}</Button>
             </Link>
           }
         />
@@ -1710,10 +1719,10 @@ export function OrderConfirmationPage() {
         {/* Title & Confirmation Copy */}
         <div className="gk-anim-slide-up-1 mt-2">
           <h1 className="text-[24px] font-extrabold tracking-[-0.02em] text-[#2B0B4E]">
-            Order Placed Successfully!
+            {t('orderConfirmedTitle')}
           </h1>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#5B4775]">
-            Thank you, <span className="font-bold text-[#2B0B4E]">{order.customer.fullName}</span>! Your GiftKart order has been confirmed.
+            {t('orderConfirmedDesc')}
           </p>
         </div>
 
@@ -1749,25 +1758,25 @@ export function OrderConfirmationPage() {
 
           <div className="mt-3.5 space-y-2 border-t border-[#EFE3FF] pt-3 text-[12.5px]">
             <div className="flex items-start justify-between gap-3">
-              <span className="text-[#6E5B85]">Delivery Address</span>
+              <span className="text-[#6E5B85]">{t('deliveryAddress')}</span>
               <span className="max-w-[65%] text-right font-semibold leading-snug text-[#2B0B4E]">
                 {order.customer.addressLine1}, {order.customer.city} - {order.customer.pincode}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[#6E5B85]">Payment Method</span>
+              <span className="text-[#6E5B85]">{t('paymentMethod')}</span>
               <span className="font-bold text-[#2B0B4E]">
-                {order.paymentMethod || 'Cash on Delivery (COD)'}
+                {order.paymentMethod || t('codLabel')}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[#6E5B85]">Order Date</span>
+              <span className="text-[#6E5B85]">{t('orderDate')}</span>
               <span className="font-semibold text-[#2B0B4E]">
                 {formatDateTime(order.createdAt)}
               </span>
             </div>
             <div className="flex items-center justify-between border-t border-[#EFE3FF] pt-2.5 text-[15px] font-extrabold text-[#2B0B4E]">
-              <span>Order Total</span>
+              <span>{t('grandTotal')}</span>
               <span className="tabular-nums text-[#6A11CB]">
                 {formatInr(order.grandTotalInr)}
               </span>
@@ -1782,7 +1791,7 @@ export function OrderConfirmationPage() {
             className="flex h-[52px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[16px] font-extrabold text-white shadow-[0_8px_22px_-4px_rgba(162,28,175,0.48)] transition-transform active:scale-[0.985]"
           >
             <Package className="h-[19px] w-[19px] shrink-0 stroke-[2.2]" />
-            <span>My Orders</span>
+            <span>{t('myOrders')}</span>
             <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.5]" />
           </Link>
         </div>

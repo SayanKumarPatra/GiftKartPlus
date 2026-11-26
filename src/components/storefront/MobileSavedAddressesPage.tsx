@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useSavedAddresses, useStoreSettings } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
 import type { SavedAddress } from '../../types';
@@ -131,6 +132,7 @@ export function MobileSavedAddressesPage() {
   const { data: settings } = useStoreSettings();
   const { customerAccount } = useAuth();
   const { pushToast } = useToast();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -432,7 +434,7 @@ export function MobileSavedAddressesPage() {
             <ArrowLeft className="h-[18px] w-[18px] stroke-[2.3]" />
           </button>
           <h1 className="text-[16px] font-extrabold leading-tight tracking-[-0.01em] text-[#1E0A3C]">
-            {editingAddress ? 'Edit Address' : 'Add New Address'}
+            {editingAddress ? t('editAddress') : t('addNewAddress')}
           </h1>
         </div>
 
@@ -457,7 +459,7 @@ export function MobileSavedAddressesPage() {
                       htmlFor="gk-addr-name"
                       className="block text-[11px] font-bold leading-tight text-[#1E0A3C]"
                     >
-                      Full Name <span className="text-[#FF4D8D]">*</span>
+                      {t('fullName')} <span className="text-[#FF4D8D]">*</span>
                     </label>
                     <input
                       id="gk-addr-name"
@@ -468,10 +470,10 @@ export function MobileSavedAddressesPage() {
                         setFullName(e.target.value);
                         clearFieldError('fullName');
                       }}
-                      placeholder="Enter full name"
+                      placeholder={t('fullName')}
                       className={`${inputBase} ${
                         invalidFields.fullName
-                          ? 'border-rose-500 bg-rose-50/40'
+                          ? 'border-[#FF4D8D] bg-[#FFF0F6]'
                           : 'border-[#DDD0F2]'
                       }`}
                     />
@@ -489,12 +491,12 @@ export function MobileSavedAddressesPage() {
                       htmlFor="gk-addr-phone"
                       className="block text-[11px] font-bold leading-tight text-[#1E0A3C]"
                     >
-                      Mobile Number <span className="text-[#FF4D8D]">*</span>
+                      {t('phoneNumber')} <span className="text-[#FF4D8D]">*</span>
                     </label>
                     <div
                       className={`mt-0.5 flex h-[31px] w-full items-center rounded-[9px] border bg-white px-2.5 focus-within:border-[#6A11CB] focus-within:ring-2 focus-within:ring-[#6A11CB]/12 ${
                         invalidFields.phone
-                          ? 'border-rose-500 bg-rose-50/40'
+                          ? 'border-[#FF4D8D] bg-[#FFF0F6]'
                           : 'border-[#DDD0F2]'
                       }`}
                     >
@@ -512,7 +514,7 @@ export function MobileSavedAddressesPage() {
                           setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
                           clearFieldError('phone');
                         }}
-                        placeholder="Enter mobile number"
+                        placeholder={t('phoneNumber')}
                         className="h-full min-w-0 flex-1 bg-transparent text-[12.5px] font-medium text-[#1E0A3C] placeholder:text-[#9686AC] focus:outline-none"
                       />
                     </div>
@@ -530,7 +532,7 @@ export function MobileSavedAddressesPage() {
                       htmlFor="gk-addr-email"
                       className="block text-[11px] font-bold leading-tight text-[#1E0A3C]"
                     >
-                      Email Address
+                      {t('emailAddress')}
                     </label>
                     <input
                       id="gk-addr-email"
@@ -541,10 +543,10 @@ export function MobileSavedAddressesPage() {
                         setEmail(e.target.value);
                         clearFieldError('email');
                       }}
-                      placeholder="Enter email address"
+                      placeholder={t('emailAddress')}
                       className={`${inputBase} ${
                         invalidFields.email
-                          ? 'border-rose-500 bg-rose-50/40'
+                          ? 'border-[#FF4D8D] bg-[#FFF0F6]'
                           : 'border-[#DDD0F2]'
                       }`}
                     />
@@ -562,7 +564,7 @@ export function MobileSavedAddressesPage() {
                       htmlFor="gk-addr-street"
                       className="block text-[11px] font-bold leading-tight text-[#1E0A3C]"
                     >
-                      House / Flat / Building / Street{' '}
+                      {t('addressLine')}{' '}
                       <span className="text-[#FF4D8D]">*</span>
                     </label>
                     <input
@@ -574,10 +576,10 @@ export function MobileSavedAddressesPage() {
                         setAddressLine1(e.target.value);
                         clearFieldError('addressLine1');
                       }}
-                      placeholder="e.g. Mukharjee Road, House No. 12"
+                      placeholder={t('addressLine')}
                       className={`${inputBase} ${
                         invalidFields.addressLine1
-                          ? 'border-rose-500 bg-rose-50/40'
+                          ? 'border-[#FF4D8D] bg-[#FFF0F6]'
                           : 'border-[#DDD0F2]'
                       }`}
                     />
@@ -595,15 +597,14 @@ export function MobileSavedAddressesPage() {
                       htmlFor="gk-addr-landmark"
                       className="block text-[11px] font-bold leading-tight text-[#1E0A3C]"
                     >
-                      Landmark{' '}
-                      <span className="font-medium text-[#7D6A96]">(Optional)</span>
+                      {t('landmarkOptional')}
                     </label>
                     <input
                       id="gk-addr-landmark"
                       type="text"
                       value={landmark}
                       onChange={(e) => setLandmark(e.target.value)}
-                      placeholder="e.g. Near Jalchak School"
+                      placeholder={t('landmarkOptional')}
                       className={`${inputBase} border-[#DDD0F2]`}
                     />
                   </div>
@@ -621,7 +622,7 @@ export function MobileSavedAddressesPage() {
                         htmlFor="gk-addr-pin"
                         className="block text-[11px] font-bold leading-tight text-[#1E0A3C]"
                       >
-                        PIN Code <span className="text-[#FF4D8D]">*</span>
+                        {t('pincode')} <span className="text-[#FF4D8D]">*</span>
                       </label>
                       <input
                         id="gk-addr-pin"
@@ -631,10 +632,10 @@ export function MobileSavedAddressesPage() {
                         maxLength={6}
                         value={pincode}
                         onChange={(e) => handlePinChange(e.target.value)}
-                        placeholder="e.g. 721155"
+                        placeholder="721155"
                         className={`${inputBase} font-mono tabular-nums ${
                           invalidFields.pincode
-                            ? 'border-rose-500 bg-rose-50/40'
+                            ? 'border-[#FF4D8D] bg-[#FFF0F6]'
                             : 'border-[#DDD0F2]'
                         }`}
                       />
@@ -645,7 +646,7 @@ export function MobileSavedAddressesPage() {
                         htmlFor="gk-addr-state"
                         className="block text-[11px] font-bold leading-tight text-[#1E0A3C]"
                       >
-                        State <span className="text-[#FF4D8D]">*</span>
+                        {t('state')} <span className="text-[#FF4D8D]">*</span>
                       </label>
                       <div className="relative mt-0.5">
                         <input
@@ -657,10 +658,10 @@ export function MobileSavedAddressesPage() {
                             setStateName(e.target.value);
                             clearFieldError('state');
                           }}
-                          placeholder="State"
+                          placeholder={t('state')}
                           className={`h-[31px] w-full rounded-[9px] border bg-white pl-2.5 pr-6 text-[12.5px] font-medium text-[#1E0A3C] placeholder:text-[#9686AC] focus:border-[#6A11CB] focus:outline-none focus:ring-2 focus:ring-[#6A11CB]/12 ${
                             invalidFields.state
-                              ? 'border-rose-500 bg-rose-50/40'
+                              ? 'border-[#FF4D8D] bg-[#FFF0F6]'
                               : 'border-[#DDD0F2]'
                           }`}
                         />
@@ -685,7 +686,7 @@ export function MobileSavedAddressesPage() {
                       htmlFor="gk-addr-city"
                       className="block text-[11px] font-bold leading-tight text-[#1E0A3C]"
                     >
-                      City / District <span className="text-[#FF4D8D]">*</span>
+                      {t('city')} <span className="text-[#FF4D8D]">*</span>
                     </label>
                     <input
                       id="gk-addr-city"
@@ -695,10 +696,10 @@ export function MobileSavedAddressesPage() {
                         setCity(e.target.value);
                         clearFieldError('city');
                       }}
-                      placeholder="City / District"
+                      placeholder={t('city')}
                       className={`${inputBase} ${
                         invalidFields.city
-                          ? 'border-rose-500 bg-rose-50/40'
+                          ? 'border-[#FF4D8D] bg-[#FFF0F6]'
                           : 'border-[#DDD0F2]'
                       }`}
                     />
@@ -709,7 +710,7 @@ export function MobileSavedAddressesPage() {
                       htmlFor="gk-addr-area"
                       className="block text-[11px] font-bold leading-tight text-[#1E0A3C]"
                     >
-                      Area / Locality <span className="text-[#FF4D8D]">*</span>
+                      {t('areaLocality')} <span className="text-[#FF4D8D]">*</span>
                     </label>
                     <input
                       id="gk-addr-area"
@@ -719,10 +720,10 @@ export function MobileSavedAddressesPage() {
                         setArea(e.target.value);
                         clearFieldError('area');
                       }}
-                      placeholder="Area / Locality"
+                      placeholder={t('areaLocality')}
                       className={`${inputBase} ${
                         invalidFields.area
-                          ? 'border-rose-500 bg-rose-50/40'
+                          ? 'border-[#FF4D8D] bg-[#FFF0F6]'
                           : 'border-[#DDD0F2]'
                       }`}
                     />
@@ -739,7 +740,7 @@ export function MobileSavedAddressesPage() {
                   className="h-3.5 w-3.5 text-[#6A11CB] stroke-[2.1]"
                 />
                 <span className="text-[12px] font-extrabold text-[#1E0A3C]">
-                  Address Type <span className="text-[#FF4D8D]">*</span>
+                  {t('deliveryAddress')} <span className="text-[#FF4D8D]">*</span>
                 </span>
               </div>
 
@@ -756,6 +757,12 @@ export function MobileSavedAddressesPage() {
                   ] as const
                 ).map(({ key, Icon }) => {
                   const selected = addressType === key;
+                  const labelText =
+                    key === 'Home'
+                      ? t('homeLabel')
+                      : key === 'Work'
+                        ? t('workLabel')
+                        : t('otherLabel');
                   return (
                     <button
                       key={key}
@@ -775,7 +782,7 @@ export function MobileSavedAddressesPage() {
                           selected ? 'text-white' : 'text-[#6A11CB]'
                         }`}
                       />
-                      <span>{key}</span>
+                      <span>{labelText}</span>
                       {selected && (
                         <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-white text-[#6A11CB]">
                           <Check className="h-2.5 w-2.5 stroke-[3.2]" />
@@ -797,7 +804,7 @@ export function MobileSavedAddressesPage() {
                   className="h-[16px] w-[16px] shrink-0 rounded accent-[#6A11CB]"
                 />
                 <span className="text-[12.5px] font-semibold leading-tight text-[#1E0A3C]">
-                  Set as Default Address
+                  {t('setAsDefault')}
                 </span>
               </label>
 
@@ -811,7 +818,7 @@ export function MobileSavedAddressesPage() {
                   className="h-[16px] w-[16px] shrink-0 rounded accent-[#6A11CB]"
                 />
                 <span className="text-[12.5px] font-semibold leading-tight text-[#1E0A3C]">
-                  Save this address for future orders
+                  {t('saveAddress')}
                 </span>
               </label>
             </div>
@@ -819,7 +826,7 @@ export function MobileSavedAddressesPage() {
             {errorMessage && (
               <p
                 role="alert"
-                className="truncate rounded-lg bg-rose-50 px-2.5 py-1 text-[11.5px] font-semibold text-rose-700"
+                className="truncate rounded-lg bg-[#FFF0F6] px-2.5 py-1 text-[11.5px] font-semibold text-[#C81E68]"
               >
                 {errorMessage}
               </p>
@@ -833,7 +840,7 @@ export function MobileSavedAddressesPage() {
             className="flex h-[42px] w-full shrink-0 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A11FC1] to-[#FF4D8D] text-[14.5px] font-extrabold text-white shadow-[0_6px_18px_rgba(106,17,203,0.3)] transition-transform active:scale-[0.985] disabled:opacity-60"
           >
             <Save aria-hidden="true" className="h-4 w-4 stroke-[2.2]" />
-            <span>{saving ? 'Saving...' : 'Save Address'}</span>
+            <span>{saving ? '...' : t('saveAddress')}</span>
           </button>
         </form>
       </div>
@@ -856,7 +863,7 @@ export function MobileSavedAddressesPage() {
           <ArrowLeft className="h-[19px] w-[19px] stroke-[2.3]" />
         </button>
         <h1 className="text-[17px] font-extrabold tracking-[-0.01em] text-[#1E0A3C]">
-          Saved Addresses
+          {t('savedAddresses')}
         </h1>
       </div>
 
@@ -884,7 +891,7 @@ export function MobileSavedAddressesPage() {
                     <div className="min-w-0">
                       {isSelected && (
                         <span className="mb-1 inline-flex rounded-full bg-[#6A11CB] px-2.5 py-0.5 text-[10px] font-bold leading-tight text-white">
-                          Default
+                          {t('defaultAddress')}
                         </span>
                       )}
                       <p className="truncate text-[14.5px] font-extrabold leading-snug text-[#1E0A3C]">
@@ -956,7 +963,7 @@ export function MobileSavedAddressesPage() {
                   className="flex h-[38px] items-center justify-center gap-1.5 border-r border-[#EBD8FF]/80 text-[12.5px] font-bold text-[#4B148C] transition-colors active:bg-[#F3E7FF]"
                 >
                   <SquarePen aria-hidden="true" className="h-3.5 w-3.5 text-[#6A11CB]" />
-                  <span>Edit</span>
+                  <span>{t('edit')}</span>
                 </button>
                 <button
                   type="button"
@@ -964,10 +971,10 @@ export function MobileSavedAddressesPage() {
                     e.stopPropagation();
                     void handleDeleteAddress(addr.id);
                   }}
-                  className="flex h-[38px] items-center justify-center gap-1.5 text-[12.5px] font-bold text-[#4B148C] transition-colors active:bg-rose-50 active:text-rose-600"
+                  className="flex h-[38px] items-center justify-center gap-1.5 text-[12.5px] font-bold text-[#4B148C] transition-colors active:bg-[#FFF0F6] active:text-[#C81E68]"
                 >
                   <Trash2 aria-hidden="true" className="h-3.5 w-3.5 text-[#6A11CB]" />
-                  <span>Remove</span>
+                  <span>{t('remove')}</span>
                 </button>
               </div>
             </div>
@@ -984,7 +991,7 @@ export function MobileSavedAddressesPage() {
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#6A11CB] text-white">
           <Plus aria-hidden="true" className="h-4 w-4 stroke-[2.6]" />
         </span>
-        <span>Add New Address</span>
+        <span>{t('addNewAddress')}</span>
       </button>
     </div>
   );

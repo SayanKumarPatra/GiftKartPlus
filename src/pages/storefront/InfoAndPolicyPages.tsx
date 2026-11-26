@@ -17,11 +17,13 @@ import {
 } from 'lucide-react';
 import { useStoreSettings } from '../../hooks/useStoreData';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { buildWhatsAppSupportUrl } from '../../utils/storefrontHelpers';
 import { MobileHelpSupportPage } from '../../components/storefront/MobileHelpSupportPage';
 
 export function AboutUsPage() {
   const { data: settings } = useStoreSettings();
+  const { t } = useLanguage();
   const activeZonesText =
     settings?.deliveryZones
       .filter((z) => z.isActive)
@@ -36,10 +38,10 @@ export function AboutUsPage() {
         className="flex items-center gap-1.5 text-[12px] text-neutral-500"
       >
         <Link to="/" className="transition-colors hover:text-neutral-900">
-          Home
+          {t('home')}
         </Link>
         <span aria-hidden="true">/</span>
-        <span className="text-neutral-800">About GiftKart</span>
+        <span className="text-neutral-800">{t('aboutUs')}</span>
       </nav>
 
       {/* Editorial Header */}
@@ -164,7 +166,7 @@ export function AboutUsPage() {
           to="/shop"
           className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded border border-neutral-900 bg-neutral-900 px-3.5 py-1.5 text-[12.5px] font-medium text-white transition-colors hover:bg-neutral-800"
         >
-          <span>Browse Products</span>
+          <span>{t('exploreGifts')}</span>
           <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       </section>
@@ -189,6 +191,7 @@ const DESKTOP_SUPPORT_TOPICS = [
 export function ContactUsPage() {
   const { data: settings } = useStoreSettings();
   const { customerAccount, isAuthReady } = useAuth();
+  const { t } = useLanguage();
   const [selectedTopic, setSelectedTopic] = useState<string>('');
   const [issueNote, setIssueNote] = useState('');
 
@@ -220,10 +223,10 @@ export function ContactUsPage() {
               className="mx-auto h-44 w-auto object-contain drop-shadow-[0_10px_22px_rgba(106,17,203,0.12)]"
             />
             <h1 className="mt-4 font-display text-2xl font-bold text-[#1E1035]">
-              Help &amp; Support
+              {t('helpSupport')}
             </h1>
             <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-[#594A6B]">
-              Please log in to get support and contact our team directly on WhatsApp.
+              {t('signInPrompt')}
             </p>
             <div className="mx-auto mt-6 flex max-w-sm flex-col gap-3">
               <Link
@@ -233,7 +236,7 @@ export function ContactUsPage() {
               >
                 <span className="flex items-center gap-2.5">
                   <User className="h-4 w-4" />
-                  <span>Login / Sign In</span>
+                  <span>{t('signIn')}</span>
                 </span>
                 <ChevronRight className="h-4 w-4" />
               </Link>
@@ -243,7 +246,7 @@ export function ContactUsPage() {
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#DFD2F2] bg-[#FAF6FF] px-5 text-sm font-bold text-[#6A11CB] transition-colors hover:bg-[#F2E7FF]"
               >
                 <UserPlus className="h-4 w-4" />
-                <span>Create New Account</span>
+                <span>{t('createAccount')}</span>
               </Link>
             </div>
           </div>
@@ -253,10 +256,10 @@ export function ContactUsPage() {
             <div className="flex items-center justify-between gap-6 rounded-2xl border border-[#EFE3FF] bg-gradient-to-r from-[#FAF5FF] via-white to-[#FFF4FA] px-8 py-6">
               <div className="max-w-xl">
                 <p className="text-xs font-bold uppercase tracking-wider text-[#6A11CB]">
-                  GiftKart Customer Care
+                  {t('footerSupport')}
                 </p>
                 <h1 className="mt-1 font-display text-3xl font-bold text-[#1E1035]">
-                  Help &amp; Support
+                  {t('helpSupport')}
                 </h1>
                 <p className="mt-1.5 text-sm text-[#594A6B]">
                   Hi <strong className="text-[#1E1035]">{customerAccount.fullName}</strong>, we&apos;re
@@ -376,7 +379,7 @@ export function ContactUsPage() {
                   >
                     <span className="flex items-center gap-2">
                       <MessageCircle className="h-4 w-4" />
-                      <span>Chat on WhatsApp</span>
+                      <span>{t('chatOnWhatsApp')}</span>
                     </span>
                     <ChevronRight className="h-4 w-4" />
                   </a>
@@ -384,14 +387,14 @@ export function ContactUsPage() {
 
                 <div className="rounded-2xl border border-[#EFE3FF] bg-white p-5">
                   <p className="text-xs font-bold uppercase tracking-wider text-[#7A6894]">
-                    Helpful Self-Service Links
+                    {t('quickLinks')}
                   </p>
                   <div className="mt-2.5 divide-y divide-[#F3EAFF] text-xs font-semibold">
                     {[
-                      { label: 'Track & Manage My Orders', to: '/my-orders' },
-                      { label: 'Frequently Asked Questions (FAQ)', to: '/faq' },
-                      { label: 'Return & Refund Policy', to: '/return-policy' },
-                      { label: 'Order Cancellation Policy', to: '/cancellation-policy' },
+                      { label: t('myOrders'), to: '/my-orders' },
+                      { label: t('faq'), to: '/faq' },
+                      { label: t('returnsRefunds'), to: '/return-policy' },
+                      { label: t('shippingDelivery'), to: '/shipping-policy' },
                     ].map((item) => (
                       <Link
                         key={item.to}
@@ -441,6 +444,7 @@ const FAQ_ITEMS = [
 ];
 
 export function FaqPage() {
+  const { t } = useLanguage();
   const [openIdx, setOpenIdx] = useState<number | null>(0);
   return (
     <div className="mx-auto max-w-3xl pb-2">
@@ -450,16 +454,16 @@ export function FaqPage() {
         className="flex items-center gap-1.5 text-[12px] text-neutral-500"
       >
         <Link to="/" className="transition-colors hover:text-neutral-900">
-          Home
+          {t('home')}
         </Link>
         <span aria-hidden="true">/</span>
-        <span className="text-neutral-800">FAQ</span>
+        <span className="text-neutral-800">{t('faq')}</span>
       </nav>
 
       {/* Clean Document Header */}
       <header className="mt-2.5 border-b border-neutral-200 pb-4">
         <h1 className="text-[22px] font-bold tracking-tight text-neutral-900 sm:text-[26px]">
-          Frequently Asked Questions
+          {t('faq')}
         </h1>
         <p className="mt-1 text-[13px] text-neutral-600 sm:text-[13.5px]">
           Answers regarding returns, cancellations, Cash on Delivery, and
@@ -786,7 +790,18 @@ function getHighlightLabel(type: PolicyType, tone: PolicyHighlightItem['tone']) 
 
 export function PolicyPage({ type }: { type: PolicyType }) {
   const { data: settings } = useStoreSettings();
+  const { t } = useLanguage();
   const content = POLICY_CONTENT[type];
+  const localizedTitle =
+    type === 'return'
+      ? t('returnsRefunds')
+      : type === 'shipping'
+        ? t('shippingDelivery')
+        : type === 'privacy'
+          ? t('privacyPolicy')
+          : type === 'terms'
+            ? t('termsConditions')
+            : content.title;
   const customPolicyNote =
     type === 'privacy'
       ? settings?.policies?.privacyPolicy?.trim()
@@ -804,12 +819,12 @@ export function PolicyPage({ type }: { type: PolicyType }) {
         className="flex items-center gap-1.5 text-[12px] text-neutral-500"
       >
         <Link to="/" className="transition-colors hover:text-neutral-900">
-          Home
+          {t('home')}
         </Link>
         <span aria-hidden="true">/</span>
-        <span>Legal</span>
+        <span>{t('footerPolicies')}</span>
         <span aria-hidden="true">/</span>
-        <span className="truncate text-neutral-800">{content.title}</span>
+        <span className="truncate text-neutral-800">{localizedTitle}</span>
       </nav>
 
       {/* Mobile Policy Switcher — Clean Underline Tabs (No Pills / No Gradients) */}
@@ -900,7 +915,7 @@ export function PolicyPage({ type }: { type: PolicyType }) {
           {/* Document Title & Quiet Metadata */}
           <header className="border-b border-neutral-200 pb-4">
             <h1 className="text-[21px] font-bold leading-tight tracking-tight text-neutral-900 sm:text-[26px]">
-              {content.title}
+              {localizedTitle}
             </h1>
             <p className="mt-1 text-[13px] text-neutral-600 sm:text-[14px]">
               {content.subtitle}
@@ -940,7 +955,7 @@ export function PolicyPage({ type }: { type: PolicyType }) {
                     item.tone === 'allowed'
                       ? 'text-emerald-700'
                       : item.tone === 'restricted'
-                        ? 'text-rose-700'
+                        ? 'text-[#C81E68]'
                         : 'text-neutral-600';
                   return (
                     <div
@@ -1009,13 +1024,13 @@ export function PolicyPage({ type }: { type: PolicyType }) {
                 to="/my-orders"
                 className="text-neutral-700 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-[#6A11CB] hover:decoration-[#6A11CB]"
               >
-                My Orders
+                {t('myOrders')}
               </Link>
               <Link
                 to="/contact"
                 className="inline-flex items-center gap-0.5 font-semibold text-neutral-900 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-[#6A11CB] hover:decoration-[#6A11CB]"
               >
-                <span>Help &amp; Support</span>
+                <span>{t('helpSupport')}</span>
                 <ChevronRight className="h-3.5 w-3.5" />
               </Link>
             </div>
