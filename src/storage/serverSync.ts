@@ -169,12 +169,15 @@ export async function apiRequest<T>(
     throw new BackendUnavailableError('Network error while contacting backend API.');
   }
 
+  const hasGiftKartHeader = response.headers.get('x-giftkart-backend') === '1';
   const contentType = (response.headers.get('content-type') || '').toLowerCase();
   const isJsonResponse = contentType.includes('application/json');
   const text = await response.text();
 
-  // Critical for static hosts (e.g. Vercel): SPA rewrites return 200 OK text/html, or static host returns 404/405 non-JSON
-  if (!isJsonResponse) {
+  // Critical for static hosts (e.g. Vercel):
+  // - SPA rewrites return 200 OK text/html
+  // - Static hosts return 404/405 (either HTML or Vercel JSON NOT_FOUND) without X-GiftKart-Backend
+  if (!isJsonResponse || ((response.status === 404 || response.status === 405) && !hasGiftKartHeader)) {
     if (
       contentType.includes('text/html') ||
       response.status === 404 ||
@@ -183,7 +186,7 @@ export async function apiRequest<T>(
       backendMode = 'static';
     }
     throw new BackendUnavailableError(
-      `API endpoint returned non-JSON response (${response.status}).`
+      `Backend API unavailable on this host (${response.status}).`
     );
   }
 
