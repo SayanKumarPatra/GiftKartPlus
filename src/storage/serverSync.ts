@@ -157,6 +157,74 @@ export async function apiRequest<T>(
   return parsed as T;
 }
 
+const COLLECTION_STORAGE_KEY: Partial<Record<SyncableCollectionKey, string>> = {
+  categories: STORAGE_KEYS.CATEGORIES,
+  products: STORAGE_KEYS.PRODUCTS,
+  storeSettings: STORAGE_KEYS.STORE_SETTINGS,
+  giftWrapConfig: STORAGE_KEYS.GIFT_WRAP_CONFIG,
+  coupons: STORAGE_KEYS.COUPONS,
+  orders: STORAGE_KEYS.ORDERS,
+  registeredCustomers: STORAGE_KEYS.REGISTERED_CUSTOMERS,
+  productReviews: STORAGE_KEYS.PRODUCT_REVIEWS,
+  newsletterSubscribers: STORAGE_KEYS.NEWSLETTER_SUBSCRIBERS,
+  adminActivityLogs: STORAGE_KEYS.ADMIN_ACTIVITY_LOGS,
+};
+
+function readLocalCollection<K extends SyncableCollectionKey>(
+  collection: K
+): LiveStoreSnapshot[K] | null {
+  if (typeof window === 'undefined') return null;
+  const key = COLLECTION_STORAGE_KEY[collection];
+  if (!key) return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw) as LiveStoreSnapshot[K];
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalCollection<K extends SyncableCollectionKey>(
+  collection: K,
+  value: LiveStoreSnapshot[K]
+): void {
+  if (typeof window === 'undefined') return;
+  const key = COLLECTION_STORAGE_KEY[collection];
+  if (!key) return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore quota/private-mode errors when mirroring cache
+  }
+}
+
+function hydrateFromLocalFallback(): void {
+  const localCategories = readLocalCollection('categories');
+  const localProducts = readLocalCollection('products');
+  const localSettings = readLocalCollection('storeSettings');
+  const localGiftWrap = readLocalCollection('giftWrapConfig');
+  const localCoupons = readLocalCollection('coupons');
+  const localReviews = readLocalCollection('productReviews');
+  const localOrders = readLocalCollection('orders');
+  const localCustomers = readLocalCollection('registeredCustomers');
+  const localSubscribers = readLocalCollection('newsletterSubscribers');
+  const localLogs = readLocalCollection('adminActivityLogs');
+
+  mergeAdminData(liveStore.version, {
+    categories: localCategories ?? undefined,
+    products: localProducts ?? undefined,
+    storeSettings: localSettings ?? undefined,
+    giftWrapConfig: localGiftWrap ?? undefined,
+    coupons: localCoupons ?? undefined,
+    productReviews: localReviews ?? undefined,
+    orders: localOrders ?? undefined,
+    registeredCustomers: localCustomers ?? undefined,
+    newsletterSubscribers: localSubscribers ?? undefined,
+    adminActivityLogs: localLogs ?? undefined,
+  });
+}
+
 function mergePublicData(
   version: number,
   data: Partial<LiveStoreSnapshot>
@@ -164,9 +232,11 @@ function mergePublicData(
   liveStore.version = Math.max(liveStore.version, version);
   if (Array.isArray(data.categories) && data.categories.length > 0) {
     liveStore.categories = data.categories;
+    writeLocalCollection('categories', liveStore.categories);
   }
   if (Array.isArray(data.products)) {
     liveStore.products = data.products;
+    writeLocalCollection('products', liveStore.products);
   }
   if (data.storeSettings && typeof data.storeSettings === 'object') {
     liveStore.storeSettings = {
@@ -188,19 +258,26 @@ function mergePublicData(
         ...SEED_STORE_SETTINGS.footerContent!,
         ...(data.storeSettings.footerContent ?? {}),
       },
+      notifications: Array.isArray(data.storeSettings.notifications)
+        ? data.storeSettings.notifications
+        : liveStore.storeSettings.notifications ?? [],
     };
+    writeLocalCollection('storeSettings', liveStore.storeSettings);
   }
   if (data.giftWrapConfig && typeof data.giftWrapConfig === 'object') {
     liveStore.giftWrapConfig = {
       ...SEED_GIFT_WRAP_CONFIG,
       ...data.giftWrapConfig,
     };
+    writeLocalCollection('giftWrapConfig', liveStore.giftWrapConfig);
   }
   if (Array.isArray(data.coupons)) {
     liveStore.coupons = data.coupons;
+    writeLocalCollection('coupons', liveStore.coupons);
   }
   if (Array.isArray(data.productReviews)) {
     liveStore.productReviews = data.productReviews;
+    writeLocalCollection('productReviews', liveStore.productReviews);
   }
 }
 
@@ -211,15 +288,19 @@ function mergeAdminData(
   mergePublicData(version, data);
   if (Array.isArray(data.orders)) {
     liveStore.orders = data.orders;
+    writeLocalCollection('orders', liveStore.orders);
   }
   if (Array.isArray(data.registeredCustomers)) {
     liveStore.registeredCustomers = data.registeredCustomers;
+    writeLocalCollection('registeredCustomers', liveStore.registeredCustomers);
   }
   if (Array.isArray(data.newsletterSubscribers)) {
     liveStore.newsletterSubscribers = data.newsletterSubscribers;
+    writeLocalCollection('newsletterSubscribers', liveStore.newsletterSubscribers);
   }
   if (Array.isArray(data.adminActivityLogs)) {
     liveStore.adminActivityLogs = data.adminActivityLogs;
+    writeLocalCollection('adminActivityLogs', liveStore.adminActivityLogs);
   }
 }
 
@@ -234,22 +315,33 @@ export async function refreshStoreFromServer(
     try {
       if (adminBearerToken) {
         const res = await apiRequest<{
-          version: number;
-          data: Partial<LiveStoreSnapshot>;
+          version?: number;
+          data?: Partial<LiveStoreSnapshot>;
         }>('/api/admin/store', { requireAdmin: true });
-        mergeAdminData(res.version, res.data);
+        if (res && typeof res.version === 'number' && res.data) {
+          mergeAdminData(res.version, res.data);
+        } else {
+          hydrateFromLocalFallback();
+        }
       } else {
         const res = await apiRequest<{
-          version: number;
-          data: Partial<LiveStoreSnapshot>;
+          version?: number;
+          data?: Partial<LiveStoreSnapshot>;
         }>('/api/store/public');
-        mergePublicData(res.version, res.data);
+        if (res && typeof res.version === 'number' && res.data) {
+          mergePublicData(res.version, res.data);
+        } else {
+          hydrateFromLocalFallback();
+        }
       }
 
       const uniqueTopics = Array.from(new Set(topicsToEmit));
       uniqueTopics.forEach((topic) => storeEvents.emit(topic));
     } catch (err) {
-      console.warn('[GiftKart Sync] Could not refresh live store from server:', err);
+      console.warn('[GiftKart Sync] Server unavailable, using local browser storage cache.', err);
+      hydrateFromLocalFallback();
+      const uniqueTopics = Array.from(new Set(topicsToEmit));
+      uniqueTopics.forEach((topic) => storeEvents.emit(topic));
     } finally {
       activeRefreshPromise = null;
     }
@@ -262,6 +354,7 @@ export async function ensureServerHydrated(): Promise<void> {
   if (typeof window === 'undefined') return;
   if (!initialHydrationPromise) {
     purgeLegacyLocalAdminKeys();
+    hydrateFromLocalFallback();
     initialHydrationPromise = refreshStoreFromServer(['all']).catch(() => {
       // Allow retry if initial fetch failed transiently
       initialHydrationPromise = null;
@@ -275,19 +368,36 @@ export async function saveAdminCollection<K extends SyncableCollectionKey>(
   value: LiveStoreSnapshot[K],
   emitTopic: StoreEventTopic
 ): Promise<void> {
-  const res = await apiRequest<{ ok: boolean; version: number }>(
-    `/api/admin/store/${encodeURIComponent(collection)}`,
-    {
-      method: 'PUT',
-      body: { data: value },
-      requireAdmin: true,
+  try {
+    const res = await apiRequest<{ ok?: boolean; version?: number }>(
+      `/api/admin/store/${encodeURIComponent(collection)}`,
+      {
+        method: 'PUT',
+        body: { data: value },
+        requireAdmin: true,
+      }
+    );
+    liveStore[collection] = value;
+    writeLocalCollection(collection, value);
+    if (typeof res.version === 'number') {
+      liveStore.version = Math.max(liveStore.version, res.version);
     }
-  );
-  liveStore[collection] = value;
-  if (typeof res.version === 'number') {
-    liveStore.version = Math.max(liveStore.version, res.version);
+    storeEvents.emit(emitTopic);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : '';
+    // Re-throw genuine auth errors from a running backend
+    if (
+      message.toLowerCase().includes('sign-in required') ||
+      message.toLowerCase().includes('unauthorized') ||
+      message.includes('(401)')
+    ) {
+      throw err;
+    }
+    // Static frontend hosting fallback (no backend server reachable)
+    liveStore[collection] = value;
+    writeLocalCollection(collection, value);
+    storeEvents.emit(emitTopic);
   }
-  storeEvents.emit(emitTopic);
 }
 
 const VALID_TOPICS = new Set<StoreEventTopic>([

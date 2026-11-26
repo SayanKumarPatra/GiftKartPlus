@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
+  Bell,
   CreditCard,
   ExternalLink,
   Gift,
@@ -47,6 +48,9 @@ function getHeaderMeta(pathname: string): PageHeaderMeta {
   if (pathname.startsWith('/admin/offers')) {
     return { title: 'Offers & Promotions', showBack: true, backTo: '/admin/more' };
   }
+  if (pathname.startsWith('/admin/notifications')) {
+    return { title: 'Notifications', showBack: true, backTo: '/admin/more' };
+  }
   if (pathname.startsWith('/admin/customers')) {
     return { title: 'Customers', showBack: true, backTo: '/admin/more' };
   }
@@ -69,6 +73,7 @@ const DESKTOP_SIDEBAR_ITEMS = [
   { to: '/admin/categories', label: 'Categories', Icon: Layers },
   { to: '/admin/orders', label: 'Orders', Icon: ShoppingBag },
   { to: '/admin/offers', label: 'Offers & Promotions', Icon: Percent },
+  { to: '/admin/notifications', label: 'Notifications', Icon: Bell },
   { to: '/admin/customers', label: 'Customers', Icon: Users },
   { to: '/admin/payments', label: 'Payments', Icon: CreditCard },
   { to: '/admin/settings', label: 'Website Settings', Icon: Settings },
@@ -133,7 +138,7 @@ export function AdminLayout() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/70 px-3 py-2 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100/70"
+            className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[#FF4D8D]/30 bg-[#FFF0F6] px-3 py-2 text-xs font-bold text-[#C81E68] transition-colors hover:bg-[#FFE2EE]"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Log Out</span>

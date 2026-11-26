@@ -4,6 +4,7 @@ import type {
   ICustomerAuthService,
   ICustomerDirectoryService,
   IGiftWrapService,
+  INotificationService,
   IOrderService,
   IPaymentGatewayService,
   IPromotionService,
@@ -11,6 +12,7 @@ import type {
 } from './interfaces';
 import { LocalCatalogService } from './local/localCatalogService';
 import { LocalGiftWrapService } from './local/localGiftWrapService';
+import { LocalNotificationService } from './local/localNotificationService';
 import { LocalOrderService } from './local/localOrderService';
 import {
   LocalPromotionService,
@@ -43,6 +45,7 @@ import {
 export interface GiftKartServices {
   catalog: ICatalogService;
   giftWrap: IGiftWrapService;
+  notifications: INotificationService;
   orders: IOrderService;
   promotions: IPromotionService;
   settings: IStoreSettingsService;
@@ -60,6 +63,7 @@ export interface GiftKartServices {
 export const services: GiftKartServices = {
   catalog: new LocalCatalogService(),
   giftWrap: new LocalGiftWrapService(),
+  notifications: new LocalNotificationService(),
   orders: new LocalOrderService(),
   promotions: new LocalPromotionService(),
   settings: new LocalStoreSettingsService(),

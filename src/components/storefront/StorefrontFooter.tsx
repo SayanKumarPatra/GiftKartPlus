@@ -17,38 +17,38 @@ import {
 import { BrandLogo } from '../ui/BrandLogo';
 import { BRAND_ASSETS } from '../../config/appConfig';
 import { useStoreSettings } from '../../hooks/useStoreData';
-
-const QUICK_LINKS = [
-  { label: 'Home', to: '/' },
-  { label: 'All Gifts', to: '/shop' },
-  { label: 'Photo Frame', to: '/category/photo-frame' },
-  { label: 'Coffee Mugs', to: '/category/coffee-mugs' },
-  { label: 'LED Lighting', to: '/category/led-lighting' },
-  { label: 'All Categories', to: '/categories' },
-];
-
-const SUPPORT_LINKS = [
-  { label: 'Contact Us', to: '/contact' },
-  { label: 'FAQ', to: '/faq' },
-  { label: 'Return & Refund', to: '/return-policy' },
-  { label: 'Cancellation Policy', to: '/cancellation-policy' },
-  { label: 'Shipping Policy', to: '/shipping-policy' },
-  { label: 'Privacy Policy', to: '/privacy-policy' },
-  { label: 'Terms & Conditions', to: '/terms' },
-];
-
-const ABOUT_LINKS = [
-  { label: 'About Us', to: '/about' },
-  { label: 'Our Story', to: '/about' },
-  { label: 'Customization Guide', to: '/customization-guide' },
-  { label: 'Careers', to: '/contact' },
-];
+import { useLanguage } from '../../context/LanguageContext';
 
 export function StorefrontFooter() {
   const { data: settings } = useStoreSettings();
+  const { t, translateCategory } = useLanguage();
   const { pathname } = useLocation();
   const [openMobileGroup, setOpenMobileGroup] = useState<string | null>(null);
   const isHome = pathname === '/';
+
+  const QUICK_LINKS = [
+    { label: t('home'), to: '/' },
+    { label: t('allGifts'), to: '/shop' },
+    { label: translateCategory('Photo Frames'), to: '/category/photo-frame' },
+    { label: translateCategory('Coffee Mugs'), to: '/category/coffee-mugs' },
+    { label: translateCategory('LED Lamps'), to: '/category/led-lighting' },
+    { label: t('categories'), to: '/categories' },
+  ];
+
+  const SUPPORT_LINKS = [
+    { label: t('contactUs'), to: '/contact' },
+    { label: t('faq'), to: '/faq' },
+    { label: t('returnsRefunds'), to: '/return-policy' },
+    { label: t('shippingDelivery'), to: '/shipping-policy' },
+    { label: t('privacyPolicy'), to: '/privacy-policy' },
+    { label: t('termsConditions'), to: '/terms' },
+  ];
+
+  const ABOUT_LINKS = [
+    { label: t('aboutUs'), to: '/about' },
+    { label: t('customizationStudio'), to: '/customization-guide' },
+    { label: t('contactSupport'), to: '/contact' },
+  ];
 
   const activeZones =
     settings?.deliveryZones.filter((z) => z.isActive).map((z) => z.name) ?? [
@@ -121,11 +121,11 @@ export function StorefrontFooter() {
           {/* Column 2: Quick Links */}
           <div className="col-span-2">
             <h3 className="text-xs font-bold uppercase tracking-wide text-[#2B0B4E]">
-              Quick Links
+              {t('quickLinks')}
             </h3>
             <ul className="mt-2.5 space-y-1.5 text-xs font-medium text-[#594A6B]">
               {QUICK_LINKS.map((item) => (
-                <li key={item.label}>
+                <li key={item.to + item.label}>
                   <Link to={item.to} className="transition-colors hover:text-[#6A11CB]">
                     {item.label}
                   </Link>
@@ -137,11 +137,11 @@ export function StorefrontFooter() {
           {/* Column 3: Customer Support */}
           <div className="col-span-2">
             <h3 className="text-xs font-bold uppercase tracking-wide text-[#2B0B4E]">
-              Customer Support
+              {t('footerSupport')}
             </h3>
             <ul className="mt-2.5 space-y-1.5 text-xs font-medium text-[#594A6B]">
               {SUPPORT_LINKS.map((item) => (
-                <li key={item.label}>
+                <li key={item.to}>
                   <Link to={item.to} className="transition-colors hover:text-[#6A11CB]">
                     {item.label}
                   </Link>
@@ -153,11 +153,11 @@ export function StorefrontFooter() {
           {/* Column 4: About GiftKart */}
           <div className="col-span-2">
             <h3 className="text-xs font-bold uppercase tracking-wide text-[#2B0B4E]">
-              About GiftKart
+              {t('footerCompany')}
             </h3>
             <ul className="mt-2.5 space-y-1.5 text-xs font-medium text-[#594A6B]">
               {ABOUT_LINKS.map((item) => (
-                <li key={item.label}>
+                <li key={item.to + item.label}>
                   <Link to={item.to} className="transition-colors hover:text-[#6A11CB]">
                     {item.label}
                   </Link>
@@ -169,7 +169,7 @@ export function StorefrontFooter() {
           {/* Column 5: Delivery & Contact */}
           <div className="col-span-3">
             <h3 className="text-xs font-bold uppercase tracking-wide text-[#2B0B4E]">
-              We Deliver To
+              {t('deliveryInfo')}
             </h3>
             <ul className="mt-2.5 space-y-1.5 text-xs font-semibold text-[#2B0B4E]">
               {activeZones.map((zone) => (
@@ -253,9 +253,9 @@ export function StorefrontFooter() {
           {/* Right Column: 4 Compact Interactive Accordions */}
           <div className="min-w-0 space-y-1.5">
             {[
-              { id: 'quick', title: 'Quick Links', Icon: Link2, links: QUICK_LINKS },
-              { id: 'support', title: 'Customer Support', Icon: Headset, links: SUPPORT_LINKS },
-              { id: 'about', title: 'About GiftKart', Icon: Info, links: ABOUT_LINKS },
+              { id: 'quick', title: t('quickLinks'), Icon: Link2, links: QUICK_LINKS },
+              { id: 'support', title: t('footerSupport'), Icon: Headset, links: SUPPORT_LINKS },
+              { id: 'about', title: t('aboutUs'), Icon: Info, links: ABOUT_LINKS },
             ].map(({ id, title, Icon, links }) => {
               const isOpen = openMobileGroup === id;
               return (
@@ -320,7 +320,7 @@ export function StorefrontFooter() {
                     <Truck className="h-3 w-3 stroke-[2.1] min-[390px]:h-3.5 min-[390px]:w-3.5" />
                   </span>
                   <span className="truncate text-[11px] font-bold text-[#2B0B4E] min-[390px]:text-[11.5px]">
-                    We Deliver To
+                    {t('deliveryInfo')}
                   </span>
                 </span>
                 <ChevronDown

@@ -129,6 +129,18 @@ export interface NewsletterSubscriber {
   subscribedAt: string;
 }
 
+export type NotificationTargetAudience = 'ALL_REGISTERED_USERS';
+
+export interface StoreNotification {
+  id: string;
+  title: string;
+  message: string;
+  targetAudience: NotificationTargetAudience;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StoreSettings {
   storeName: string;
   tagline: string;
@@ -149,4 +161,5 @@ export interface StoreSettings {
   seo?: StoreSeoConfig;
   policies?: StorePoliciesConfig;
   footerContent?: StoreFooterConfig;
+  notifications?: StoreNotification[];
 }

@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Headset, Home, LayoutGrid, ShoppingBag, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
+import type { TranslationKey } from '../../i18n/translations';
 
 interface MobileNavItem {
   id: 'home' | 'categories' | 'order' | 'help' | 'account';
-  label: string;
+  labelKey: TranslationKey;
   to: string;
   Icon: LucideIcon;
   matches: (pathname: string) => boolean;
@@ -14,21 +16,21 @@ interface MobileNavItem {
 const MOBILE_NAV_ITEMS: MobileNavItem[] = [
   {
     id: 'home',
-    label: 'Home',
+    labelKey: 'home',
     to: '/',
     Icon: Home,
     matches: (pathname) => pathname === '/',
   },
   {
     id: 'categories',
-    label: 'Categories',
+    labelKey: 'categories',
     to: '/categories',
     Icon: LayoutGrid,
     matches: (pathname) => pathname === '/categories',
   },
   {
     id: 'order',
-    label: 'Order',
+    labelKey: 'orderShort',
     to: '/my-orders',
     Icon: ShoppingBag,
     matches: (pathname) =>
@@ -38,7 +40,7 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
   },
   {
     id: 'help',
-    label: 'Help',
+    labelKey: 'help',
     to: '/contact',
     Icon: Headset,
     matches: (pathname) =>
@@ -52,7 +54,7 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
   },
   {
     id: 'account',
-    label: 'Account',
+    labelKey: 'account',
     to: '/account',
     Icon: User,
     matches: (pathname) =>
@@ -80,6 +82,7 @@ function SolidHomeIcon({ className }: { className?: string }) {
 
 export function MobileBottomNav() {
   const { pathname } = useLocation();
+  const { t } = useLanguage();
   const isHome = pathname === '/';
 
   const activeIndex = useMemo(
@@ -127,7 +130,7 @@ export function MobileBottomNav() {
             <div className="gk-liquid-glass-capsule h-full w-full rounded-full" />
           </div>
 
-          {MOBILE_NAV_ITEMS.map(({ id, label, to, Icon }, idx) => {
+          {MOBILE_NAV_ITEMS.map(({ id, labelKey, to, Icon }, idx) => {
             const isActive = idx === activeIndex;
 
             return (
@@ -157,7 +160,7 @@ export function MobileBottomNav() {
                       : 'font-semibold'
                   }`}
                 >
-                  {label}
+                  {t(labelKey)}
                 </span>
               </Link>
             );

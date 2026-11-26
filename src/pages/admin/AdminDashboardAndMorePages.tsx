@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import {
+  Bell,
   ChevronRight,
   CreditCard,
   Globe,
@@ -17,20 +18,25 @@ import {
   Wrench,
 } from 'lucide-react';
 import {
+  useCategories,
   useCoupons,
   useOrders,
   useProducts,
   useRegisteredCustomers,
+  useStoreNotifications,
   useStoreSettings,
 } from '../../hooks/useStoreData';
 import { useAuth } from '../../context/AuthContext';
 
 export function AdminDashboardPage() {
+  const { data: categories } = useCategories(true);
   const { data: products } = useProducts({ includeInactive: true });
   const { data: orders } = useOrders();
   const { data: customers } = useRegisteredCustomers();
   const { data: coupons } = useCoupons();
   const { data: settings } = useStoreSettings();
+  const { data: notifications } = useStoreNotifications(true);
+  const activeNotifCount = notifications.filter((n) => n.isActive).length;
 
   const pendingOrdersCount = orders.filter(
     (o) => o.fulfillmentStatus === 'New' || o.fulfillmentStatus === 'Demo Placed'
@@ -235,8 +241,14 @@ export function AdminDashboardPage() {
             {
               to: '/admin/categories',
               title: 'Category Management',
-              desc: '10 official GiftKart categories',
+              desc: `${categories.length} storefront ${categories.length === 1 ? 'category' : 'categories'}`,
               Icon: Layers,
+            },
+            {
+              to: '/admin/notifications',
+              title: 'Notification Management',
+              desc: `${activeNotifCount} active storefront ${activeNotifCount === 1 ? 'notification' : 'notifications'}`,
+              Icon: Bell,
             },
             {
               to: '/admin/settings',
@@ -284,8 +296,14 @@ export function AdminMorePage() {
     {
       to: '/admin/categories',
       title: 'Category Management',
-      subtitle: 'Manage the 10 GiftKart categories & products',
+      subtitle: 'Add, edit, reorder & manage store categories',
       Icon: Layers,
+    },
+    {
+      to: '/admin/notifications',
+      title: 'Notification Management',
+      subtitle: 'Create & manage storefront header bell updates',
+      Icon: Bell,
     },
     {
       to: '/admin/offers',
@@ -365,7 +383,7 @@ export function AdminMorePage() {
           <button
             type="button"
             onClick={handleLogout}
-            className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100"
+            className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#FF4D8D]/30 bg-[#FFF0F6] px-3 text-xs font-bold text-[#C81E68] transition-colors hover:bg-[#FFE2EE]"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Log Out</span>

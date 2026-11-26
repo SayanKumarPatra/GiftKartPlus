@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Headphones, Sparkles } from 'lucide-react';
 import { useStoreSettings } from '../../hooks/useStoreData';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function AnnouncementBar() {
   const { data: settings } = useStoreSettings();
+  const { t } = useLanguage();
   const announcement = settings?.announcement;
 
   if (announcement && !announcement.enabled) {
@@ -12,7 +14,7 @@ export function AnnouncementBar() {
 
   const desktopText =
     announcement?.desktopText ??
-    'Delivery in Jalchak • Customization Available • Demo Orders Only (No COD)';
+    'Delivery in Jalchak • Customization Available';
   const showSupport = announcement?.showSupportLink ?? true;
 
   return (
@@ -21,7 +23,6 @@ export function AnnouncementBar() {
       aria-label="Store announcements"
       className="hidden w-full rounded-none bg-gradient-to-r from-[#6A11CB] via-[#8A2BE2] to-[#FF4D8D] text-white lg:block"
     >
-      {/* Desktop Announcement Bar (Unchanged) */}
       <div className="mx-auto flex h-8 max-w-7xl items-center justify-between gap-4 px-6 text-xs font-semibold">
         <div className="flex items-center gap-2 truncate">
           <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#FFE1EF]" />
@@ -35,7 +36,7 @@ export function AnnouncementBar() {
               className="inline-flex items-center gap-1.5 text-white/95 transition-opacity hover:opacity-80"
             >
               <Headphones className="h-3.5 w-3.5" />
-              <span>Customer Support</span>
+              <span>{t('footerSupport')}</span>
             </Link>
           )}
         </div>

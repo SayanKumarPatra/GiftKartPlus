@@ -18,6 +18,14 @@ export interface Subcategory {
   sortOrder: number;
 }
 
+export type SupportedLanguage = 'en' | 'bn' | 'hi';
+
+export interface LocalizedEntityText {
+  name?: string;
+  description?: string;
+  shortDescription?: string;
+}
+
 export interface Category {
   id: string;
   slug: string;
@@ -27,6 +35,8 @@ export interface Category {
   sortOrder: number;
   isActive: boolean;
   subcategories: Subcategory[];
+  /** Future-ready optional per-language translations (falls back to original name/description when absent) */
+  translations?: Partial<Record<SupportedLanguage, LocalizedEntityText>>;
 }
 
 export interface ProductVariantGroup {
@@ -60,6 +70,8 @@ export interface Product {
   supportsPersonalization: boolean;
   supportsPhotoUpload?: boolean;
   personalizationPrompt?: string;
+  /** Future-ready optional per-language translations (falls back to original product fields when absent) */
+  translations?: Partial<Record<SupportedLanguage, LocalizedEntityText>>;
   /** Sample preview rating only — clearly labeled as sample data until real reviews are wired */
   sampleRating?: number;
   sampleReviewCount?: number;

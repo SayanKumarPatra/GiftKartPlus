@@ -41,22 +41,25 @@ import { AdminCategoriesPage } from '../pages/admin/AdminCategoriesPage';
 import { AdminOrdersPage } from '../pages/admin/AdminOrdersPage';
 import { AdminOffersPage } from '../pages/admin/AdminOffersPage';
 import { AdminCustomersPage } from '../pages/admin/AdminCustomersPage';
+import { AdminNotificationsPage } from '../pages/admin/AdminNotificationsPage';
 import { AdminPaymentsPage } from '../pages/admin/AdminPaymentsPage';
 import { AdminSettingsPage } from '../pages/admin/AdminSettingsPage';
 import { AdminSecurityPage } from '../pages/admin/AdminSecurityPage';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
+import { useLanguage } from '../context/LanguageContext';
 
 function NotFoundView() {
+  const { t } = useLanguage();
   return (
     <div className="mx-auto max-w-xl px-4 py-16">
       <EmptyState
-        title="Page not found"
-        description="The GiftKart page you requested could not be found."
+        title={t('pageNotFound')}
+        description={t('pageNotFoundDesc')}
         action={
           <Link to="/">
             <Button size="sm" variant="accent">
-              Return to GiftKart Home
+              {t('goHome')}
             </Button>
           </Link>
         }
@@ -132,6 +135,7 @@ export function AppRouter() {
           <Route path="categories" element={<AdminCategoriesPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="offers" element={<AdminOffersPage />} />
+          <Route path="notifications" element={<AdminNotificationsPage />} />
           <Route path="customers" element={<AdminCustomersPage />} />
           <Route path="payments" element={<AdminPaymentsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />

@@ -24,6 +24,10 @@ export const STORAGE_KEYS = {
   SEEDED_FLAG: `${STORAGE_PREFIX}seeded`,
   CATEGORY_MIGRATION_V2: `${STORAGE_PREFIX}category_migration_v2`,
   REAL_DATA_CLEANUP_V3: `${STORAGE_PREFIX}real_data_cleanup_v3`,
+  LANGUAGE: `${STORAGE_PREFIX}language`,
+  USER_LANGUAGES: `${STORAGE_PREFIX}user_languages`,
+  NOTIF_SEEN_AT: `${STORAGE_PREFIX}notif_seen_at`,
+  NOTIFICATIONS: `${STORAGE_PREFIX}notifications`,
 } as const;
 
 export function readStorage<T>(key: string, fallback: T): T {

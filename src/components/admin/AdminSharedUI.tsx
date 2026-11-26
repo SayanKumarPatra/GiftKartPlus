@@ -195,13 +195,13 @@ export function AdminToast({
       role="status"
       className={`fixed left-1/2 top-4 z-[130] flex w-[calc(100%-24px)] max-w-md -translate-x-1/2 items-center justify-between gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-semibold shadow-lg ${
         tone === 'error'
-          ? 'border border-rose-200 bg-rose-50 text-rose-800'
+          ? 'border border-[#FF4D8D]/35 bg-[#FFF0F6] text-[#9E1650]'
           : 'border border-emerald-200 bg-white text-[#1E1035] ring-1 ring-[#6A11CB]/15'
       }`}
     >
       <span className="flex items-center gap-2">
         {tone === 'error' ? (
-          <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+          <AlertTriangle className="h-4 w-4 shrink-0 text-[#FF4D8D]" />
         ) : (
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
         )}
@@ -227,6 +227,7 @@ export function AdminConfirmDialog({
   danger = true,
   onConfirm,
   onCancel,
+  children,
 }: {
   open: boolean;
   title: string;
@@ -235,6 +236,7 @@ export function AdminConfirmDialog({
   danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: React.ReactNode;
 }) {
   if (!open) return null;
   return (
@@ -254,6 +256,7 @@ export function AdminConfirmDialog({
         <p className="mt-1.5 text-[12.5px] leading-relaxed text-[#594A6B]">
           {message}
         </p>
+        {children && <div className="mt-3">{children}</div>}
         <div className="mt-4 flex items-center justify-end gap-2">
           <button
             type="button"
@@ -267,7 +270,7 @@ export function AdminConfirmDialog({
             onClick={onConfirm}
             className={`h-9 cursor-pointer rounded-xl px-4 text-xs font-bold text-white shadow-xs transition-opacity hover:opacity-95 ${
               danger
-                ? 'bg-rose-600'
+                ? 'bg-gradient-to-r from-[#FF4D8D] to-[#D81B60]'
                 : 'bg-gradient-to-r from-[#6A11CB] to-[#9333EA]'
             }`}
           >

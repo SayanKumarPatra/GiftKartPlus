@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   ChevronDown,
+  Globe,
   Headset,
   Heart,
   LogOut,
@@ -12,24 +13,28 @@ import {
   User,
 } from 'lucide-react';
 import { BrandLogo } from '../ui/BrandLogo';
+import { NotificationBell } from './NotificationBell';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import type { TranslationKey } from '../../i18n/translations';
 
 interface DesktopHeaderProps {
   onOpenSearch: () => void;
 }
 
-const DESKTOP_NAV_LINKS = [
-  { label: 'Home', to: '/', end: true },
-  { label: 'Categories', to: '/categories', end: false },
-  { label: 'All Gifts', to: '/shop', end: false },
-  { label: 'My Orders', to: '/my-orders', end: false },
-  { label: 'Help & Support', to: '/contact', end: false },
+const DESKTOP_NAV_LINKS: { labelKey: TranslationKey; to: string; end: boolean }[] = [
+  { labelKey: 'home', to: '/', end: true },
+  { labelKey: 'categories', to: '/categories', end: false },
+  { labelKey: 'allGifts', to: '/shop', end: false },
+  { labelKey: 'myOrders', to: '/my-orders', end: false },
+  { labelKey: 'helpSupport', to: '/contact', end: false },
 ];
 
 export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
   const { itemCount, wishlistIds } = useCart();
   const { customerAccount, signOutCustomer } = useAuth();
+  const { t } = useLanguage();
   const [accountOpen, setAccountOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const headerRef = useRef<HTMLDivElement>(null);
@@ -89,31 +94,31 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
           className="flex h-[42px] max-w-2xl flex-1 items-stretch overflow-hidden rounded-lg border border-[#DCD0EF] bg-[#FAF8FC] transition-colors focus-within:border-[#6A11CB] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#6A11CB]/12"
         >
           <label htmlFor="desktop-header-search" className="sr-only">
-            Search GiftKart products
+            {t('search')}
           </label>
           <input
             id="desktop-header-search"
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search Photo Frame, Coffee Mugs, T-shirt Prints, LED Lighting, PVC Card..."
+            placeholder={t('searchDesktopPlaceholder')}
             className="w-full bg-transparent px-4 text-[13px] font-medium text-[#1E1035] placeholder:text-[#7E7094] focus:outline-none"
           />
           <button
             type="submit"
-            aria-label="Search gifts"
+            aria-label={t('search')}
             className="inline-flex h-full shrink-0 cursor-pointer items-center justify-center gap-1.5 bg-[#6A11CB] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#560DA8] active:bg-[#46098C]"
           >
             <Search className="h-4 w-4 stroke-[2.2]" />
-            <span>Search</span>
+            <span>{t('search')}</span>
           </button>
         </form>
 
-        {/* Right: Wishlist | Account Dropdown | Cart */}
-        <div className="flex shrink-0 items-center gap-5">
+        {/* Right: Wishlist | Notification Bell | Account Dropdown | Cart */}
+        <div className="flex shrink-0 items-center gap-4">
           <Link
             to="/wishlist"
-            aria-label={`Wishlist (${wishlistIds.length} items)`}
+            aria-label={`${t('wishlist')} (${wishlistIds.length})`}
             className="group relative inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1E1035] transition-colors hover:text-[#6A11CB]"
           >
             <span className="relative flex items-center justify-center">
@@ -124,8 +129,10 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
                 </span>
               )}
             </span>
-            <span>Wishlist</span>
+            <span>{t('wishlist')}</span>
           </Link>
+
+          <NotificationBell variant="desktop" />
 
           <span className="h-4 w-px bg-[#EBD8FF]" aria-hidden="true" />
 
@@ -141,7 +148,7 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
             >
               <User className="h-[19px] w-[19px] text-[#6A11CB]" />
               <span className="max-w-[110px] truncate">
-                {customerAccount ? customerAccount.fullName.split(' ')[0] : 'Sign In'}
+                {customerAccount ? customerAccount.fullName.split(' ')[0] : t('signIn')}
               </span>
               <ChevronDown
                 className={`h-3.5 w-3.5 text-[#594A6B] transition-transform duration-150 ${
@@ -154,7 +161,7 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
               <div className="absolute right-0 top-full z-50 w-56 pt-2">
                 <div className="rounded-xl border border-[#EBD8FF] bg-white p-1.5 shadow-lg shadow-[#2B0B4E]/10">
                   {customerAccount && (
-                    <div className="border-b border-[#F2E8FF] px-3 py-2 mb-1">
+                    <div className="mb-1 border-b border-[#F2E8FF] px-3 py-2">
                       <p className="truncate text-xs font-bold text-[#1E1035]">
                         {customerAccount.fullName}
                       </p>
@@ -169,28 +176,35 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
                     className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-[#2B0B4E] transition-colors hover:bg-[#FAF5FF] hover:text-[#6A11CB]"
                   >
                     <User className="h-3.5 w-3.5 text-[#6A11CB]" />
-                    <span>{customerAccount ? 'My Profile' : 'Login / Sign Up'}</span>
+                    <span>{customerAccount ? t('profile') : t('loginRegister')}</span>
+                  </Link>
+                  <Link
+                    to="/account?tab=language"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-[#2B0B4E] transition-colors hover:bg-[#FAF5FF] hover:text-[#6A11CB]"
+                  >
+                    <Globe className="h-3.5 w-3.5 text-[#6A11CB]" />
+                    <span>{t('language')}</span>
                   </Link>
                   <Link
                     to="/my-orders"
                     className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-[#2B0B4E] transition-colors hover:bg-[#FAF5FF] hover:text-[#6A11CB]"
                   >
                     <Package className="h-3.5 w-3.5 text-[#6A11CB]" />
-                    <span>My Orders</span>
+                    <span>{t('myOrders')}</span>
                   </Link>
                   <Link
                     to="/addresses"
                     className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-[#2B0B4E] transition-colors hover:bg-[#FAF5FF] hover:text-[#6A11CB]"
                   >
                     <MapPin className="h-3.5 w-3.5 text-[#6A11CB]" />
-                    <span>Delivery Addresses</span>
+                    <span>{t('savedAddresses')}</span>
                   </Link>
                   <Link
                     to="/contact"
                     className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-[#2B0B4E] transition-colors hover:bg-[#FAF5FF] hover:text-[#6A11CB]"
                   >
                     <Headset className="h-3.5 w-3.5 text-[#6A11CB]" />
-                    <span>Help &amp; Support</span>
+                    <span>{t('helpSupport')}</span>
                   </Link>
 
                   {customerAccount && (
@@ -199,10 +213,10 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
                       <button
                         type="button"
                         onClick={() => void handleLogout()}
-                        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-[#C81E68] transition-colors hover:bg-[#FFF0F6]"
                       >
                         <LogOut className="h-3.5 w-3.5" />
-                        <span>Logout</span>
+                        <span>{t('signOut')}</span>
                       </button>
                     </>
                   )}
@@ -216,7 +230,7 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
           {/* Cart Direct Link */}
           <Link
             to="/cart"
-            aria-label={`Shopping cart (${itemCount} items)`}
+            aria-label={`${t('cart')} (${itemCount})`}
             className="group relative inline-flex items-center gap-2 rounded-lg bg-[#FAF5FF] px-3.5 py-2 text-[13px] font-bold text-[#6A11CB] transition-colors hover:bg-[#F1E4FF]"
           >
             <span className="relative flex items-center justify-center">
@@ -227,7 +241,7 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
                 </span>
               )}
             </span>
-            <span>Cart</span>
+            <span>{t('cart')}</span>
           </Link>
         </div>
       </div>
@@ -252,13 +266,13 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
                   }`
                 }
               >
-                {item.label}
+                {t(item.labelKey)}
               </NavLink>
             ))}
           </div>
 
           <p className="text-[12px] font-medium text-[#6C5987]">
-            Personalized Gifts &amp; Hampers · Cash on Delivery Available
+            {t('brandTagline')}
           </p>
         </div>
       </nav>

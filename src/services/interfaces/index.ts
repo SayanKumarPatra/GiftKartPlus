@@ -17,6 +17,7 @@ import type {
   Product,
   ProductFilterParams,
   RegisteredCustomer,
+  StoreNotification,
   StoreSettings,
   Subcategory,
 } from '../../types';
@@ -25,7 +26,7 @@ export interface ICatalogService {
   getCategories(includeInactive?: boolean): Promise<Category[]>;
   getCategoryBySlug(slug: string): Promise<Category | null>;
   saveCategory(category: Category): Promise<Category>;
-  deleteCategory(categoryId: string): Promise<void>;
+  deleteCategory(categoryId: string, fallbackCategoryId?: string): Promise<void>;
   saveSubcategory(categoryId: string, subcategory: Subcategory): Promise<Category>;
   deleteSubcategory(categoryId: string, subcategoryId: string): Promise<Category>;
 
@@ -84,6 +85,16 @@ export interface IStoreSettingsService {
   updateSettings(settings: StoreSettings): Promise<StoreSettings>;
   upsertDeliveryZone(zone: DeliveryZone): Promise<StoreSettings>;
   deleteDeliveryZone(zoneId: string): Promise<StoreSettings>;
+}
+
+export interface INotificationService {
+  listNotifications(includeInactive?: boolean): Promise<StoreNotification[]>;
+  saveNotification(
+    input: Omit<StoreNotification, 'createdAt' | 'updatedAt'> &
+      Partial<Pick<StoreNotification, 'createdAt' | 'updatedAt'>>
+  ): Promise<StoreNotification>;
+  toggleNotification(id: string, isActive: boolean): Promise<StoreNotification | null>;
+  deleteNotification(id: string): Promise<void>;
 }
 
 /**

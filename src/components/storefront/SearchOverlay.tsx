@@ -5,6 +5,7 @@ import { services } from '../../services/registry';
 import type { Product } from '../../types';
 import { formatInr } from '../../utils/format';
 import { ProductImage } from '../ui/ProductImage';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface SearchOverlayProps {
   open: boolean;
@@ -12,6 +13,7 @@ interface SearchOverlayProps {
 }
 
 export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
+  const { t, localizeEntity } = useLanguage();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -60,7 +62,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
       className="fixed inset-0 z-50 flex items-start justify-center bg-[#2A0E4D]/35 px-4 pt-16 backdrop-blur-xs sm:pt-24"
       role="dialog"
       aria-modal="true"
-      aria-label="Search GiftKart catalog"
+      aria-label={t('search')}
       onClick={onClose}
     >
       <div
@@ -74,13 +76,13 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search Photo Frame, Coffee Mugs, T-shirt Prints, LED Lighting, PVC Card..."
+            placeholder={t('searchDesktopPlaceholder')}
             className="w-full bg-transparent text-sm text-[#2A0E4D] placeholder:text-[#7B6496] focus:outline-none sm:text-base"
           />
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close search"
+            aria-label={t('close')}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[#5F4B78] hover:bg-[#EBD8FF]/70 hover:text-[#6A11CB]"
           >
             <X className="h-4 w-4" />
@@ -89,58 +91,67 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
 
         <div className="mt-4 max-h-[60vh] overflow-y-auto">
           {isSearching ? (
-            <p className="py-8 text-center text-sm text-[#5F4B78]">Searching GiftKart catalog...</p>
+            <p className="py-8 text-center text-sm text-[#5F4B78]">{t('loading')}</p>
           ) : results.length === 0 ? (
             <p className="py-8 text-center text-sm text-[#5F4B78]">
-              No matching gifts found for &ldquo;{query}&rdquo;.
+              {t('noSearchResults')}
+              {query ? ` ("${query}")` : ''}
             </p>
           ) : (
             <ul className="divide-y divide-[#F0E4FF]">
-              {results.map((product) => (
-                <li key={product.id}>
-                  <Link
-                    to={`/product/${product.slug}`}
-                    onClick={onClose}
-                    className="flex items-center justify-between gap-4 rounded-2xl px-2.5 py-3 transition-colors hover:bg-[#FAF6FF]"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-[#EBD8FF] bg-[#FAF6FF]">
-                        <ProductImage
-                          src={product.images[0]}
-                          alt={product.name}
-                          className="h-full w-full object-cover"
-                        />
+              {results.map((product) => {
+                const productName = localizeEntity(product.name, 'name', product.translations);
+                const shortDesc = localizeEntity(
+                  product.shortDescription,
+                  'shortDescription',
+                  product.translations
+                );
+                return (
+                  <li key={product.id}>
+                    <Link
+                      to={`/product/${product.slug}`}
+                      onClick={onClose}
+                      className="flex items-center justify-between gap-4 rounded-2xl px-2.5 py-3 transition-colors hover:bg-[#FAF6FF]"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-[#EBD8FF] bg-[#FAF6FF]">
+                          <ProductImage
+                            src={product.images[0]}
+                            alt={productName}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-[#2A0E4D]">
+                            {productName}
+                          </p>
+                          <p className="mt-0.5 truncate text-xs text-[#5F4B78]">
+                            <span className="font-mono">{product.sku}</span> · {shortDesc}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-[#2A0E4D]">
-                          {product.name}
-                        </p>
-                        <p className="mt-0.5 truncate text-xs text-[#5F4B78]">
-                          <span className="font-mono">{product.sku}</span> · {product.shortDescription}
-                        </p>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <span className="font-mono text-sm font-bold tabular-nums text-[#6A11CB]">
+                          {formatInr(product.priceInr)}
+                        </span>
+                        <ArrowRight className="h-4 w-4 text-[#FF4D8D]" />
                       </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <span className="font-mono text-sm font-bold tabular-nums text-[#6A11CB]">
-                        {formatInr(product.priceInr)}
-                      </span>
-                      <ArrowRight className="h-4 w-4 text-[#FF4D8D]" />
-                    </div>
-                  </Link>
-                </li>
-              ))}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#EBD8FF]/80 pt-3 text-xs text-[#5F4B78]">
-          <span>Serving Jalchak · All prices in INR (₹)</span>
+          <span>INR (₹)</span>
           <Link
             to={query.trim() ? `/search?search=${encodeURIComponent(query.trim())}` : '/search'}
             onClick={onClose}
             className="inline-flex items-center gap-1 font-semibold text-[#6A11CB] hover:text-[#FF4D8D]"
           >
-            <span>View all results</span>
+            <span>{t('viewAll')}</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>

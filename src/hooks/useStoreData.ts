@@ -13,6 +13,7 @@ import type {
   ProductReview,
   RegisteredCustomer,
   SavedAddress,
+  StoreNotification,
   StoreSettings,
 } from '../types';
 
@@ -98,6 +99,16 @@ export function useGiftWrapConfig(): AsyncState<GiftWrapConfig | null> {
 export function useStoreSettings(): AsyncState<StoreSettings | null> {
   const fetcher = useCallback(() => services.settings.getSettings(), []);
   return useAsyncStoreResource<StoreSettings | null>(fetcher, null, SETTINGS_TOPICS);
+}
+
+export function useStoreNotifications(
+  includeInactive = false
+): AsyncState<StoreNotification[]> {
+  const fetcher = useCallback(
+    () => services.notifications.listNotifications(includeInactive),
+    [includeInactive]
+  );
+  return useAsyncStoreResource<StoreNotification[]>(fetcher, [], SETTINGS_TOPICS);
 }
 
 export function useOrders(): AsyncState<DemoOrder[]> {

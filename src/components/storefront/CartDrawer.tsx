@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Gift, Image as ImageIcon, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formatInr } from '../../utils/format';
 import { Button } from '../ui/Button';
 import { ProductImage } from '../ui/ProductImage';
 
 export function CartDrawer() {
+  const { t } = useLanguage();
   const {
     items,
     giftWrap,
@@ -42,17 +44,17 @@ export function CartDrawer() {
             </div>
             <div>
               <h2 className="font-display text-lg font-bold text-[#2A0E4D]">
-                Your Gift Bag
+                {t('yourCart')}
               </h2>
               <p className="text-[11px] text-[#5F4B78]">
-                {items.reduce((sum, i) => sum + i.quantity, 0)} item(s) · INR (₹)
+                {items.reduce((sum, i) => sum + i.quantity, 0)} {t('items')} · INR (₹)
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={closeCartDrawer}
-            aria-label="Close cart drawer"
+            aria-label={t('close')}
             className="flex h-10 w-10 items-center justify-center rounded-xl text-[#5F4B78] hover:bg-[#EBD8FF]/60 hover:text-[#6A11CB]"
           >
             <X className="h-5 w-5" />
@@ -66,14 +68,14 @@ export function CartDrawer() {
                 <ShoppingBag className="h-6 w-6" />
               </div>
               <p className="font-display text-base font-bold text-[#2A0E4D]">
-                Your gift bag is empty
+                {t('cartEmptyTitle')}
               </p>
               <p className="mt-1 max-w-xs text-xs leading-relaxed text-[#5F4B78]">
-                Explore Photo Frame, Coffee Mugs, T-shirt Prints, Home Decor, Hand Made, LED Lighting, and more.
+                {t('cartEmptyDesc')}
               </p>
               <Link to="/shop" onClick={closeCartDrawer} className="mt-5">
                 <Button size="sm" variant="accent">
-                  Browse Gifts
+                  {t('exploreGifts')}
                 </Button>
               </Link>
             </div>
@@ -109,8 +111,8 @@ export function CartDrawer() {
                         <button
                           type="button"
                           onClick={() => removeItem(item.cartItemId)}
-                          aria-label={`Remove ${item.productName}`}
-                          className="rounded-lg p-1 text-[#7B6496] hover:bg-rose-50 hover:text-rose-700"
+                          aria-label={`${t('remove')} ${item.productName}`}
+                          className="rounded-lg p-1 text-[#7B6496] hover:bg-[#FFF0F6] hover:text-[#C81E68]"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -228,21 +230,21 @@ export function CartDrawer() {
           <div className="border-t border-[#EBD8FF] bg-[#FAF6FF] px-5 py-4">
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between text-[#5F4B78]">
-                <span>Subtotal</span>
+                <span>{t('subtotal')}</span>
                 <span className="font-mono tabular-nums text-[#2A0E4D]">
                   {formatInr(subtotalInr)}
                 </span>
               </div>
               {giftWrap.enabled && (
                 <div className="flex justify-between text-[#5F4B78]">
-                  <span>Gift Wrapping ({giftWrap.styleNameSnapshot})</span>
+                  <span>{t('giftWrapCharge')} ({giftWrap.styleNameSnapshot})</span>
                   <span className="font-mono tabular-nums text-[#2A0E4D]">
                     {formatInr(giftWrapChargeInr)}
                   </span>
                 </div>
               )}
               <div className="flex justify-between border-t border-[#EBD8FF] pt-2 text-base font-bold text-[#2A0E4D]">
-                <span>Estimated Total</span>
+                <span>{t('total')}</span>
                 <span className="font-mono tabular-nums text-[#6A11CB]">
                   {formatInr(estimatedTotalInr)}
                 </span>
@@ -252,12 +254,12 @@ export function CartDrawer() {
             <div className="mt-4 grid grid-cols-2 gap-2.5">
               <Link to="/cart" onClick={closeCartDrawer}>
                 <Button variant="glass" fullWidth>
-                  View Cart
+                  {t('viewFullCart')}
                 </Button>
               </Link>
               <Link to="/checkout" onClick={closeCartDrawer}>
                 <Button variant="accent" fullWidth>
-                  Checkout
+                  {t('checkout')}
                 </Button>
               </Link>
             </div>

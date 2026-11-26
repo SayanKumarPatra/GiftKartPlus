@@ -178,8 +178,8 @@ export function AdminBannerPage() {
         setEditorOpen(false);
         showNotice(
           exists
-            ? 'Banner updated & saved live!'
-            : `Banner #${nextSlides.length} saved to homepage slider!`
+            ? 'Banner updated & saved!'
+            : `Banner #${nextSlides.length} added to homepage slider!`
         );
       }
     } catch (err) {
@@ -324,7 +324,7 @@ export function AdminBannerPage() {
               Website Banner (Slider)
             </h2>
             <p className="text-[11.5px] text-[#75648E]">
-              Unlimited banners · Live synced to mobile &amp; desktop
+              Unlimited banners · Responsive homepage slider
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -406,7 +406,7 @@ export function AdminBannerPage() {
                         type="button"
                         onClick={() => setDeleteTarget(slide)}
                         aria-label={`Delete ${label}`}
-                        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
+                        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border border-[#FF4D8D]/30 bg-[#FFF0F6] text-[#C81E68] hover:bg-[#FFE2EE]"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
@@ -570,17 +570,48 @@ export function AdminBannerPage() {
 
           <div>
             <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
-              Banner Click Link
+              Banner Subtitle (Optional)
             </label>
             <input
               type="text"
-              value={draft.ctaHref}
+              value={draft.subtitle}
               onChange={(e) =>
-                setDraft((prev) => ({ ...prev, ctaHref: e.target.value }))
+                setDraft((prev) => ({ ...prev, subtitle: e.target.value }))
               }
-              placeholder="/shop or /category/photo-frame"
+              placeholder="e.g. Personalized mugs, photo frames & festive hampers"
               className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Button Label
+              </label>
+              <input
+                type="text"
+                value={draft.ctaLabel}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, ctaLabel: e.target.value }))
+                }
+                placeholder="Shop Now"
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11.5px] font-bold text-[#4A3860]">
+                Banner Click Link
+              </label>
+              <input
+                type="text"
+                value={draft.ctaHref}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, ctaHref: e.target.value }))
+                }
+                placeholder="/shop or /category/photo-frame"
+                className="h-10 w-full rounded-xl border border-[#DFCEF7] bg-[#FAF8FF] px-3 text-xs text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] px-3 py-2.5">

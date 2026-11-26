@@ -44,12 +44,17 @@ export class LocalCatalogService implements ICatalogService {
     const all = await this.readCategories();
     const normalizedSlug = category.slug.trim().toLowerCase();
     const normalizedName = category.name.trim().toLowerCase();
-    const index = all.findIndex(
+    const conflict = all.find(
       (c) =>
-        c.id === category.id ||
-        c.slug.trim().toLowerCase() === normalizedSlug ||
-        c.name.trim().toLowerCase() === normalizedName
+        c.id !== category.id &&
+        (c.slug.trim().toLowerCase() === normalizedSlug ||
+          c.name.trim().toLowerCase() === normalizedName)
     );
+    if (conflict) {
+      throw new Error(`A category named "${conflict.name}" already exists.`);
+    }
+
+    const index = all.findIndex((c) => c.id === category.id);
     const next = [...all];
     if (index >= 0) {
       next[index] = {
@@ -63,13 +68,38 @@ export class LocalCatalogService implements ICatalogService {
     return index >= 0 ? next[index] : category;
   }
 
-  async deleteCategory(categoryId: string): Promise<void> {
+  async deleteCategory(categoryId: string, fallbackCategoryId?: string): Promise<void> {
     if (categoryId === ALL_GIFTS_CATEGORY_ID) {
       return;
     }
-    const all = await this.readCategories();
-    const next = all.filter((c) => c.id !== categoryId);
-    await saveAdminCollection('categories', next, 'catalog');
+    const allCategories = await this.readCategories();
+    const remainingCategories = allCategories.filter((c) => c.id !== categoryId);
+    const allProducts = await this.readProducts();
+    const linkedProducts = allProducts.filter((p) => p.categoryId === categoryId);
+
+    if (linkedProducts.length > 0) {
+      const targetFallback =
+        (fallbackCategoryId &&
+          remainingCategories.find((c) => c.id === fallbackCategoryId)?.id) ||
+        remainingCategories.find((c) => c.id !== ALL_GIFTS_CATEGORY_ID && c.isActive)?.id ||
+        remainingCategories.find((c) => c.id !== ALL_GIFTS_CATEGORY_ID)?.id ||
+        ALL_GIFTS_CATEGORY_ID;
+
+      const now = new Date().toISOString();
+      const updatedProducts = allProducts.map((product) =>
+        product.categoryId === categoryId
+          ? {
+              ...product,
+              categoryId: targetFallback,
+              subcategoryId: undefined,
+              updatedAt: now,
+            }
+          : product
+      );
+      await saveAdminCollection('products', updatedProducts, 'catalog');
+    }
+
+    await saveAdminCollection('categories', remainingCategories, 'catalog');
   }
 
   async saveSubcategory(categoryId: string, subcategory: Subcategory): Promise<Category> {

@@ -39,6 +39,7 @@ export function AdminCategoriesPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+  const [reassignTargetId, setReassignTargetId] = useState<string>('');
   const [toast, setToast] = useState<{ message: string; tone?: 'success' | 'error' } | null>(null);
 
   const sortedCategories = useMemo(
@@ -141,15 +142,15 @@ export function AdminCategoriesPage() {
       const isCreating = !editing;
       const latestCategories = await services.catalog.getCategories(true);
 
-      if (isCreating) {
-        const duplicate = latestCategories.some(
-          (c) => c.name.trim().toLowerCase() === cleanName.toLowerCase()
-        );
-        if (duplicate) {
-          showNotice(`Category "${cleanName}" already exists.`, 'error');
-          setSaving(false);
-          return;
-        }
+      const duplicate = latestCategories.some(
+        (c) =>
+          c.id !== editing?.id &&
+          c.name.trim().toLowerCase() === cleanName.toLowerCase()
+      );
+      if (duplicate) {
+        showNotice(`Category "${cleanName}" already exists.`, 'error');
+        setSaving(false);
+        return;
       }
 
       const baseSlug = slugify(cleanName) || `category-${Date.now().toString(36)}`;
@@ -208,8 +209,8 @@ export function AdminCategoriesPage() {
       setEditing(null);
       showNotice(
         isCreating
-          ? `New category "${cleanName}" added live across the website!`
-          : `"${cleanName}" saved across the website!`
+          ? `New category "${cleanName}" added to storefront & product list!`
+          : `"${cleanName}" updated successfully!`
       );
     } catch (err) {
       showNotice(
@@ -221,10 +222,43 @@ export function AdminCategoriesPage() {
     }
   }
 
+  async function handleToggleCategoryActive(cat: Category, nextActive: boolean) {
+    if (cat.id === ALL_GIFTS_CATEGORY_ID) return;
+    try {
+      await services.catalog.saveCategory({ ...cat, isActive: nextActive });
+      await services.adminAuth.logActivity(
+        `${nextActive ? 'Activated' : 'Hidden'} category "${cat.name}"`,
+        'Category Management'
+      );
+      showNotice(
+        nextActive
+          ? `"${cat.name}" is now visible on the storefront.`
+          : `"${cat.name}" is now hidden from customers.`
+      );
+    } catch (err) {
+      showNotice(
+        err instanceof Error ? err.message : 'Unable to update category status.',
+        'error'
+      );
+    }
+  }
+
+  function openDeletePrompt(cat: Category) {
+    const fallback = sortedCategories.find(
+      (c) => c.id !== cat.id && c.id !== ALL_GIFTS_CATEGORY_ID
+    );
+    setReassignTargetId(fallback?.id ?? ALL_GIFTS_CATEGORY_ID);
+    setDeleteTarget(cat);
+  }
+
   async function confirmDeleteCategory() {
     if (!deleteTarget) return;
     try {
-      await services.catalog.deleteCategory(deleteTarget.id);
+      const linkedCount = getCategoryProductCount(deleteTarget.id);
+      await services.catalog.deleteCategory(
+        deleteTarget.id,
+        linkedCount > 0 ? reassignTargetId : undefined
+      );
       await services.adminAuth.logActivity(
         `Deleted category "${deleteTarget.name}"`,
         'Category Management'
@@ -233,8 +267,13 @@ export function AdminCategoriesPage() {
         setEditorOpen(false);
         setEditing(null);
       }
+      const deletedName = deleteTarget.name;
       setDeleteTarget(null);
-      showNotice(`Category "${deleteTarget.name}" removed.`);
+      showNotice(
+        linkedCount > 0
+          ? `"${deletedName}" deleted and ${linkedCount} linked product${linkedCount === 1 ? '' : 's'} safely reassigned.`
+          : `Category "${deletedName}" removed.`
+      );
     } catch (err) {
       showNotice(
         err instanceof Error ? err.message : 'Unable to delete category.',
@@ -244,6 +283,14 @@ export function AdminCategoriesPage() {
   }
 
   const isAllGifts = editing?.id === ALL_GIFTS_CATEGORY_ID;
+  const deleteLinkedCount = deleteTarget ? getCategoryProductCount(deleteTarget.id) : 0;
+  const reassignOptions = useMemo(
+    () =>
+      sortedCategories.filter(
+        (c) => c.id !== deleteTarget?.id && c.id !== ALL_GIFTS_CATEGORY_ID
+      ),
+    [sortedCategories, deleteTarget?.id]
+  );
 
   return (
     <div className="space-y-3">
@@ -255,7 +302,7 @@ export function AdminCategoriesPage() {
 
       <div className="flex items-center justify-between gap-2 px-0.5">
         <p className="text-[12px] font-semibold text-[#685782]">
-          {sortedCategories.length} Storefront Categories (Live Global Sync)
+          {sortedCategories.length} Storefront Categories
         </p>
         <button
           type="button"
@@ -310,6 +357,15 @@ export function AdminCategoriesPage() {
               </button>
 
               <div className="flex shrink-0 items-center gap-1">
+                {cat.id !== ALL_GIFTS_CATEGORY_ID && (
+                  <div className="mr-0.5">
+                    <AdminToggleSwitch
+                      checked={cat.isActive}
+                      onChange={(next) => void handleToggleCategoryActive(cat, next)}
+                      label={`Toggle ${cat.name} active status`}
+                    />
+                  </div>
+                )}
                 <button
                   type="button"
                   disabled={idx === 0}
@@ -331,9 +387,9 @@ export function AdminCategoriesPage() {
                 {cat.id !== ALL_GIFTS_CATEGORY_ID && (
                   <button
                     type="button"
-                    onClick={() => setDeleteTarget(cat)}
+                    onClick={() => openDeletePrompt(cat)}
                     aria-label={`Delete ${cat.name}`}
-                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
+                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[#FF4D8D]/30 bg-[#FFF0F6] text-[#C81E68] hover:bg-[#FFE2EE]"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -565,11 +621,42 @@ export function AdminCategoriesPage() {
       <AdminConfirmDialog
         open={Boolean(deleteTarget)}
         title="Delete Category?"
-        message={`"${deleteTarget?.name ?? ''}" will be removed from both desktop and mobile storefronts immediately.`}
-        confirmLabel="Delete"
+        message={
+          deleteLinkedCount > 0
+            ? `"${deleteTarget?.name ?? ''}" currently has ${deleteLinkedCount} linked ${deleteLinkedCount === 1 ? 'product' : 'products'}. Choose a destination category below so no products are lost.`
+            : `"${deleteTarget?.name ?? ''}" will be removed from both desktop and mobile storefronts.`
+        }
+        confirmLabel={deleteLinkedCount > 0 ? 'Reassign & Delete' : 'Delete'}
         onConfirm={() => void confirmDeleteCategory()}
         onCancel={() => setDeleteTarget(null)}
-      />
+      >
+        {deleteLinkedCount > 0 && (
+          <div className="rounded-xl border border-[#EBD8FF] bg-[#FAF6FF] p-3">
+            <label
+              htmlFor="reassign-category-select"
+              className="mb-1 block text-[11.5px] font-bold text-[#4A3860]"
+            >
+              Move {deleteLinkedCount} {deleteLinkedCount === 1 ? 'product' : 'products'} to:
+            </label>
+            <select
+              id="reassign-category-select"
+              value={reassignTargetId}
+              onChange={(e) => setReassignTargetId(e.target.value)}
+              className="h-9 w-full rounded-lg border border-[#DFCEF7] bg-white px-2.5 text-xs font-semibold text-[#1E1035] focus:border-[#6A11CB] focus:outline-none"
+            >
+              {reassignOptions.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                  {!cat.isActive ? ' (Hidden)' : ''}
+                </option>
+              ))}
+              {reassignOptions.length === 0 && (
+                <option value={ALL_GIFTS_CATEGORY_ID}>All Gifts</option>
+              )}
+            </select>
+          </div>
+        )}
+      </AdminConfirmDialog>
     </div>
   );
 }
