@@ -8,8 +8,10 @@ import {
   ensureServerHydrated,
   getAdminBearerToken,
   getLiveStore,
+  isBackendUnavailableError,
   refreshStoreFromServer,
   saveAdminCollection,
+  savePublicLocalCollection,
 } from '../../storage/serverSync';
 import type {
   NewsletterSubscriber,
@@ -78,14 +80,40 @@ export class LocalCommunityDataService implements ICommunityDataService {
   async subscribeNewsletter(
     email: string
   ): Promise<{ added: boolean; subscriber: NewsletterSubscriber }> {
-    const res = await apiRequest<{ added: boolean; subscriber: NewsletterSubscriber }>(
-      '/api/public/newsletter',
-      {
-        method: 'POST',
-        body: { email },
+    const normalized = email.trim().toLowerCase();
+    if (!normalized || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+      throw new Error('Please enter a valid email address.');
+    }
+
+    try {
+      const res = await apiRequest<{ added: boolean; subscriber: NewsletterSubscriber }>(
+        '/api/public/newsletter',
+        {
+          method: 'POST',
+          body: { email: normalized },
+        }
+      );
+      return res;
+    } catch (err) {
+      if (!isBackendUnavailableError(err)) {
+        throw err;
       }
-    );
-    return res;
+
+      await ensureServerHydrated();
+      const existing = getLiveStore().newsletterSubscribers;
+      const found = existing.find((s) => s.email.toLowerCase() === normalized);
+      if (found) {
+        return { added: false, subscriber: found };
+      }
+
+      const subscriber: NewsletterSubscriber = {
+        id: `sub-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        email: normalized,
+        subscribedAt: new Date().toISOString(),
+      };
+      savePublicLocalCollection('newsletterSubscribers', [subscriber, ...existing], 'community');
+      return { added: true, subscriber };
+    }
   }
 
   async listReviews(productId?: string): Promise<ProductReview[]> {
@@ -98,12 +126,26 @@ export class LocalCommunityDataService implements ICommunityDataService {
   }
 
   async upsertReview(review: ProductReview): Promise<ProductReview[]> {
-    const res = await apiRequest<{ reviews: ProductReview[] }>('/api/public/reviews', {
-      method: 'POST',
-      body: review,
-    });
-    void refreshStoreFromServer(['community']);
-    return res.reviews;
+    try {
+      const res = await apiRequest<{ reviews: ProductReview[] }>('/api/public/reviews', {
+        method: 'POST',
+        body: review,
+      });
+      void refreshStoreFromServer(['community']);
+      return res.reviews;
+    } catch (err) {
+      if (!isBackendUnavailableError(err)) {
+        throw err;
+      }
+
+      await ensureServerHydrated();
+      const existing = getLiveStore().productReviews;
+      const next = existing.some((r) => r.id === review.id)
+        ? existing.map((r) => (r.id === review.id ? review : r))
+        : [review, ...existing];
+      savePublicLocalCollection('productReviews', next, 'community');
+      return next;
+    }
   }
 
   async deleteReview(reviewId: string): Promise<ProductReview[]> {

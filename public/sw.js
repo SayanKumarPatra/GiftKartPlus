@@ -1,4 +1,4 @@
-// GiftKart PWA Service Worker v3 — always fetches fresh HTML on navigation so live updates appear immediately
+// GiftKart PWA Service Worker v4 — purges stale caches and always fetches fresh HTML on navigation
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
@@ -21,7 +21,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
-  // Never serve stale cached HTML documents when deploying new live features
+  // Never serve stale cached HTML documents when deploying new live builds
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(new Request(event.request.url, { cache: 'no-store' })).catch(() =>

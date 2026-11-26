@@ -45,6 +45,19 @@ export type SyncableCollectionKey =
   | 'newsletterSubscribers'
   | 'adminActivityLogs';
 
+export const STATIC_ADMIN_TOKEN = '__giftkart_static_admin__';
+
+export class BackendUnavailableError extends Error {
+  constructor(message = 'Backend API server is not reachable on this host.') {
+    super(message);
+    this.name = 'BackendUnavailableError';
+  }
+}
+
+export function isBackendUnavailableError(err: unknown): boolean {
+  return err instanceof BackendUnavailableError;
+}
+
 const liveStore: LiveStoreSnapshot = {
   version: 0,
   categories: SEED_CATEGORIES,
@@ -59,15 +72,26 @@ const liveStore: LiveStoreSnapshot = {
   adminActivityLogs: [],
 };
 
-// Strictly held in JS memory (never written to localStorage/sessionStorage)
+// Strictly held in JS memory (never written to localStorage/sessionStorage for server mode)
 let adminBearerToken: string | null = null;
 let cachedAdminSession: AdminDemoSession | null = null;
+
+// Tracks whether Express backend (/api/*) is running ('server') or static host like Vercel ('static')
+let backendMode: 'unknown' | 'server' | 'static' = 'unknown';
 
 let initialHydrationPromise: Promise<void> | null = null;
 let eventSource: EventSource | null = null;
 let reconnectTimer: number | null = null;
 let syncStarted = false;
 let activeRefreshPromise: Promise<void> | null = null;
+
+export function getBackendMode(): 'unknown' | 'server' | 'static' {
+  return backendMode;
+}
+
+export function isStaticHostMode(): boolean {
+  return backendMode === 'static';
+}
 
 export function getAdminBearerToken(): string | null {
   return adminBearerToken;
@@ -112,6 +136,10 @@ export async function apiRequest<T>(
     requireAdmin?: boolean;
   }
 ): Promise<T> {
+  if (backendMode === 'static') {
+    throw new BackendUnavailableError();
+  }
+
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
@@ -122,25 +150,54 @@ export async function apiRequest<T>(
     if (!adminBearerToken) {
       throw new Error('Admin sign-in required. Please log in again.');
     }
+    if (adminBearerToken === STATIC_ADMIN_TOKEN) {
+      backendMode = 'static';
+      throw new BackendUnavailableError();
+    }
     headers.Authorization = `Bearer ${adminBearerToken}`;
   }
 
-  const response = await fetch(url, {
-    method: options?.method ?? 'GET',
-    headers,
-    body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
-    cache: 'no-store',
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: options?.method ?? 'GET',
+      headers,
+      body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
+      cache: 'no-store',
+    });
+  } catch {
+    throw new BackendUnavailableError('Network error while contacting backend API.');
+  }
 
+  const contentType = (response.headers.get('content-type') || '').toLowerCase();
+  const isJsonResponse = contentType.includes('application/json');
   const text = await response.text();
+
+  // Critical for static hosts (e.g. Vercel): SPA rewrites return 200 OK text/html, or static host returns 404/405 non-JSON
+  if (!isJsonResponse) {
+    if (
+      contentType.includes('text/html') ||
+      response.status === 404 ||
+      response.status === 405
+    ) {
+      backendMode = 'static';
+    }
+    throw new BackendUnavailableError(
+      `API endpoint returned non-JSON response (${response.status}).`
+    );
+  }
+
   let parsed: Record<string, unknown> = {};
   if (text) {
     try {
       parsed = JSON.parse(text) as Record<string, unknown>;
     } catch {
-      parsed = {};
+      backendMode = 'static';
+      throw new BackendUnavailableError('Invalid JSON payload from API endpoint.');
     }
   }
+
+  backendMode = 'server';
 
   if (!response.ok) {
     if (response.status === 401 && options?.requireAdmin) {
@@ -170,6 +227,19 @@ const COLLECTION_STORAGE_KEY: Partial<Record<SyncableCollectionKey, string>> = {
   adminActivityLogs: STORAGE_KEYS.ADMIN_ACTIVITY_LOGS,
 };
 
+const STORAGE_KEY_TO_TOPIC: Record<string, StoreEventTopic> = {
+  [STORAGE_KEYS.CATEGORIES]: 'catalog',
+  [STORAGE_KEYS.PRODUCTS]: 'catalog',
+  [STORAGE_KEYS.STORE_SETTINGS]: 'settings',
+  [STORAGE_KEYS.GIFT_WRAP_CONFIG]: 'giftWrap',
+  [STORAGE_KEYS.COUPONS]: 'coupons',
+  [STORAGE_KEYS.ORDERS]: 'orders',
+  [STORAGE_KEYS.REGISTERED_CUSTOMERS]: 'customers',
+  [STORAGE_KEYS.PRODUCT_REVIEWS]: 'community',
+  [STORAGE_KEYS.NEWSLETTER_SUBSCRIBERS]: 'community',
+  [STORAGE_KEYS.ADMIN_ACTIVITY_LOGS]: 'activity',
+};
+
 function readLocalCollection<K extends SyncableCollectionKey>(
   collection: K
 ): LiveStoreSnapshot[K] | null {
@@ -194,8 +264,17 @@ function writeLocalCollection<K extends SyncableCollectionKey>(
   if (!key) return;
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Ignore quota/private-mode errors when mirroring cache
+  } catch (err) {
+    if (
+      err instanceof DOMException &&
+      (err.name === 'QuotaExceededError' ||
+        err.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+        err.code === 22)
+    ) {
+      throw new Error(
+        'Browser storage is full. Please upload a smaller image or remove unused banners/products.'
+      );
+    }
   }
 }
 
@@ -232,11 +311,19 @@ function mergePublicData(
   liveStore.version = Math.max(liveStore.version, version);
   if (Array.isArray(data.categories) && data.categories.length > 0) {
     liveStore.categories = data.categories;
-    writeLocalCollection('categories', liveStore.categories);
+    try {
+      writeLocalCollection('categories', liveStore.categories);
+    } catch {
+      // Ignore quota mirror error during hydration
+    }
   }
   if (Array.isArray(data.products)) {
     liveStore.products = data.products;
-    writeLocalCollection('products', liveStore.products);
+    try {
+      writeLocalCollection('products', liveStore.products);
+    } catch {
+      // Ignore quota mirror error during hydration
+    }
   }
   if (data.storeSettings && typeof data.storeSettings === 'object') {
     liveStore.storeSettings = {
@@ -262,22 +349,38 @@ function mergePublicData(
         ? data.storeSettings.notifications
         : liveStore.storeSettings.notifications ?? [],
     };
-    writeLocalCollection('storeSettings', liveStore.storeSettings);
+    try {
+      writeLocalCollection('storeSettings', liveStore.storeSettings);
+    } catch {
+      // Ignore quota mirror error during hydration
+    }
   }
   if (data.giftWrapConfig && typeof data.giftWrapConfig === 'object') {
     liveStore.giftWrapConfig = {
       ...SEED_GIFT_WRAP_CONFIG,
       ...data.giftWrapConfig,
     };
-    writeLocalCollection('giftWrapConfig', liveStore.giftWrapConfig);
+    try {
+      writeLocalCollection('giftWrapConfig', liveStore.giftWrapConfig);
+    } catch {
+      // Ignore quota mirror error during hydration
+    }
   }
   if (Array.isArray(data.coupons)) {
     liveStore.coupons = data.coupons;
-    writeLocalCollection('coupons', liveStore.coupons);
+    try {
+      writeLocalCollection('coupons', liveStore.coupons);
+    } catch {
+      // Ignore quota mirror error during hydration
+    }
   }
   if (Array.isArray(data.productReviews)) {
     liveStore.productReviews = data.productReviews;
-    writeLocalCollection('productReviews', liveStore.productReviews);
+    try {
+      writeLocalCollection('productReviews', liveStore.productReviews);
+    } catch {
+      // Ignore quota mirror error during hydration
+    }
   }
 }
 
@@ -288,19 +391,35 @@ function mergeAdminData(
   mergePublicData(version, data);
   if (Array.isArray(data.orders)) {
     liveStore.orders = data.orders;
-    writeLocalCollection('orders', liveStore.orders);
+    try {
+      writeLocalCollection('orders', liveStore.orders);
+    } catch {
+      // Ignore quota mirror error during hydration
+    }
   }
   if (Array.isArray(data.registeredCustomers)) {
     liveStore.registeredCustomers = data.registeredCustomers;
-    writeLocalCollection('registeredCustomers', liveStore.registeredCustomers);
+    try {
+      writeLocalCollection('registeredCustomers', liveStore.registeredCustomers);
+    } catch {
+      // Ignore quota mirror error during hydration
+    }
   }
   if (Array.isArray(data.newsletterSubscribers)) {
     liveStore.newsletterSubscribers = data.newsletterSubscribers;
-    writeLocalCollection('newsletterSubscribers', liveStore.newsletterSubscribers);
+    try {
+      writeLocalCollection('newsletterSubscribers', liveStore.newsletterSubscribers);
+    } catch {
+      // Ignore quota mirror error during hydration
+    }
   }
   if (Array.isArray(data.adminActivityLogs)) {
     liveStore.adminActivityLogs = data.adminActivityLogs;
-    writeLocalCollection('adminActivityLogs', liveStore.adminActivityLogs);
+    try {
+      writeLocalCollection('adminActivityLogs', liveStore.adminActivityLogs);
+    } catch {
+      // Ignore quota mirror error during hydration
+    }
   }
 }
 
@@ -313,7 +432,14 @@ export async function refreshStoreFromServer(
 
   activeRefreshPromise = (async () => {
     try {
-      if (adminBearerToken) {
+      if (backendMode === 'static') {
+        hydrateFromLocalFallback();
+        const uniqueTopics = Array.from(new Set(topicsToEmit));
+        uniqueTopics.forEach((topic) => storeEvents.emit(topic));
+        return;
+      }
+
+      if (adminBearerToken && adminBearerToken !== STATIC_ADMIN_TOKEN) {
         const res = await apiRequest<{
           version?: number;
           data?: Partial<LiveStoreSnapshot>;
@@ -338,7 +464,9 @@ export async function refreshStoreFromServer(
       const uniqueTopics = Array.from(new Set(topicsToEmit));
       uniqueTopics.forEach((topic) => storeEvents.emit(topic));
     } catch (err) {
-      console.warn('[GiftKart Sync] Server unavailable, using local browser storage cache.', err);
+      if (!isBackendUnavailableError(err)) {
+        console.warn('[GiftKart Sync] Server sync error, using local browser cache.', err);
+      }
       hydrateFromLocalFallback();
       const uniqueTopics = Array.from(new Set(topicsToEmit));
       uniqueTopics.forEach((topic) => storeEvents.emit(topic));
@@ -356,11 +484,20 @@ export async function ensureServerHydrated(): Promise<void> {
     purgeLegacyLocalAdminKeys();
     hydrateFromLocalFallback();
     initialHydrationPromise = refreshStoreFromServer(['all']).catch(() => {
-      // Allow retry if initial fetch failed transiently
       initialHydrationPromise = null;
     });
   }
   return initialHydrationPromise;
+}
+
+export function savePublicLocalCollection<K extends SyncableCollectionKey>(
+  collection: K,
+  value: LiveStoreSnapshot[K],
+  emitTopic: StoreEventTopic
+): void {
+  liveStore[collection] = value;
+  writeLocalCollection(collection, value);
+  storeEvents.emit(emitTopic);
 }
 
 export async function saveAdminCollection<K extends SyncableCollectionKey>(
@@ -368,6 +505,17 @@ export async function saveAdminCollection<K extends SyncableCollectionKey>(
   value: LiveStoreSnapshot[K],
   emitTopic: StoreEventTopic
 ): Promise<void> {
+  if (!adminBearerToken) {
+    throw new Error('Admin sign-in required. Please log in again.');
+  }
+
+  if (backendMode === 'static' || adminBearerToken === STATIC_ADMIN_TOKEN) {
+    liveStore[collection] = value;
+    writeLocalCollection(collection, value);
+    storeEvents.emit(emitTopic);
+    return;
+  }
+
   try {
     const res = await apiRequest<{ ok?: boolean; version?: number }>(
       `/api/admin/store/${encodeURIComponent(collection)}`,
@@ -384,19 +532,13 @@ export async function saveAdminCollection<K extends SyncableCollectionKey>(
     }
     storeEvents.emit(emitTopic);
   } catch (err) {
-    const message = err instanceof Error ? err.message : '';
-    // Re-throw genuine auth errors from a running backend
-    if (
-      message.toLowerCase().includes('sign-in required') ||
-      message.toLowerCase().includes('unauthorized') ||
-      message.includes('(401)')
-    ) {
-      throw err;
+    if (isBackendUnavailableError(err)) {
+      liveStore[collection] = value;
+      writeLocalCollection(collection, value);
+      storeEvents.emit(emitTopic);
+      return;
     }
-    // Static frontend hosting fallback (no backend server reachable)
-    liveStore[collection] = value;
-    writeLocalCollection(collection, value);
-    storeEvents.emit(emitTopic);
+    throw err;
   }
 }
 
@@ -414,7 +556,11 @@ const VALID_TOPICS = new Set<StoreEventTopic>([
 ]);
 
 function connectEventStream(): void {
-  if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
+  if (
+    typeof window === 'undefined' ||
+    typeof EventSource === 'undefined' ||
+    backendMode !== 'server'
+  ) {
     return;
   }
   if (eventSource) {
@@ -441,8 +587,9 @@ function connectEventStream(): void {
       if (payload.type === 'store:updated') {
         const incomingVersion = typeof payload.version === 'number' ? payload.version : 0;
         if (incomingVersion > liveStore.version || incomingVersion === 0) {
-          const topics = (payload.topics ?? [])
-            .filter((t): t is StoreEventTopic => VALID_TOPICS.has(t as StoreEventTopic));
+          const topics = (payload.topics ?? []).filter((t): t is StoreEventTopic =>
+            VALID_TOPICS.has(t as StoreEventTopic)
+          );
           void refreshStoreFromServer(topics.length > 0 ? topics : ['all']);
         }
       }
@@ -456,13 +603,18 @@ function connectEventStream(): void {
     if (eventSource === es) {
       eventSource = null;
     }
+    if (backendMode !== 'server') {
+      return;
+    }
     if (reconnectTimer !== null) {
       window.clearTimeout(reconnectTimer);
     }
     reconnectTimer = window.setTimeout(() => {
       reconnectTimer = null;
-      connectEventStream();
-      void refreshStoreFromServer(['all']);
+      if (backendMode === 'server') {
+        connectEventStream();
+        void refreshStoreFromServer(['all']);
+      }
     }, 3000);
   };
 }
@@ -472,14 +624,30 @@ export function startLiveStoreSync(): void {
   syncStarted = true;
 
   purgeLegacyLocalAdminKeys();
-  void ensureServerHydrated();
-  connectEventStream();
+  void ensureServerHydrated().then(() => {
+    if (backendMode === 'server') {
+      connectEventStream();
+    }
+  });
+
+  // Sync updates instantly across tabs when running on static hosting (Vercel)
+  window.addEventListener('storage', (event) => {
+    if (!event.key) return;
+    const topic = STORAGE_KEY_TO_TOPIC[event.key];
+    if (topic) {
+      hydrateFromLocalFallback();
+      storeEvents.emit(topic);
+    }
+  });
 
   // Re-sync immediately whenever the user returns to the browser tab (especially on mobile phones!)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       void refreshStoreFromServer(['all']);
-      if (!eventSource || eventSource.readyState === EventSource.CLOSED) {
+      if (
+        backendMode === 'server' &&
+        (!eventSource || eventSource.readyState === EventSource.CLOSED)
+      ) {
         connectEventStream();
       }
     }

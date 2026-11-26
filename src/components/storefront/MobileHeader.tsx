@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   ChevronRight,
+  Globe,
   Heart,
   Home,
   Info,
@@ -33,6 +34,7 @@ const MOBILE_DRAWER_MAIN_LINKS: DrawerMainLink[] = [
   { labelKey: 'home', to: '/', Icon: Home },
   { labelKey: 'myOrders', to: '/my-orders', Icon: Package },
   { labelKey: 'savedAddresses', to: '/addresses', Icon: MapPin },
+  { labelKey: 'language', to: '/account?tab=language', Icon: Globe },
   { labelKey: 'aboutUs', to: '/about', Icon: Info },
   { labelKey: 'contactUs', to: '/contact', Icon: Phone },
 ];
