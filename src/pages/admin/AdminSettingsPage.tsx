@@ -586,7 +586,7 @@ export function AdminSettingsPage() {
             </>
           )}
 
-          <div className="sticky bottom-0 -mx-4 border-t border-[#EFE3FF] bg-white px-4 pt-3 pb-1">
+          <div className="sticky bottom-[74px] z-20 -mx-4 rounded-b-2xl border-t border-[#EFE3FF] bg-white/98 px-4 py-3 shadow-[0_-8px_20px_-14px_rgba(106,17,203,0.28)] backdrop-blur-sm lg:bottom-0">
             <button
               type="submit"
               disabled={saving || uploadingLogo}

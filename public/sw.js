@@ -1,10 +1,18 @@
-// Minimal pass-through Service Worker for GiftKart PWA installability
+// GiftKart PWA Service Worker v3 — always fetches fresh HTML on navigation so live updates appear immediately
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      if ('caches' in self) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+      await self.clients.claim();
+    })()
+  );
 });
 
 self.addEventListener('fetch', (event) => {
@@ -12,5 +20,16 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
+
+  // Never serve stale cached HTML documents when deploying new live features
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(new Request(event.request.url, { cache: 'no-store' })).catch(() =>
+        fetch(event.request)
+      )
+    );
+    return;
+  }
+
   event.respondWith(fetch(event.request));
 });

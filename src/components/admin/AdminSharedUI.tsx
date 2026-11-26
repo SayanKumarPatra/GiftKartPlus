@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCircle2, X } from 'lucide-react';
 
 /**
@@ -77,10 +78,9 @@ export function readImageFileAsDataUrl(
 }
 
 /**
- * Mobile-first bottom sheet / centered modal with:
- * - Sticky top header (Title + Close)
- * - Independently scrollable body
- * - ALWAYS-VISIBLE pinned bottom action footer (Cancel + Save) above safe-area & bottom nav
+ * Mobile-first bottom sheet / centered modal portaled to document.body so it
+ * ALWAYS paints above AdminMobileBottomNav, tracks visualViewport (soft keyboard),
+ * scrolls smoothly via min-h-0 flex-1, and pins the Save footer cleanly in view.
  */
 export function AdminSheetModal({
   open,
@@ -97,21 +97,76 @@ export function AdminSheetModal({
   footer?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  if (!open) return null;
+  const [viewportMetrics, setViewportMetrics] = useState<{
+    height: number;
+    offsetTop: number;
+  } | null>(null);
 
-  return (
+  useEffect(() => {
+    if (!open || typeof window === 'undefined') return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const updateViewport = () => {
+      const vv = window.visualViewport;
+      setViewportMetrics({
+        height: Math.round(vv ? vv.height : window.innerHeight),
+        offsetTop: Math.round(vv ? vv.offsetTop : 0),
+      });
+    };
+
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    window.visualViewport?.addEventListener('resize', updateViewport);
+    window.visualViewport?.addEventListener('scroll', updateViewport);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('resize', updateViewport);
+      window.visualViewport?.removeEventListener('resize', updateViewport);
+      window.visualViewport?.removeEventListener('scroll', updateViewport);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open, onClose]);
+
+  if (!open || typeof document === 'undefined') return null;
+
+  const sheetMaxHeight = viewportMetrics
+    ? `${Math.max(260, Math.round(viewportMetrics.height * 0.92))}px`
+    : '88dvh';
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-[110] flex items-end justify-center bg-[#1E1035]/50 backdrop-blur-[2px] sm:items-center sm:p-4"
+      className="fixed inset-x-0 top-0 z-[200] flex items-end justify-center bg-[#1E1035]/55 backdrop-blur-[2px] sm:items-center sm:p-4"
+      style={
+        viewportMetrics
+          ? {
+              top: `${viewportMetrics.offsetTop}px`,
+              height: `${viewportMetrics.height}px`,
+            }
+          : { bottom: 0 }
+      }
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
         }
       }}
     >
-      <div className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[26px] border border-[#EBD8FF] bg-white shadow-2xl sm:rounded-2xl">
+      <div
+        className="flex w-full max-w-md flex-col overflow-hidden rounded-t-[26px] border border-[#EBD8FF] bg-white shadow-2xl sm:rounded-2xl"
+        style={{ maxHeight: sheetMaxHeight }}
+      >
         {/* Sticky Top Header */}
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[#EFE3FF] bg-white px-4 py-3">
           <div className="min-w-0">
@@ -134,20 +189,23 @@ export function AdminSheetModal({
           </button>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-4 py-3.5">{children}</div>
+        {/* Scrollable Content (min-h-0 is critical so mobile flex never clips the footer) */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3.5">
+          {children}
+        </div>
 
         {/* Always-Visible Pinned Bottom Footer */}
         {footer && (
           <div
-            className="shrink-0 border-t border-[#EFE3FF] bg-white px-4 pt-3 shadow-[0_-6px_16px_-12px_rgba(106,17,203,0.2)]"
-            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
+            className="shrink-0 border-t border-[#EFE3FF] bg-white px-4 pt-2.5 shadow-[0_-8px_20px_-12px_rgba(106,17,203,0.24)]"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 14px)' }}
           >
             {footer}
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -189,11 +247,11 @@ export function AdminToast({
   tone?: 'success' | 'error';
   onClose: () => void;
 }) {
-  if (!message) return null;
-  return (
+  if (!message || typeof document === 'undefined') return null;
+  return createPortal(
     <div
       role="status"
-      className={`fixed left-1/2 top-4 z-[130] flex w-[calc(100%-24px)] max-w-md -translate-x-1/2 items-center justify-between gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-semibold shadow-lg ${
+      className={`fixed left-1/2 top-4 z-[220] flex w-[calc(100%-24px)] max-w-md -translate-x-1/2 items-center justify-between gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-semibold shadow-lg ${
         tone === 'error'
           ? 'border border-[#FF4D8D]/35 bg-[#FFF0F6] text-[#9E1650]'
           : 'border border-emerald-200 bg-white text-[#1E1035] ring-1 ring-[#6A11CB]/15'
@@ -215,7 +273,8 @@ export function AdminToast({
       >
         <X className="h-3.5 w-3.5" />
       </button>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -238,13 +297,13 @@ export function AdminConfirmDialog({
   onCancel: () => void;
   children?: React.ReactNode;
 }) {
-  if (!open) return null;
-  return (
+  if (!open || typeof document === 'undefined') return null;
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-confirm-title"
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-[#1E1035]/45 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[210] flex items-center justify-center bg-[#1E1035]/50 p-4 backdrop-blur-[2px]"
     >
       <div className="w-full max-w-sm rounded-2xl border border-[#EBD8FF] bg-white p-4 shadow-xl">
         <h3
@@ -278,7 +337,8 @@ export function AdminConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

@@ -6,6 +6,7 @@ const MORE_SUBPATHS = [
   '/admin/more',
   '/admin/banners',
   '/admin/categories',
+  '/admin/notifications',
   '/admin/offers',
   '/admin/customers',
   '/admin/payments',

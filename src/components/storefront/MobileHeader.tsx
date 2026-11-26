@@ -60,7 +60,7 @@ export function MobileHeader(_props: MobileHeaderProps) {
   return (
     <>
       <header
-        className={`sticky top-0 z-40 grid h-[56px] grid-cols-[100px_1fr_100px] items-center px-2 backdrop-blur-md lg:hidden ${
+        className={`sticky top-0 z-40 grid h-[56px] grid-cols-[92px_1fr_104px] items-center px-2 backdrop-blur-md lg:hidden ${
           isHome
             ? 'border-b border-transparent bg-[#FDE4EC]/95'
             : 'border-b border-[#EFE3FF]/80 bg-white/96'

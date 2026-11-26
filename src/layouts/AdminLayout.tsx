@@ -187,7 +187,7 @@ export function AdminLayout() {
         </header>
 
         {/* Curved Sheet Content Surface */}
-        <main className="relative z-10 -mt-4 flex-1 rounded-t-[24px] bg-[#F7F3FF] px-3.5 pb-24 pt-4 lg:mt-0 lg:rounded-none lg:px-6 lg:pb-8 lg:pt-5">
+        <main className="relative -mt-4 flex-1 rounded-t-[24px] bg-[#F7F3FF] px-3.5 pb-28 pt-4 lg:mt-0 lg:rounded-none lg:px-6 lg:pb-8 lg:pt-5">
           <div className="mx-auto w-full max-w-3xl">
             <Outlet />
           </div>

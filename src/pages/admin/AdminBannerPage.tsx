@@ -442,12 +442,12 @@ export function AdminBannerPage() {
         subtitle="Upload photo and tap Save Banner below"
         onClose={() => setEditorOpen(false)}
         footer={
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setEditorOpen(false)}
-                className="h-11 flex-1 cursor-pointer rounded-xl border border-[#DFCEF7] bg-white text-xs font-bold text-[#4A3860]"
+                className="h-10 flex-1 cursor-pointer rounded-xl border border-[#DFCEF7] bg-white text-xs font-bold text-[#4A3860]"
               >
                 Cancel
               </button>
@@ -455,7 +455,7 @@ export function AdminBannerPage() {
                 type="button"
                 disabled={saving || uploading}
                 onClick={() => void handleSaveBanner(undefined, false)}
-                className="flex h-11 flex-[1.5] cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-sm disabled:opacity-60"
+                className="flex h-10 flex-[1.5] cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white shadow-sm disabled:opacity-60"
               >
                 <Save className="h-4 w-4" />
                 <span>{saving ? 'Saving...' : 'Save Banner'}</span>
