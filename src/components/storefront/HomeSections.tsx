@@ -12,6 +12,7 @@ import {
   buildPopulatedCategoryGroups,
   getAvailableStorefrontProducts,
 } from '../../utils/storefrontHelpers';
+import { useLanguage } from '../../context/LanguageContext';
 
 /* ============================================================================
  * 1. DESKTOP PROMOTIONAL HERO BANNER CAROUSEL
@@ -108,6 +109,7 @@ export function HeroSliderSection() {
 export function ShopByCategorySection() {
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
+  const { t, translateCategory } = useLanguage();
 
   const categoryGroups = useMemo(
     () => buildPopulatedCategoryGroups(categories, products),
@@ -128,58 +130,61 @@ export function ShopByCategorySection() {
               id="desktop-shop-by-category"
               className="font-display text-[22px] font-bold tracking-tight text-[#1E1035]"
             >
-              Shop by Category
+              {t('shopByCategory')}
             </h2>
             <p className="mt-0.5 text-[13px] text-[#685782]">
-              Explore curated gift collections tailored for every occasion.
+              {t('browseOurCuratedCategories')}
             </p>
           </div>
           <Link
             to="/categories"
             className="inline-flex items-center gap-1 text-[13px] font-bold text-[#6A11CB] transition-colors hover:text-[#FF4D8D]"
           >
-            <span>All Categories</span>
+            <span>{t('categories')}</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
         <div className="grid grid-cols-5 gap-3.5">
-          {categoryGroups.map((group) => (
-            <Link
-              key={group.id}
-              to={
-                group.isAllGifts
-                  ? '/categories?cat=all-gifts'
-                  : `/categories?cat=${encodeURIComponent(group.slug)}`
-              }
-              className="group flex flex-col items-center rounded-xl border border-[#EFE4FF] bg-[#FCFAFF] p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-[#6A11CB]/40 hover:bg-white hover:shadow-[0_10px_22px_-12px_rgba(106,17,203,0.22)]"
-            >
-              <div className="flex h-[74px] w-[74px] items-center justify-center overflow-hidden rounded-xl bg-white p-1.5 shadow-[0_2px_8px_rgba(106,17,203,0.06)]">
-                {group.isPngArtwork ? (
-                  <img
-                    src={group.artworkUrl}
-                    alt={group.label}
-                    loading="lazy"
-                    className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-108"
-                  />
-                ) : (
-                  <ProductImage
-                    src={group.artworkUrl}
-                    alt={group.label}
-                    aspectClass="h-full w-full rounded-lg"
-                    zoomOnHover
-                  />
-                )}
-              </div>
-              <span className="mt-2.5 line-clamp-2 text-[12.5px] font-bold leading-snug text-[#2B0B4E] group-hover:text-[#6A11CB]">
-                {group.label}
-              </span>
-              <span className="mt-0.5 text-[11px] font-medium tabular-nums text-[#7C6997]">
-                {group.products.length}{' '}
-                {group.products.length === 1 ? 'item' : 'items'}
-              </span>
-            </Link>
-          ))}
+          {categoryGroups.map((group) => {
+            const localizedLabel = translateCategory(group.label);
+            return (
+              <Link
+                key={group.id}
+                to={
+                  group.isAllGifts
+                    ? '/categories?cat=all-gifts'
+                    : `/categories?cat=${encodeURIComponent(group.slug)}`
+                }
+                className="group flex flex-col items-center rounded-xl border border-[#EFE4FF] bg-[#FCFAFF] p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-[#6A11CB]/40 hover:bg-white hover:shadow-[0_10px_22px_-12px_rgba(106,17,203,0.22)]"
+              >
+                <div className="flex h-[74px] w-[74px] items-center justify-center overflow-hidden rounded-xl bg-white p-1.5 shadow-[0_2px_8px_rgba(106,17,203,0.06)]">
+                  {group.isPngArtwork ? (
+                    <img
+                      src={group.artworkUrl}
+                      alt={localizedLabel}
+                      loading="lazy"
+                      className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-108"
+                    />
+                  ) : (
+                    <ProductImage
+                      src={group.artworkUrl}
+                      alt={localizedLabel}
+                      aspectClass="h-full w-full rounded-lg"
+                      zoomOnHover
+                    />
+                  )}
+                </div>
+                <span className="mt-2.5 line-clamp-2 text-[12.5px] font-bold leading-snug text-[#2B0B4E] group-hover:text-[#6A11CB]">
+                  {localizedLabel}
+                </span>
+                <span className="mt-0.5 text-[11px] font-medium tabular-nums text-[#7C6997]">
+                  {group.products.length}{' '}
+                  {group.products.length === 1 ? t('item') : t('items')}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -192,6 +197,7 @@ export function ShopByCategorySection() {
 export function TrendingGiftsSection() {
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
+  const { t } = useLanguage();
 
   const categoryNameById = useMemo(
     () => new Map(categories.map((c) => [c.id, c.name])),
@@ -223,10 +229,10 @@ export function TrendingGiftsSection() {
                 id="desktop-trending-gifts"
                 className="font-display text-[22px] font-bold tracking-tight text-[#1E1035]"
               >
-                Trending Gifts
+                {t('trendingGifts')}
               </h2>
               <p className="text-[13px] text-[#685782]">
-                Customer favourites crafted for memorable moments.
+                {t('popularRightNow')}
               </p>
             </div>
           </div>
@@ -235,7 +241,7 @@ export function TrendingGiftsSection() {
             to="/shop"
             className="inline-flex items-center gap-1 text-[13px] font-bold text-[#6A11CB] transition-colors hover:text-[#FF4D8D]"
           >
-            <span>View All Gifts</span>
+            <span>{t('viewAll')}</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -271,6 +277,7 @@ export function TrendingGiftsSection() {
 export function ProductListingSection() {
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
+  const { t, translateCategory } = useLanguage();
   const [selectedGroupId, setSelectedGroupId] = useState<string>('all-gifts');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>(
     'featured'
@@ -312,14 +319,14 @@ export function ProductListingSection() {
               id="desktop-product-listing"
               className="font-display text-[22px] font-bold tracking-tight text-[#1E1035]"
             >
-              Explore All Gifts
+              {t('exploreAllGifts')}
             </h2>
             <p className="mt-0.5 text-[13px] text-[#685782]">
-              Showing{' '}
+              {t('showingResults')}{' '}
               <span className="font-semibold tabular-nums text-[#2B0B4E]">
                 {displayedProducts.length}
               </span>{' '}
-              available products
+              {t('giftsFound')}
             </p>
           </div>
 
@@ -328,7 +335,7 @@ export function ProductListingSection() {
               htmlFor="home-desktop-sort"
               className="text-xs font-semibold text-[#5E4B78]"
             >
-              Sort by
+              {t('sortBy')}
             </label>
             <select
               id="home-desktop-sort"
@@ -340,9 +347,9 @@ export function ProductListingSection() {
               }
               className="h-9 rounded-lg border border-[#DCD0EF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
             >
-              <option value="featured">Featured</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
+              <option value="featured">{t('sortFeatured')}</option>
+              <option value="price-asc">{t('sortPriceLowHigh')}</option>
+              <option value="price-desc">{t('sortPriceHighLow')}</option>
             </select>
           </div>
         </div>
@@ -362,7 +369,7 @@ export function ProductListingSection() {
                     : 'border border-[#EBD8FF] bg-[#FCFAFF] text-[#3A2259] hover:border-[#6A11CB]/40 hover:text-[#6A11CB]'
                 }`}
               >
-                {group.label}
+                {translateCategory(group.label)}
               </button>
             );
           })}
@@ -381,7 +388,7 @@ export function ProductListingSection() {
         ) : displayedProducts.length === 0 ? (
           <div className="mt-6 rounded-xl border border-[#EBD8FF] bg-[#FAF7FF] px-6 py-12 text-center">
             <p className="text-sm font-semibold text-[#2B0B4E]">
-              No products are available in this category right now.
+              {t('noProductsMatch')}
             </p>
           </div>
         ) : (

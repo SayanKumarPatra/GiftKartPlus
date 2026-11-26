@@ -28,6 +28,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   useCategories,
   useCoupons,
@@ -67,6 +68,7 @@ export function MobileCartPage() {
   } = useCart();
   const { customerAccount } = useAuth();
   const { pushToast } = useToast();
+  const { t, translateCategory } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -263,8 +265,8 @@ export function MobileCartPage() {
             <ChevronLeft className="h-[22px] w-[22px] stroke-[2.4]" />
           </button>
           <h1 className="text-[19px] font-extrabold tracking-[-0.015em] text-[#2B0B4E]">
-            My Cart{' '}
-            <span className="font-semibold text-[#5E477A]">(0 Items)</span>
+            {t('myCart')}{' '}
+            <span className="font-semibold text-[#5E477A]">(0 {t('items')})</span>
           </h1>
         </div>
 
@@ -273,17 +275,17 @@ export function MobileCartPage() {
             <ShoppingBag className="h-8 w-8 stroke-[1.9]" />
           </div>
           <h2 className="mt-4 text-[18px] font-extrabold text-[#2B0B4E]">
-            Your Cart is Empty
+            {t('cartEmptyTitle')}
           </h2>
           <p className="mt-1.5 max-w-[260px] text-[13px] leading-relaxed text-[#6A5782]">
-            Add photo frames, coffee mugs, T-shirt prints, or keychains to get started.
+            {t('cartEmptyDesc')}
           </p>
           <Link
             to="/shop"
-            className="mt-6 inline-flex h-[46px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-7 text-[14px] font-extrabold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] transition-transform active:scale-[0.98]"
+            className="mt-6 inline-flex h-[46px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-7 text-[14px] font-extrabold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] transition-transform active:scale-[0.98]"
           >
             <Gift className="h-4 w-4 stroke-[2.2]" />
-            <span>Explore Gifts</span>
+            <span>{t('exploreGifts')}</span>
           </Link>
         </div>
       </div>
@@ -303,9 +305,9 @@ export function MobileCartPage() {
           <ChevronLeft className="h-[22px] w-[22px] stroke-[2.4]" />
         </button>
         <h1 className="truncate text-[18.5px] font-extrabold tracking-[-0.015em] text-[#2B0B4E]">
-          My Cart{' '}
+          {t('myCart')}{' '}
           <span className="font-semibold text-[#5E477A]">
-            ({itemCount} {itemCount === 1 ? 'Item' : 'Items'})
+            ({itemCount} {itemCount === 1 ? t('item') : t('items')})
           </span>
         </h1>
       </div>
@@ -320,8 +322,8 @@ export function MobileCartPage() {
             />
             <p className="truncate text-[13.5px] font-bold text-[#2B0B4E]">
               {selectedAddress
-                ? `Delivery at ${selectedAddress.city} - ${selectedAddress.pincode}`
-                : 'Add Delivery Address'}
+                ? `${selectedAddress.city} - ${selectedAddress.pincode}`
+                : t('deliveryAddress')}
             </p>
           </div>
 
@@ -336,7 +338,7 @@ export function MobileCartPage() {
             }}
             className="shrink-0 whitespace-nowrap rounded-xl border border-[#DEC7FF] bg-white px-3.5 py-1.5 text-[12.5px] font-extrabold text-[#3B0764] shadow-[0_2px_6px_rgba(106,17,203,0.08)] transition-transform active:scale-95"
           >
-            {selectedAddress ? 'Change' : 'Add'}
+            {selectedAddress ? t('change') : t('add')}
           </button>
         </div>
       </section>
@@ -378,7 +380,7 @@ export function MobileCartPage() {
                       aria-hidden="true"
                       className="h-3 w-3 shrink-0 stroke-[2.2]"
                     />
-                    <span className="truncate">{categoryLabel}</span>
+                    <span className="truncate">{translateCategory(categoryLabel)}</span>
                   </span>
 
                   {/* Product Name */}
@@ -452,7 +454,7 @@ export function MobileCartPage() {
                     handleRemoveItem(item.cartItemId, item.productName)
                   }
                   aria-label={`Remove ${item.productName} from cart`}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-[#5B4675] transition-colors active:scale-90 active:bg-rose-50 active:text-rose-600"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-[#5B4675] transition-colors active:scale-90 active:bg-[#FFF0F6] active:text-[#C81E68]"
                 >
                   <Trash2 className="h-[18px] w-[18px] stroke-[1.9]" />
                 </button>
@@ -479,7 +481,7 @@ export function MobileCartPage() {
               {appliedCouponCode ? (
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="truncate text-[14px] font-extrabold text-[#2B0B4E]">
-                    {appliedCouponCode} Applied
+                    {appliedCouponCode}
                   </span>
                   <span className="shrink-0 rounded-full bg-[#DCFCE7] px-2 py-0.5 text-[11px] font-bold text-[#15803D]">
                     -{formatInr(couponDiscount)}
@@ -487,7 +489,7 @@ export function MobileCartPage() {
                 </div>
               ) : (
                 <span className="text-[14.5px] font-extrabold text-[#2B0B4E]">
-                  Apply Coupon
+                  {t('applyCoupon')}
                 </span>
               )}
             </div>
@@ -510,7 +512,7 @@ export function MobileCartPage() {
                     setCouponInput(e.target.value.toUpperCase());
                     if (couponError) setCouponError('');
                   }}
-                  placeholder="Enter coupon code"
+                  placeholder={t('enterPromoCode')}
                   aria-label="Coupon code"
                   className="h-[42px] min-w-0 flex-1 rounded-xl border border-[#E6D4FF] bg-[#FAF6FF] px-3 font-mono text-[13px] font-bold uppercase text-[#2B0B4E] placeholder:font-sans placeholder:font-medium placeholder:normal-case placeholder:text-[#84729B] focus:border-[#6A11CB] focus:outline-none"
                 />
@@ -519,12 +521,12 @@ export function MobileCartPage() {
                   disabled={couponValidating}
                   className="h-[42px] shrink-0 whitespace-nowrap rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] px-4 text-[13px] font-extrabold text-white shadow-[0_4px_12px_rgba(106,17,203,0.25)] active:scale-95 disabled:opacity-50"
                 >
-                  {couponValidating ? '...' : 'Apply'}
+                  {couponValidating ? '...' : t('apply')}
                 </button>
               </form>
 
               {couponError && (
-                <p className="mt-2 text-[12px] font-semibold text-rose-600">
+                <p className="mt-2 text-[12px] font-semibold text-[#C81E68]">
                   {couponError}
                 </p>
               )}
@@ -532,14 +534,14 @@ export function MobileCartPage() {
               {appliedCouponCode && (
                 <div className="mt-2.5 flex items-center justify-between rounded-xl bg-[#ECFDF5] px-3 py-2 text-[12px]">
                   <span className="font-bold text-[#15803D]">
-                    Code {appliedCouponCode} saves {formatInr(couponDiscount)}
+                    {appliedCouponCode} (-{formatInr(couponDiscount)})
                   </span>
                   <button
                     type="button"
                     onClick={handleClearCoupon}
-                    className="font-extrabold text-rose-600 underline-offset-2 hover:underline"
+                    className="font-extrabold text-[#C81E68] underline-offset-2 hover:underline"
                   >
-                    Remove
+                    {t('remove')}
                   </button>
                 </div>
               )}
@@ -596,9 +598,9 @@ export function MobileCartPage() {
               className="h-[19px] w-[19px] shrink-0 text-[#3B0764] stroke-[2]"
             />
             <h2 className="text-[15.5px] font-extrabold text-[#2B0B4E]">
-              Price Details{' '}
+              {t('priceDetails')}{' '}
               <span className="font-semibold text-[#5E477A]">
-                ({itemCount} {itemCount === 1 ? 'Item' : 'Items'})
+                ({itemCount} {itemCount === 1 ? t('item') : t('items')})
               </span>
             </h2>
           </div>
@@ -607,7 +609,7 @@ export function MobileCartPage() {
           <dl className="mt-3.5 space-y-2.5">
             <div className="flex items-center justify-between gap-2">
               <dt className="border-b border-dotted border-[#5A4575]/60 pb-0.5 text-[14px] font-medium text-[#2B0B4E]">
-                Product Price
+                {t('productPrice')}
               </dt>
               <dd className="text-[14.5px] font-bold tabular-nums text-[#2B0B4E]">
                 + {formatInr(pricing.totalProductPriceInr)}
@@ -616,7 +618,7 @@ export function MobileCartPage() {
 
             <div className="flex items-center justify-between gap-2">
               <dt className="border-b border-dotted border-[#16A34A]/75 pb-0.5 text-[14px] font-semibold text-[#16A34A]">
-                Product Discount
+                {t('productDiscount')}
               </dt>
               <dd className="text-[14.5px] font-bold tabular-nums text-[#16A34A]">
                 - {formatInr(pricing.catalogDiscountInr)}
@@ -626,7 +628,7 @@ export function MobileCartPage() {
             {couponDiscount > 0 && appliedCouponCode && (
               <div className="flex items-center justify-between gap-2">
                 <dt className="border-b border-dotted border-[#16A34A]/75 pb-0.5 text-[14px] font-semibold text-[#16A34A]">
-                  Coupon Discount ({appliedCouponCode})
+                  {t('couponDiscount')} ({appliedCouponCode})
                 </dt>
                 <dd className="text-[14.5px] font-bold tabular-nums text-[#16A34A]">
                   - {formatInr(couponDiscount)}
@@ -637,7 +639,7 @@ export function MobileCartPage() {
             {giftWrap.enabled && giftWrapChargeInr > 0 && (
               <div className="flex items-center justify-between gap-2">
                 <dt className="text-[14px] font-medium text-[#5A4575]">
-                  Gift Wrapping
+                  {t('giftWrapCharge')}
                 </dt>
                 <dd className="text-[14.5px] font-bold tabular-nums text-[#2B0B4E]">
                   + {formatInr(giftWrapChargeInr)}
@@ -652,7 +654,7 @@ export function MobileCartPage() {
           {/* Order Total */}
           <div className="flex items-center justify-between gap-2">
             <span className="text-[16px] font-extrabold text-[#2B0B4E]">
-              Order Total
+              {t('grandTotal')}
             </span>
             <span className="text-[18px] font-extrabold tabular-nums text-[#2B0B4E]">
               {formatInr(pricing.orderTotalInr)}
@@ -667,7 +669,7 @@ export function MobileCartPage() {
                 className="h-[19px] w-[19px] shrink-0 fill-[#16A34A] text-white"
               />
               <span>
-                Yay! Your total discount is {formatInr(pricing.totalDiscountInr)}
+                {t('discount')}: {formatInr(pricing.totalDiscountInr)}
               </span>
             </div>
           )}
@@ -687,7 +689,7 @@ export function MobileCartPage() {
               {formatInr(pricing.orderTotalInr)}
             </p>
             <p className="mt-1 text-[11.5px] font-medium text-[#75628E]">
-              Total Amount
+              {t('grandTotal')}
             </p>
           </div>
 
@@ -704,9 +706,9 @@ export function MobileCartPage() {
               couponDiscount,
               selectedAddressId: selectedAddress?.id,
             }}
-            className="flex h-[48px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-6 text-[16px] font-extrabold text-white shadow-[0_8px_20px_-4px_rgba(162,28,175,0.48)] transition-transform active:scale-[0.985]"
+            className="flex h-[48px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-6 text-[16px] font-extrabold text-white shadow-[0_8px_20px_-4px_rgba(162,28,175,0.48)] transition-transform active:scale-[0.985]"
           >
-            <span>Continue</span>
+            <span>{t('continueBtn')}</span>
             <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.5]" />
           </Link>
         </div>

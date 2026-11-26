@@ -10,6 +10,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   buildStorefrontCategoryGroups,
   isAllGiftsCategory,
@@ -30,6 +31,7 @@ export function ShopPage({
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { data: categories } = useCategories();
+  const { t, translateCategory, translateOccasion } = useLanguage();
 
   const categorySlug = searchParams.get('category') ?? '';
   const subcategorySlug = searchParams.get('subcategory') ?? '';
@@ -59,22 +61,22 @@ export function ShopPage({
   );
 
   const pageHeading = bestSellersOnly
-    ? 'Best Sellers'
+    ? t('bestSellers')
     : customizableOnly
-      ? 'Customize Your Gift'
+      ? t('customizeGift')
       : isSearchPage
         ? searchQuery
-          ? `Results for "${searchQuery}"`
-          : 'Search Gifts'
+          ? `${t('searchResultsFor')} "${searchQuery}"`
+          : t('search')
         : activeSubcategory
           ? activeSubcategory.name
           : activeCategory
-            ? activeCategory.name
+            ? translateCategory(activeCategory.name, activeCategory.translations)
             : occasionParam
-              ? `${occasionParam} Gifts`
+              ? translateOccasion(occasionParam)
               : searchQuery
                 ? searchQuery
-                : 'All Gifts';
+                : t('allGifts');
 
   return (
     <div className="space-y-4">
@@ -93,15 +95,15 @@ export function ShopPage({
             className="inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back</span>
+            <span>{t('back')}</span>
           </button>
           <h1 className="mt-1 truncate text-xl font-extrabold tracking-tight text-[#2B0B4E] sm:text-2xl">
             {pageHeading}
           </h1>
           <p className="text-xs font-medium text-[#6E5B85]">
             {isLoading
-              ? 'Loading gifts...'
-              : `${products.length} ${products.length === 1 ? 'gift' : 'gifts'} available`}
+              ? t('loading')
+              : `${products.length} ${t('giftsFound')}`}
           </p>
         </div>
 
@@ -111,7 +113,7 @@ export function ShopPage({
             onClick={() => setSearchParams({})}
             className="rounded-full border border-[#EBD8FF] bg-[#FAF5FF] px-3.5 py-1.5 text-xs font-bold text-[#6A11CB] transition-colors hover:bg-[#F1E4FF]"
           >
-            Show All Gifts
+            {t('allGifts')}
           </button>
         )}
       </div>
@@ -128,17 +130,17 @@ export function ShopPage({
         </div>
       ) : products.length === 0 ? (
         <EmptyState
-          title="No gifts found"
-          description="Try browsing another gift category or view all available gifts on GiftKart."
+          title={t('noSearchResults')}
+          description={t('tryDifferentKeywords')}
           icon={<Package className="h-5 w-5" />}
           action={
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button size="sm" onClick={() => setSearchParams({})}>
-                Show All Gifts
+                {t('allGifts')}
               </Button>
               <Link to="/categories">
                 <Button size="sm" variant="glass">
-                  Browse Categories
+                  {t('browseCategories')}
                 </Button>
               </Link>
             </div>
@@ -162,6 +164,7 @@ export function ShopPage({
 export function AllCategoriesPage() {
   const { data: categories } = useCategories();
   const { data: products, isLoading } = useProducts();
+  const { t, translateCategory } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>('featured');
 
@@ -211,26 +214,26 @@ export function AllCategoriesPage() {
               className="flex items-center gap-1.5 text-xs font-medium text-[#7A6894]"
             >
               <Link to="/" className="hover:text-[#6A11CB]">
-                Home
+                {t('home')}
               </Link>
               <span>/</span>
-              <span className="font-semibold text-[#2B0B4E]">Categories</span>
+              <span className="font-semibold text-[#2B0B4E]">{t('categories')}</span>
               {activeGroup && activeGroup.id !== 'all-gifts' && (
                 <>
                   <span>/</span>
                   <span className="font-semibold text-[#6A11CB]">
-                    {activeGroup.label}
+                    {translateCategory(activeGroup.label)}
                   </span>
                 </>
               )}
             </nav>
             <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-[#1E1035]">
-              {activeGroup?.label ?? 'Gift Categories'}
+              {activeGroup ? translateCategory(activeGroup.label) : t('categories')}
             </h1>
             <p className="mt-0.5 text-[13px] text-[#685782]">
               {isLoading
-                ? 'Loading gifts...'
-                : `${sortedProducts.length} ${sortedProducts.length === 1 ? 'gift' : 'gifts'} available`}
+                ? t('loading')
+                : `${sortedProducts.length} ${t('giftsFound')}`}
             </p>
           </div>
 
@@ -239,7 +242,7 @@ export function AllCategoriesPage() {
               htmlFor="desktop-cat-sort"
               className="text-xs font-semibold text-[#685782]"
             >
-              Sort by
+              {t('sortBy')}
             </label>
             <select
               id="desktop-cat-sort"
@@ -249,9 +252,9 @@ export function AllCategoriesPage() {
               }
               className="h-9 rounded-lg border border-[#DFD2F2] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
             >
-              <option value="featured">Featured</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
+              <option value="featured">{t('sortFeatured')}</option>
+              <option value="price-asc">{t('sortPriceLowHigh')}</option>
+              <option value="price-desc">{t('sortPriceHighLow')}</option>
             </select>
           </div>
         </div>
@@ -260,11 +263,12 @@ export function AllCategoriesPage() {
           {/* Left Sticky Category Sidebar */}
           <aside className="col-span-3 sticky top-28 rounded-2xl border border-[#EFE3FF] bg-[#FCFAFF] p-2.5">
             <p className="px-2.5 pb-2 pt-1 text-[11px] font-bold uppercase tracking-wider text-[#7A6894]">
-              Shop by Category
+              {t('shopByCategory')}
             </p>
             <nav aria-label="Category filter" className="space-y-1">
               {categoryGroups.map((group) => {
                 const isSelected = activeGroup?.id === group.id;
+                const localizedLabel = translateCategory(group.label);
                 return (
                   <button
                     key={group.id}
@@ -284,25 +288,25 @@ export function AllCategoriesPage() {
                       {group.isPngArtwork ? (
                         <img
                           src={group.artworkUrl}
-                          alt={group.label}
+                          alt={localizedLabel}
                           loading="lazy"
                           className="h-full w-full object-contain"
                         />
                       ) : (
                         <ProductImage
                           src={group.artworkUrl}
-                          alt={group.label}
+                          alt={localizedLabel}
                           aspectClass="h-full w-full rounded-md"
                         />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] leading-snug">
-                        {group.label}
+                        {localizedLabel}
                       </p>
                       <p className="text-[11px] font-medium tabular-nums text-[#7C6997]">
                         {group.products.length}{' '}
-                        {group.products.length === 1 ? 'item' : 'items'}
+                        {group.products.length === 1 ? t('item') : t('items')}
                       </p>
                     </div>
                   </button>
@@ -324,12 +328,12 @@ export function AllCategoriesPage() {
               </div>
             ) : sortedProducts.length === 0 ? (
               <EmptyState
-                title="No gifts available in this category"
-                description="Explore All Gifts to discover our personalized and ready-to-gift collection."
+                title={t('noProductsMatch')}
+                description={t('catalogEmptyDesc')}
                 icon={<Package className="h-5 w-5" />}
                 action={
                   <Button size="sm" onClick={() => setSearchParams({})}>
-                    View All Gifts
+                    {t('allGifts')}
                   </Button>
                 }
               />
@@ -355,6 +359,7 @@ export function CategoryDetailPage() {
   const { slug = '' } = useParams();
   const navigate = useNavigate();
   const { data: categories } = useCategories();
+  const { t, translateCategory } = useLanguage();
 
   const category = resolveCategoryBySlug(slug, categories);
   const isAllGifts = isAllGiftsCategory(category);
@@ -368,16 +373,18 @@ export function CategoryDetailPage() {
   });
 
   const products = category ? fetchedProducts : [];
-  const categoryTitle = category?.name;
+  const categoryTitle = category
+    ? translateCategory(category.name, category.translations)
+    : undefined;
 
   if (!categoryTitle) {
     return (
       <EmptyState
-        title="Category not found"
-        description="Explore GiftKart products to find the perfect personalized gift."
+        title={t('noProductsMatch')}
+        description={t('tryDifferentKeywords')}
         action={
           <Link to="/shop">
-            <Button size="sm">View All Gifts</Button>
+            <Button size="sm">{t('allGifts')}</Button>
           </Link>
         }
       />
@@ -401,15 +408,15 @@ export function CategoryDetailPage() {
             className="inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back</span>
+            <span>{t('back')}</span>
           </button>
           <h1 className="mt-1 text-xl font-extrabold tracking-tight text-[#2B0B4E] sm:text-2xl">
             {categoryTitle}
           </h1>
           <p className="text-xs font-medium text-[#6E5B85]">
             {isLoading
-              ? 'Loading gifts...'
-              : `${products.length} ${products.length === 1 ? 'gift' : 'gifts'} available`}
+              ? t('loading')
+              : `${products.length} ${t('giftsFound')}`}
           </p>
         </div>
 
@@ -417,7 +424,7 @@ export function CategoryDetailPage() {
           to="/shop"
           className="rounded-full border border-[#EBD8FF] bg-[#FAF5FF] px-3.5 py-1.5 text-xs font-bold text-[#6A11CB] transition-colors hover:bg-[#F1E4FF]"
         >
-          View All Gifts
+          {t('allGifts')}
         </Link>
       </div>
 
@@ -432,12 +439,12 @@ export function CategoryDetailPage() {
         </div>
       ) : products.length === 0 ? (
         <EmptyState
-          title={`No products listed in ${categoryTitle} yet`}
-          description="New gifts in this collection are coming soon. Explore all available gifts across GiftKart."
+          title={t('catalogEmptyTitle')}
+          description={t('catalogEmptyDesc')}
           icon={<Package className="h-5 w-5" />}
           action={
             <Link to="/shop">
-              <Button size="sm">View All Gifts</Button>
+              <Button size="sm">{t('allGifts')}</Button>
             </Link>
           }
         />
@@ -447,7 +454,7 @@ export function CategoryDetailPage() {
             <ProductCard
               key={product.id}
               product={product}
-              categoryLabel={categoryTitle}
+              categoryLabel={category?.name}
             />
           ))}
         </div>
@@ -461,21 +468,22 @@ export function WishlistPage() {
   const { customerAccount } = useAuth();
   const { data: products } = useProducts();
   const { data: categories } = useCategories();
+  const { t } = useLanguage();
   const catMap = new Map(categories.map((c) => [c.id, c.name]));
 
   if (!customerAccount) {
     return (
       <div className="mx-auto max-w-2xl py-6">
         <EmptyState
-          title="Sign in to view your Wishlist"
-          description="Please log in to your GiftKart account to save and access your favourite gifts across visits."
+          title={t('wishlist')}
+          description={t('signInPrompt')}
           icon={<Heart className="h-5 w-5 text-[#FF4D8D]" />}
           action={
             <Link
               to="/account"
               state={{ from: '/wishlist', reason: 'wishlist' }}
             >
-              <Button size="sm">Sign In to Continue</Button>
+              <Button size="sm">{t('signIn')}</Button>
             </Link>
           }
         />
@@ -490,21 +498,21 @@ export function WishlistPage() {
       <div className="gk-promo-gradient rounded-3xl border border-[#EBD8FF] p-6 sm:p-8">
         <h1 className="flex items-center gap-2.5 text-2xl font-bold text-[#3B0764] sm:text-3xl">
           <Heart className="h-6 w-6 fill-[#FF4D8D] text-[#FF4D8D] sm:h-7 sm:w-7" />
-          <span>Your Wishlist</span>
+          <span>{t('wishlist')}</span>
         </h1>
         <p className="mt-1.5 text-sm text-[#4B2C70]">
-          Saved gifts for {customerAccount.fullName} ({customerAccount.email}).
+          {customerAccount.fullName} ({customerAccount.email})
         </p>
       </div>
 
       {savedProducts.length === 0 ? (
         <EmptyState
-          title="Your wishlist is empty"
-          description="Tap the heart icon on any product card to save gifts for birthdays, anniversaries, and special occasions."
+          title={t('wishlistEmptyTitle')}
+          description={t('wishlistEmptyDesc')}
           icon={<Heart className="h-5 w-5 text-[#FF4D8D]" />}
           action={
             <Link to="/shop">
-              <Button size="sm">Explore Gifts</Button>
+              <Button size="sm">{t('exploreGifts')}</Button>
             </Link>
           }
         />

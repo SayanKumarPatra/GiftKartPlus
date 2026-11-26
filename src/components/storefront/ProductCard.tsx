@@ -5,6 +5,7 @@ import { ProductImage } from '../ui/ProductImage';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formatInr } from '../../utils/format';
 
 interface ProductCardProps {
@@ -21,10 +22,14 @@ export function ProductCard({
   const { items, addToCart, toggleWishlist, isWishlisted } = useCart();
   const { customerAccount } = useAuth();
   const { pushToast } = useToast();
+  const { t, translateCategory, localizeEntity } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const saved = isWishlisted(product.id);
   const isInCart = items.some((item) => item.productId === product.id);
+
+  const displayName = localizeEntity(product.name, 'name', product.translations);
+  const displayCategory = categoryLabel ? translateCategory(categoryLabel) : undefined;
 
   function handleAddToCart() {
     if (isInCart) {
@@ -39,7 +44,7 @@ export function ProductCard({
     });
     addToCart(product, { quantity: 1, selectedVariants: defaultVariants });
     pushToast({
-      title: 'Product is added to cart.',
+      title: t('addedToCart'),
       variant: 'success',
       compact: true,
     });
@@ -65,7 +70,7 @@ export function ProductCard({
         <Link to={`/product/${product.slug}`} className="block">
           <ProductImage
             src={product.images[0]}
-            alt={product.name}
+            alt={displayName}
             aspectClass="aspect-square"
             zoomOnHover
           />
@@ -74,11 +79,7 @@ export function ProductCard({
         <button
           type="button"
           onClick={handleWishlistClick}
-          aria-label={
-            saved
-              ? `Remove ${product.name} from wishlist`
-              : `Save ${product.name} to wishlist`
-          }
+          aria-label={saved ? t('removeFromWishlist') : t('saveToWishlist')}
           className="absolute right-2.5 top-2.5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-[#2B0B4E] shadow-xs transition-transform duration-150 hover:scale-105"
         >
           <Heart
@@ -89,11 +90,11 @@ export function ProductCard({
         </button>
       </div>
 
-      {/* Clean Modern E-Commerce Card Body (Normal Selling Price Only — No Ratings/Reviews/MRP) */}
+      {/* Clean Modern E-Commerce Card Body */}
       <div className={`flex flex-1 flex-col ${compact ? 'p-3' : 'p-3.5'}`}>
-        {categoryLabel && (
+        {displayCategory && (
           <p className="truncate text-[11px] font-semibold text-[#6A11CB]">
-            {categoryLabel}
+            {displayCategory}
           </p>
         )}
 
@@ -103,7 +104,7 @@ export function ProductCard({
             compact ? 'text-[13px]' : 'text-[14px]'
           }`}
         >
-          {product.name}
+          {displayName}
         </Link>
 
         <div className="mt-2 flex items-baseline justify-between gap-2">
@@ -115,8 +116,8 @@ export function ProductCard({
             {formatInr(product.priceInr)}
           </span>
           {product.stockCount <= 0 && (
-            <span className="text-[11px] font-semibold text-rose-600">
-              Out of Stock
+            <span className="text-[11px] font-semibold text-[#C81E68]">
+              {t('outOfStock')}
             </span>
           )}
         </div>
@@ -138,10 +139,10 @@ export function ProductCard({
             <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
             <span>
               {isInCart
-                ? 'Go to Cart'
+                ? t('goToCart')
                 : product.stockCount > 0
-                  ? 'Add to Cart'
-                  : 'Out of Stock'}
+                  ? t('addToCart')
+                  : t('outOfStock')}
             </span>
           </button>
         </div>

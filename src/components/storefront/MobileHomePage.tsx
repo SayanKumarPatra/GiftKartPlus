@@ -8,6 +8,7 @@ import {
 } from '../../hooks/useStoreData';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
 import { buildStorefrontCategoryGroups } from '../../utils/storefrontHelpers';
@@ -25,6 +26,7 @@ export function MobileHomePage() {
   const { data: products, isLoading: productsLoading } = useProducts();
   const { toggleWishlist, isWishlisted } = useCart();
   const { customerAccount } = useAuth();
+  const { t, translateCategory, localizeEntity } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -65,12 +67,12 @@ export function MobileHomePage() {
     () =>
       buildStorefrontCategoryGroups(categories, products).map((group) => ({
         id: group.id,
-        label: group.label,
+        label: translateCategory(group.label),
         to: group.isAllGifts ? '/shop' : `/category/${encodeURIComponent(group.slug)}`,
         imageUrl: group.artworkUrl,
         isPng: group.isPngArtwork,
       })),
-    [categories, products]
+    [categories, products, translateCategory]
   );
 
   // Real active products from the store database stacked cleanly in 2-column rows
@@ -159,14 +161,14 @@ export function MobileHomePage() {
               <Search className="h-[17px] w-[17px] stroke-[2.2]" />
             </button>
             <label htmlFor="mobile-home-search" className="sr-only">
-              Search for Gifts, Products &amp; More
+              {t('searchPlaceholder')}
             </label>
             <input
               id="mobile-home-search"
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for Gifts, Products & More..."
+              placeholder={t('searchPlaceholder')}
               className="w-full bg-transparent text-[13px] font-medium text-[#2B0B4E] placeholder:text-[#867699] focus:outline-none"
             />
           </form>
@@ -282,14 +284,14 @@ export function MobileHomePage() {
                 aria-hidden="true"
                 className="h-[18px] w-[18px] shrink-0 fill-[#FF4D8D] text-[#E61E6E]"
               />
-              <span>Trending Gifts</span>
+              <span>{t('trendingGifts')}</span>
             </h2>
 
             <Link
               to="/shop"
               className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-[#2B0B4E] shadow-[0_3px_10px_-3px_rgba(106,17,203,0.18)] ring-1 ring-[#EBD8FF]/90 transition-transform active:scale-95"
             >
-              <span>View All</span>
+              <span>{t('viewAll')}</span>
               <ArrowRight className="h-3 w-3 text-[#6A11CB]" />
             </Link>
           </div>
@@ -313,10 +315,10 @@ export function MobileHomePage() {
           ) : trendingProducts.length === 0 ? (
             <div className="mt-2 rounded-2xl border border-[#EBD8FF] bg-white px-4 py-8 text-center">
               <p className="text-[13px] font-bold text-[#2B0B4E]">
-                No products available yet
+                {t('catalogEmptyTitle')}
               </p>
               <p className="mt-1 text-[11.5px] text-[#685782]">
-                New gifts will appear here as soon as they are published in the store.
+                {t('catalogEmptyDesc')}
               </p>
             </div>
           ) : (
@@ -328,6 +330,11 @@ export function MobileHomePage() {
                 const discountPercent = hasDiscount
                   ? Math.round(((compareAt - product.priceInr) / compareAt) * 100)
                   : 0;
+                const displayName = localizeEntity(
+                  product.name,
+                  'name',
+                  product.translations
+                );
 
                 return (
                   <article
@@ -338,7 +345,7 @@ export function MobileHomePage() {
                       <Link to={`/product/${product.slug}`} className="block">
                         <ProductImage
                           src={product.images[0]}
-                          alt={product.name}
+                          alt={displayName}
                           aspectClass="aspect-square"
                         />
                       </Link>
@@ -347,9 +354,7 @@ export function MobileHomePage() {
                         type="button"
                         onClick={() => handleWishlistToggle(product.id)}
                         aria-label={
-                          saved
-                            ? `Remove ${product.name} from wishlist`
-                            : `Save ${product.name} to wishlist`
+                          saved ? t('removeFromWishlist') : t('saveToWishlist')
                         }
                         className="absolute right-1.5 top-1.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-white/95 shadow-xs ring-1 ring-[#EBD8FF]/80 transition-transform active:scale-90"
                       >
@@ -368,7 +373,7 @@ export function MobileHomePage() {
                       className="flex flex-1 flex-col justify-between pt-2"
                     >
                       <h3 className="line-clamp-2 min-h-[32px] text-[12px] font-bold leading-[1.3] text-[#2B0B4E]">
-                        {product.name}
+                        {displayName}
                       </h3>
 
                       <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1">
@@ -384,8 +389,8 @@ export function MobileHomePage() {
                         </div>
 
                         {discountPercent > 0 && (
-                          <span className="rounded-full bg-[#FF1F7A] px-2 py-[2.5px] text-[9px] font-bold leading-none whitespace-nowrap text-white">
-                            {discountPercent}% OFF
+                          <span className="rounded-full bg-[#FF4D8D] px-2 py-[2.5px] text-[9px] font-bold leading-none whitespace-nowrap text-white">
+                            {discountPercent}% {t('off')}
                           </span>
                         )}
                       </div>

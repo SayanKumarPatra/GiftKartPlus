@@ -5,6 +5,7 @@ import type { Category, Product } from '../../types';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
 import { getCategoryPresentation } from '../../utils/storefrontHelpers';
@@ -65,6 +66,14 @@ export function MobileProductDetailPage({
   const { customerAccount } = useAuth();
   const { items, addToCart, toggleWishlist, isWishlisted } = useCart();
   const { pushToast } = useToast();
+  const { t, translateCategory, localizeEntity } = useLanguage();
+
+  const displayName = localizeEntity(product.name, 'name', product.translations);
+  const displayDesc = localizeEntity(
+    product.description?.trim() || product.shortDescription?.trim() || '',
+    'description',
+    product.translations
+  );
 
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>(() =>
@@ -190,7 +199,7 @@ export function MobileProductDetailPage({
       selectedVariants,
     });
     pushToast({
-      title: 'Product is added to cart.',
+      title: t('addedToCart'),
       variant: 'success',
       compact: true,
     });
@@ -212,7 +221,7 @@ export function MobileProductDetailPage({
       selectedVariants: buildDefaultVariants(relProduct),
     });
     pushToast({
-      title: 'Product is added to cart.',
+      title: t('addedToCart'),
       variant: 'success',
       compact: true,
     });
@@ -291,24 +300,24 @@ export function MobileProductDetailPage({
             className="inline-flex items-center gap-1.5 rounded-full border border-[#EBD8FF] bg-[#F5ECFF] px-3 py-1 text-[12px] font-bold leading-none text-[#6A11CB] transition-colors active:bg-[#EBD8FF]"
           >
             <CategoryIcon className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" aria-hidden="true" />
-            <span>{category.name}</span>
+            <span>{translateCategory(category.name, category.translations)}</span>
           </Link>
         )}
 
         {/* Product Name */}
         <h1 className="mt-2 text-[22px] font-extrabold leading-[1.2] tracking-[-0.015em] text-[#2B0B4E]">
-          {product.name}
+          {displayName}
         </h1>
 
-        {/* Normal Selling Price ONLY (No Rating, No Reviews, No Original Price, No Discount) */}
-        <p className="mt-1.5 text-[27px] font-extrabold leading-none tracking-[-0.02em] text-[#FF2A7A] tabular-nums">
+        {/* Normal Selling Price ONLY */}
+        <p className="mt-1.5 text-[27px] font-extrabold leading-none tracking-[-0.02em] text-[#FF4D8D] tabular-nums">
           {formatInr(product.priceInr)}
         </p>
 
         {/* Product Description */}
-        {descriptionText && (
+        {displayDesc && (
           <p className="mt-2.5 text-[13.5px] leading-[1.55] text-[#3B2654]">
-            {descriptionText}
+            {displayDesc}
           </p>
         )}
       </section>
@@ -394,7 +403,7 @@ export function MobileProductDetailPage({
           <div className="flex items-center gap-2">
             <Gift className="h-[18px] w-[18px] shrink-0 text-[#FF2A7A] stroke-[2.2]" aria-hidden="true" />
             <h2 className="text-[16.5px] font-extrabold tracking-[-0.01em] text-[#2B0B4E] whitespace-nowrap">
-              You May Also Like
+              {t('relatedGifts')}
             </h2>
             <div aria-hidden="true" className="h-px flex-1 bg-[#EBD8FF]" />
           </div>
@@ -489,10 +498,10 @@ export function MobileProductDetailPage({
             <ShoppingCart className="h-4 w-4 shrink-0 text-[#6A11CB] stroke-[2.2]" />
             <span>
               {isInCart
-                ? 'Go to Cart'
+                ? t('goToCart')
                 : isOutOfStock
-                  ? 'Out of Stock'
-                  : 'Add to Cart'}
+                  ? t('outOfStock')
+                  : t('addToCart')}
             </span>
             {isInCart && (
               <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#6A11CB] stroke-[2.5]" />
@@ -504,10 +513,10 @@ export function MobileProductDetailPage({
             type="button"
             onClick={handleBuyNow}
             disabled={isOutOfStock}
-            className="inline-flex h-[43px] items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-3 text-[14px] font-extrabold text-white shadow-[0_6px_16px_-4px_rgba(255,36,122,0.52)] whitespace-nowrap transition-transform active:scale-[0.98] disabled:opacity-45"
+            className="inline-flex h-[43px] items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-3 text-[14px] font-extrabold text-white shadow-[0_6px_16px_-4px_rgba(255,77,141,0.52)] whitespace-nowrap transition-transform active:scale-[0.98] disabled:opacity-45"
           >
             <Zap className="h-4 w-4 shrink-0 fill-white text-white" />
-            <span>Buy Now</span>
+            <span>{t('buyNow')}</span>
           </button>
         </div>
       </div>

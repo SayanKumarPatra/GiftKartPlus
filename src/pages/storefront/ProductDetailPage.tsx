@@ -25,6 +25,7 @@ import {
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { ProductImage } from '../../components/ui/ProductImage';
 import { ProductCard } from '../../components/storefront/ProductCard';
 import { MobileProductDetailPage } from '../../components/storefront/MobileProductDetailPage';
@@ -55,6 +56,7 @@ export function ProductDetailPage() {
     setGiftWrapEnabled,
   } = useCart();
   const { pushToast } = useToast();
+  const { t, translateCategory, localizeEntity } = useLanguage();
 
   const product = products.find((p) => p.slug === slug);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
@@ -92,11 +94,11 @@ export function ProductDetailPage() {
   if (!product) {
     return (
       <EmptyState
-        title="Product not found"
-        description="The gift you requested is unavailable or has been moved."
+        title={t('productNotFound')}
+        description={t('productNotFoundDesc')}
         action={
           <Link to="/shop">
-            <Button size="sm">Back to Shop</Button>
+            <Button size="sm">{t('allGifts')}</Button>
           </Link>
         }
       />
@@ -104,6 +106,15 @@ export function ProductDetailPage() {
   }
 
   const category = categories.find((c) => c.id === product.categoryId);
+  const displayProductName = localizeEntity(product.name, 'name', product.translations);
+  const displayProductDesc = localizeEntity(
+    product.description,
+    'description',
+    product.translations
+  );
+  const displayCategoryName = category
+    ? translateCategory(category.name, category.translations)
+    : undefined;
   const visibleVariantGroups = getVisibleVariantGroups(product);
   const personalized = isProductPersonalized(product);
   const saved = isWishlisted(product.id);
@@ -172,7 +183,7 @@ export function ProductDetailPage() {
       customPhotoPreviewUrl: photoPreviewUrl,
     });
     pushToast({
-      title: 'Product is added to cart.',
+      title: t('addedToCart'),
       variant: 'success',
       compact: true,
     });
@@ -215,22 +226,22 @@ export function ProductDetailPage() {
           className="flex flex-wrap items-center gap-2 text-xs font-medium text-[#6E5B85]"
         >
           <Link to="/" className="hover:text-[#6A11CB]">
-            Home
+            {t('home')}
           </Link>
           <span>/</span>
           <Link to="/categories" className="hover:text-[#6A11CB]">
-            Categories
+            {t('categories')}
           </Link>
-          {category && (
+          {category && displayCategoryName && (
             <>
               <span>/</span>
               <Link to={`/category/${category.slug}`} className="hover:text-[#6A11CB]">
-                {category.name}
+                {displayCategoryName}
               </Link>
             </>
           )}
           <span>/</span>
-          <span className="truncate font-semibold text-[#2B0B4E]">{product.name}</span>
+          <span className="truncate font-semibold text-[#2B0B4E]">{displayProductName}</span>
         </nav>
 
         {/* Main Split Module */}
@@ -298,10 +309,10 @@ export function ProductDetailPage() {
           <div className="space-y-5 rounded-2xl border border-[#EFE3FF] bg-white p-6 shadow-[0_8px_28px_-14px_rgba(106,17,203,0.12)] lg:col-span-6">
             <div>
               <p className="font-mono text-xs font-semibold text-[#7A6894]">
-                {category?.name} · SKU: {product.sku}
+                {displayCategoryName} · {t('sku')}: {product.sku}
               </p>
               <h1 className="mt-1.5 font-display text-2xl font-bold leading-snug text-[#1E1035] xl:text-[28px]">
-                {product.name}
+                {displayProductName}
               </h1>
 
               {/* Pricing Row */}
@@ -317,16 +328,16 @@ export function ProductDetailPage() {
                   )}
                 {discountPct > 0 && (
                   <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">
-                    {discountPct}% off
+                    {discountPct}% {t('off')}
                   </span>
                 )}
               </div>
               <p className="mt-1 text-xs text-[#6E5B85]">
-                Inclusive of all taxes · Cash on Delivery available
+                {t('inclusiveOfTaxes')} · {t('codLabel')}
               </p>
 
               <p className="mt-3.5 text-sm leading-relaxed text-[#4B3963]">
-                {product.description}
+                {displayProductDesc}
               </p>
             </div>
 
@@ -425,8 +436,8 @@ export function ProductDetailPage() {
                               setPhotoPreviewUrl(undefined);
                               setPhotoFileName(undefined);
                             }}
-                            aria-label="Remove uploaded photo"
-                            className="cursor-pointer rounded-lg p-1 text-[#6E5B85] hover:bg-rose-50 hover:text-rose-700"
+                            aria-label={t('removePhoto')}
+                            className="cursor-pointer rounded-lg p-1 text-[#6E5B85] hover:bg-[#FFF0F6] hover:text-[#C81E68]"
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
@@ -434,7 +445,7 @@ export function ProductDetailPage() {
                       )}
                     </div>
                     {photoError && (
-                      <p className="mt-1 text-xs font-semibold text-rose-600">
+                      <p className="mt-1 text-xs font-semibold text-[#C81E68]">
                         {photoError}
                       </p>
                     )}
@@ -498,7 +509,7 @@ export function ProductDetailPage() {
             {/* Quantity + Add to Cart + Buy Now */}
             <div className="space-y-3 pt-1">
               <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-[#2B0B4E]">Quantity</span>
+                <span className="text-xs font-bold text-[#2B0B4E]">{t('quantity')}</span>
                 <div className="inline-flex h-10 items-center rounded-lg border border-[#DFD2F2] bg-[#FAF6FF] px-1">
                   <button
                     type="button"
@@ -524,8 +535,8 @@ export function ProductDetailPage() {
                 </div>
                 <span className="text-xs font-medium text-[#6E5B85]">
                   {product.stockCount > 0
-                    ? `${product.stockCount} available`
-                    : 'Currently Out of Stock'}
+                    ? `${product.stockCount} ${t('available')}`
+                    : t('outOfStock')}
                 </span>
               </div>
 
@@ -543,10 +554,10 @@ export function ProductDetailPage() {
                   <ShoppingCart className="h-4 w-4" />
                   <span>
                     {isInCart
-                      ? 'Go to Cart'
+                      ? t('goToCart')
                       : product.stockCount > 0
-                        ? 'Add to Cart'
-                        : 'Out of Stock'}
+                        ? t('addToCart')
+                        : t('outOfStock')}
                   </span>
                 </button>
 
@@ -554,10 +565,10 @@ export function ProductDetailPage() {
                   type="button"
                   onClick={handleBuyNow}
                   disabled={product.stockCount <= 0}
-                  className="flex h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] px-5 text-sm font-bold text-white shadow-[0_10px_24px_-8px_rgba(106,17,203,0.45)] transition-all hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-sm font-bold text-white shadow-[0_10px_24px_-8px_rgba(106,17,203,0.45)] transition-all hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Zap className="h-4 w-4" />
-                  <span>Buy Now · {formatInr(product.priceInr * quantity)}</span>
+                  <span>{t('buyNow')} · {formatInr(product.priceInr * quantity)}</span>
                 </button>
               </div>
             </div>
@@ -567,7 +578,7 @@ export function ProductDetailPage() {
               <div className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#FF4D8D]" />
                 <span>
-                  Delivers to{' '}
+                  {t('deliveryZone')}:{' '}
                   <strong className="text-[#2B0B4E]">
                     {activeZones.map((z) => z.name).join(' & ') || 'Jalchak'}
                   </strong>
@@ -575,7 +586,7 @@ export function ProductDetailPage() {
               </div>
               <div className="flex items-start gap-2">
                 <Truck className="mt-0.5 h-4 w-4 shrink-0 text-[#6A11CB]" />
-                <span>Cash on Delivery available at checkout</span>
+                <span>{t('codLabel')}</span>
               </div>
               <div className="flex items-start gap-2">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
@@ -594,14 +605,14 @@ export function ProductDetailPage() {
           <section className="border-t border-[#EFE3FF] pt-8">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="font-display text-2xl font-bold text-[#1E1035]">
-                You May Also Love
+                {t('relatedGifts')}
               </h2>
               <Link
                 to="/shop"
                 className="inline-flex items-center gap-1 text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
               >
                 <ShoppingBag className="h-3.5 w-3.5" />
-                <span>Explore All Gifts</span>
+                <span>{t('exploreAllGifts')}</span>
               </Link>
             </div>
             <div className="grid grid-cols-4 gap-4">

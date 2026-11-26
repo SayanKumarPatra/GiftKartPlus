@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  Globe,
   Headset,
   Heart,
   Lock,
@@ -28,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useOrders, useProducts } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
 import type { DemoOrder } from '../../types';
@@ -44,6 +46,7 @@ import { Button } from '../../components/ui/Button';
 import { ProductImage } from '../../components/ui/ProductImage';
 import { MobileOrdersPage } from '../../components/storefront/MobileOrdersPage';
 import { MobileAccountAuthPages } from '../../components/storefront/MobileAccountAuthPages';
+import { LanguageSelector } from '../../components/storefront/LanguageSelector';
 
 const DESKTOP_LOGIN_ILLUSTRATION =
   '/assets/aistudio/Vibrant_Purple_Shopping_Bag_Scene_2fb63564.png';
@@ -57,7 +60,7 @@ const DESKTOP_ORDERS_LOGGED_OUT_ILLUSTRATION =
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type DesktopAuthMode = 'login' | 'signup' | 'forgot';
-type DesktopAccountTab = 'overview' | 'edit-profile' | 'preferences';
+type DesktopAccountTab = 'overview' | 'edit-profile' | 'preferences' | 'language';
 
 function GoogleOfficialLogo({ className }: { className?: string }) {
   return (
@@ -93,10 +96,14 @@ export function CustomerAccountPage() {
   const { customerAccount, isAuthReady, signInCustomerDemo, signOutCustomer } =
     useAuth();
   const { wishlistIds } = useCart();
+  const { language, languages, t } = useLanguage();
   const { data: orders } = useOrders();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  const currentLanguageLabel =
+    languages.find((l) => l.code === language)?.nativeName ?? 'English';
 
   const navState = location.state as {
     from?: string;
@@ -105,6 +112,7 @@ export function CustomerAccountPage() {
   } | null;
 
   const queryMode = searchParams.get('mode') as DesktopAuthMode | null;
+  const queryTab = searchParams.get('tab');
   const initialMode: DesktopAuthMode =
     queryMode === 'signup' || queryMode === 'forgot' || queryMode === 'login'
       ? queryMode
@@ -115,7 +123,9 @@ export function CustomerAccountPage() {
           : 'login';
 
   const [authMode, setAuthMode] = useState<DesktopAuthMode>(initialMode);
-  const [activeTab, setActiveTab] = useState<DesktopAccountTab>('overview');
+  const [activeTab, setActiveTab] = useState<DesktopAccountTab>(
+    queryTab === 'language' ? 'language' : 'overview'
+  );
   const [confirmLogout, setConfirmLogout] = useState(false);
 
   // Login form state
@@ -162,6 +172,12 @@ export function CustomerAccountPage() {
       setAuthMode(navState.mode);
     }
   }, [queryMode, navState?.mode]);
+
+  useEffect(() => {
+    if (queryTab === 'language') {
+      setActiveTab('language');
+    }
+  }, [queryTab]);
 
   useEffect(() => {
     if (customerAccount) {
@@ -327,25 +343,24 @@ export function CustomerAccountPage() {
               />
               <h2 className="mt-5 font-display text-xl font-bold text-[#1E1035]">
                 {authMode === 'signup'
-                  ? 'Join GiftKart Today'
+                  ? t('createAccount')
                   : authMode === 'forgot'
-                    ? 'Reset Your Password'
-                    : 'Welcome Back to GiftKart'}
+                    ? t('account')
+                    : t('welcomeBack')}
               </h2>
               <p className="mt-2 max-w-[260px] text-xs leading-relaxed text-[#594A6B]">
-                {authMode === 'signup'
-                  ? 'Create your account to save delivery addresses, manage wishlists, and track every personalized gift.'
-                  : authMode === 'forgot'
-                    ? 'Enter your email address and we will help you recover access to your GiftKart account.'
-                    : 'Sign in to check live order progress, reorder favourites, and access direct WhatsApp support.'}
+                {t('guestAccountNote')}
               </p>
+
+              {/* Language Switcher Accessible Before Login */}
+              <LanguageSelector compact className="mt-5 w-full text-left" />
             </div>
 
             {/* Right Interactive Auth Form Column */}
             <div className="col-span-7 p-8">
               {navState?.reason === 'wishlist' && (
                 <div className="mb-4 rounded-xl border border-[#EBD8FF] bg-[#FAF5FF] px-4 py-2.5 text-xs font-semibold text-[#6A11CB]">
-                  Please sign in to save and manage products in your Wishlist.
+                  {t('signInPrompt')}
                 </div>
               )}
 
@@ -360,7 +375,7 @@ export function CustomerAccountPage() {
                         : 'border-transparent text-[#7A6894] hover:text-[#1E1035]'
                     }`}
                   >
-                    Sign In
+                    {t('signIn')}
                   </button>
                   <button
                     type="button"
@@ -371,7 +386,7 @@ export function CustomerAccountPage() {
                         : 'border-transparent text-[#7A6894] hover:text-[#1E1035]'
                     }`}
                   >
-                    Create Account
+                    {t('createAccount')}
                   </button>
                 </div>
               )}
@@ -394,7 +409,7 @@ export function CustomerAccountPage() {
                       />
                     </div>
                     {loginErrors.email && (
-                      <p className="mt-1 text-xs text-rose-600">{loginErrors.email}</p>
+                      <p className="mt-1 text-xs font-semibold text-[#C81E68]">{loginErrors.email}</p>
                     )}
                   </div>
 
@@ -437,15 +452,15 @@ export function CustomerAccountPage() {
                       </button>
                     </div>
                     {loginErrors.password && (
-                      <p className="mt-1 text-xs text-rose-600">{loginErrors.password}</p>
+                      <p className="mt-1 text-xs font-semibold text-[#C81E68]">{loginErrors.password}</p>
                     )}
                   </div>
 
                   <button
                     type="submit"
-                    className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] transition-opacity hover:opacity-95"
+                    className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] transition-opacity hover:opacity-95"
                   >
-                    Sign In
+                    {t('signIn')}
                   </button>
 
                   <div className="relative my-4 flex items-center justify-center">
@@ -482,14 +497,14 @@ export function CustomerAccountPage() {
                       className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] px-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
                     />
                     {signupErrors.name && (
-                      <p className="mt-1 text-xs text-rose-600">{signupErrors.name}</p>
+                      <p className="mt-1 text-xs font-semibold text-[#C81E68]">{signupErrors.name}</p>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-[#2B0B4E]">
-                        Email Address *
+                        {t('emailAddress')} *
                       </label>
                       <input
                         type="email"
@@ -499,12 +514,12 @@ export function CustomerAccountPage() {
                         className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] px-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
                       />
                       {signupErrors.email && (
-                        <p className="mt-1 text-xs text-rose-600">{signupErrors.email}</p>
+                        <p className="mt-1 text-xs font-semibold text-[#C81E68]">{signupErrors.email}</p>
                       )}
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[#2B0B4E]">
-                        Mobile Number (Optional)
+                        {t('phoneNumber')}
                       </label>
                       <input
                         type="tel"
@@ -545,7 +560,7 @@ export function CustomerAccountPage() {
                       </button>
                     </div>
                     {signupErrors.password && (
-                      <p className="mt-1 text-xs text-rose-600">
+                      <p className="mt-1 text-xs font-semibold text-[#C81E68]">
                         {signupErrors.password}
                       </p>
                     )}
@@ -553,9 +568,9 @@ export function CustomerAccountPage() {
 
                   <button
                     type="submit"
-                    className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] transition-opacity hover:opacity-95"
+                    className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] transition-opacity hover:opacity-95"
                   >
-                    Create Account
+                    {t('createAccount')}
                   </button>
 
                   <button
@@ -577,7 +592,7 @@ export function CustomerAccountPage() {
                     onClick={() => setAuthMode('login')}
                     className="cursor-pointer text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
                   >
-                    ← Back to Sign In
+                    ← {t('back')}
                   </button>
                   <h1 className="font-display text-xl font-bold text-[#1E1035]">
                     Forgot Password
@@ -597,7 +612,7 @@ export function CustomerAccountPage() {
                     <form onSubmit={handleForgotSubmit} className="space-y-4">
                       <div>
                         <label className="block text-xs font-bold text-[#2B0B4E]">
-                          Registered Email Address
+                          {t('emailAddress')}
                         </label>
                         <input
                           type="email"
@@ -607,14 +622,14 @@ export function CustomerAccountPage() {
                           className="mt-1 h-11 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] px-3.5 text-sm focus:border-[#6A11CB] focus:bg-white focus:outline-none"
                         />
                         {forgotError && (
-                          <p className="mt-1 text-xs text-rose-600">{forgotError}</p>
+                          <p className="mt-1 text-xs font-semibold text-[#C81E68]">{forgotError}</p>
                         )}
                       </div>
                       <button
                         type="submit"
-                        className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF247A] text-sm font-bold text-white"
+                        className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-sm font-bold text-white"
                       >
-                        Send Reset Link
+                        {t('submit')}
                       </button>
                     </form>
                   )}
@@ -678,7 +693,7 @@ export function CustomerAccountPage() {
                 >
                   <span className="flex items-center gap-2.5">
                     <User className="h-4 w-4" />
-                    <span>Account Overview</span>
+                    <span>{t('myAccount')}</span>
                   </span>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </button>
@@ -694,9 +709,27 @@ export function CustomerAccountPage() {
                 >
                   <span className="flex items-center gap-2.5">
                     <PencilLine className="h-4 w-4" />
-                    <span>Edit Profile</span>
+                    <span>{t('editProfile')}</span>
                   </span>
                   <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('language')}
+                  className={`flex w-full cursor-pointer items-center justify-between rounded-xl px-3.5 py-2.5 text-left transition-colors ${
+                    activeTab === 'language'
+                      ? 'bg-[#FAF5FF] text-[#6A11CB]'
+                      : 'text-[#2B0B4E] hover:bg-[#FAF8FC]'
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Globe className="h-4 w-4 text-[#6A11CB]" />
+                    <span>{t('appLanguage')}</span>
+                  </span>
+                  <span className="rounded-full bg-[#F3E8FF] px-2 py-0.5 text-[10.5px] font-bold text-[#6A11CB]">
+                    {currentLanguageLabel}
+                  </span>
                 </button>
 
                 <button
@@ -710,7 +743,7 @@ export function CustomerAccountPage() {
                 >
                   <span className="flex items-center gap-2.5">
                     <Settings className="h-4 w-4" />
-                    <span>Notifications &amp; Settings</span>
+                    <span>{t('accountSettings')}</span>
                   </span>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </button>
@@ -723,7 +756,7 @@ export function CustomerAccountPage() {
                 >
                   <span className="flex items-center gap-2.5">
                     <Package className="h-4 w-4 text-[#6A11CB]" />
-                    <span>My Orders</span>
+                    <span>{t('myOrders')}</span>
                   </span>
                   <span className="font-mono text-[11px] text-[#7A6894]">
                     {myOrdersCount}
@@ -736,7 +769,7 @@ export function CustomerAccountPage() {
                 >
                   <span className="flex items-center gap-2.5">
                     <MapPin className="h-4 w-4 text-[#6A11CB]" />
-                    <span>Saved Addresses</span>
+                    <span>{t('savedAddresses')}</span>
                   </span>
                   <ChevronRight className="h-3.5 w-3.5 text-[#9B8AB4]" />
                 </Link>
@@ -747,7 +780,7 @@ export function CustomerAccountPage() {
                 >
                   <span className="flex items-center gap-2.5">
                     <Heart className="h-4 w-4 text-[#FF4D8D]" />
-                    <span>My Wishlist</span>
+                    <span>{t('wishlist')}</span>
                   </span>
                   <span className="font-mono text-[11px] text-[#7A6894]">
                     {wishlistIds.length}
@@ -760,7 +793,7 @@ export function CustomerAccountPage() {
                 >
                   <span className="flex items-center gap-2.5">
                     <Headset className="h-4 w-4 text-[#6A11CB]" />
-                    <span>Help &amp; Support</span>
+                    <span>{t('helpSupport')}</span>
                   </span>
                   <ChevronRight className="h-3.5 w-3.5 text-[#9B8AB4]" />
                 </Link>
@@ -771,15 +804,15 @@ export function CustomerAccountPage() {
                   <button
                     type="button"
                     onClick={() => setConfirmLogout(true)}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50/50 py-2.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-50"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#FFD1E5] bg-[#FFF0F6]/70 py-2.5 text-xs font-bold text-[#C81E68] transition-colors hover:bg-[#FFF0F6]"
                   >
                     <LogOut className="h-3.5 w-3.5" />
-                    <span>Sign Out</span>
+                    <span>{t('signOut')}</span>
                   </button>
                 ) : (
-                  <div className="space-y-2 rounded-xl border border-rose-200 bg-rose-50/60 p-3 text-center">
-                    <p className="text-xs font-bold text-rose-900">
-                      Sign out of your account?
+                  <div className="space-y-2 rounded-xl border border-[#FFD1E5] bg-[#FFF0F6]/80 p-3 text-center">
+                    <p className="text-xs font-bold text-[#9D174D]">
+                      {t('signOut')}?
                     </p>
                     <div className="flex gap-2">
                       <button
@@ -787,7 +820,7 @@ export function CustomerAccountPage() {
                         onClick={() => setConfirmLogout(false)}
                         className="flex-1 cursor-pointer rounded-lg border border-[#DFD2F2] bg-white py-1.5 text-xs font-bold text-[#2B0B4E]"
                       >
-                        Cancel
+                        {t('cancel')}
                       </button>
                       <button
                         type="button"
@@ -795,9 +828,9 @@ export function CustomerAccountPage() {
                           setConfirmLogout(false);
                           void signOutCustomer();
                         }}
-                        className="flex-1 cursor-pointer rounded-lg bg-rose-600 py-1.5 text-xs font-bold text-white hover:bg-rose-700"
+                        className="flex-1 cursor-pointer rounded-lg bg-[#FF4D8D] py-1.5 text-xs font-bold text-white hover:bg-[#E03576]"
                       >
-                        Confirm
+                        {t('signOut')}
                       </button>
                     </div>
                   </div>
@@ -1018,6 +1051,12 @@ export function CustomerAccountPage() {
                   </div>
                 </div>
               )}
+
+              {activeTab === 'language' && (
+                <div className="space-y-4">
+                  <LanguageSelector />
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1042,6 +1081,7 @@ export function MyOrdersPage() {
   const { data: products } = useProducts();
   const { customerAccount, isAuthReady } = useAuth();
   const { addToCart } = useCart();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [activeFilter, setActiveFilter] = useState<'All' | CustomerOrderDisplayStatus>(
@@ -1199,10 +1239,10 @@ export function MyOrdersPage() {
             <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#EFE3FF] pb-4">
               <div>
                 <h1 className="font-display text-2xl font-bold text-[#1E1035]">
-                  My Orders
+                  {t('myOrders')}
                 </h1>
                 <p className="mt-0.5 text-[13px] text-[#685782]">
-                  View live order progress, payment details, and receipts for your GiftKart purchases.
+                  {t('noOrdersDesc')}
                 </p>
               </div>
               <Link
@@ -1210,7 +1250,7 @@ export function MyOrdersPage() {
                 className="inline-flex items-center gap-1.5 rounded-lg border border-[#DFD2F2] bg-[#FAF6FF] px-3.5 py-2 text-xs font-bold text-[#6A11CB] hover:bg-[#F1E4FF]"
               >
                 <ShoppingBag className="h-3.5 w-3.5" />
-                <span>Continue Shopping</span>
+                <span>{t('continueShopping')}</span>
               </Link>
             </div>
 
@@ -1223,6 +1263,18 @@ export function MyOrdersPage() {
               {ORDER_FILTER_TABS.map((tab) => {
                 const active = activeFilter === tab;
                 const count = countsByStatus[tab] ?? 0;
+                const tabLabel =
+                  tab === 'All'
+                    ? t('allOrders')
+                    : tab === 'Order Placed'
+                      ? t('statusPending')
+                      : tab === 'Processing'
+                        ? t('statusConfirmed')
+                        : tab === 'Shipped'
+                          ? t('statusShipped')
+                          : tab === 'Delivered'
+                            ? t('statusDelivered')
+                            : t('statusCancelled');
                 return (
                   <button
                     key={tab}
@@ -1236,7 +1288,7 @@ export function MyOrdersPage() {
                         : 'bg-[#FAF6FF] text-[#4B3963] hover:bg-[#F1E4FF] hover:text-[#6A11CB]'
                     }`}
                   >
-                    <span>{tab === 'All' ? 'All Orders' : tab}</span>
+                    <span>{tabLabel}</span>
                     <span
                       className={`rounded px-1.5 py-0.5 font-mono text-[10px] tabular-nums ${
                         active
@@ -1252,32 +1304,24 @@ export function MyOrdersPage() {
             </div>
 
             {cancelError && (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-700">
+              <div className="rounded-xl border border-[#FFD1E5] bg-[#FFF0F6] px-4 py-2.5 text-xs font-semibold text-[#C81E68]">
                 {cancelError}
               </div>
             )}
 
             {filteredOrders.length === 0 ? (
               <EmptyState
-                title={
-                  activeFilter === 'All'
-                    ? 'No orders placed yet'
-                    : `No ${activeFilter.toLowerCase()} orders`
-                }
-                description={
-                  activeFilter === 'All'
-                    ? 'Explore GiftKart and place your first order to track live status here.'
-                    : 'Try selecting another status tab or view all orders.'
-                }
+                title={t('noOrdersYet')}
+                description={t('noOrdersDesc')}
                 icon={<Package className="h-5 w-5" />}
                 action={
                   activeFilter === 'All' ? (
                     <Link to="/shop">
-                      <Button size="sm">Start Shopping</Button>
+                      <Button size="sm">{t('shopNow')}</Button>
                     </Link>
                   ) : (
                     <Button size="sm" onClick={() => setActiveFilter('All')}>
-                      Show All Orders
+                      {t('allOrders')}
                     </Button>
                   )
                 }
@@ -1445,9 +1489,9 @@ export function MyOrdersPage() {
                             </ol>
                           </div>
                         ) : (
-                          <div className="mt-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50/70 px-3.5 py-2 text-xs font-semibold text-rose-700">
+                          <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#FFD1E5] bg-[#FFF0F6]/80 px-3.5 py-2 text-xs font-semibold text-[#C81E68]">
                             <XCircle className="h-4 w-4 shrink-0" />
-                            <span>This order was cancelled.</span>
+                            <span>{t('orderCancelled')}</span>
                           </div>
                         )}
 
@@ -1456,25 +1500,25 @@ export function MyOrdersPage() {
                           {cancellable ? (
                             confirmCancelId === order.id ? (
                               <div className="flex flex-wrap items-center gap-2.5">
-                                <span className="font-bold text-rose-800">
-                                  Are you sure you want to cancel this order?
+                                <span className="font-bold text-[#9D174D]">
+                                  {t('cancelOrder')}?
                                 </span>
                                 <button
                                   type="button"
                                   disabled={cancellingId === order.id}
                                   onClick={() => void handleConfirmCancel(order)}
-                                  className="cursor-pointer rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50"
+                                  className="cursor-pointer rounded-lg bg-[#FF4D8D] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#E03576] disabled:opacity-50"
                                 >
                                   {cancellingId === order.id
-                                    ? 'Cancelling...'
-                                    : 'Yes, Cancel Order'}
+                                    ? t('loading')
+                                    : t('cancelOrder')}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setConfirmCancelId(null)}
                                   className="cursor-pointer rounded-lg border border-[#DFD2F2] bg-white px-3 py-1.5 text-xs font-bold text-[#2B0B4E]"
                                 >
-                                  Keep Order
+                                  {t('cancel')}
                                 </button>
                               </div>
                             ) : (
@@ -1482,9 +1526,9 @@ export function MyOrdersPage() {
                                 <button
                                   type="button"
                                   onClick={() => setConfirmCancelId(order.id)}
-                                  className="cursor-pointer rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100"
+                                  className="cursor-pointer rounded-lg border border-[#FFD1E5] bg-[#FFF0F6]/70 px-3 py-1.5 text-xs font-bold text-[#C81E68] transition-colors hover:bg-[#FFF0F6]"
                                 >
-                                  Cancel Order
+                                  {t('cancelOrder')}
                                 </button>
                                 <span className="text-[11px] text-[#7A6894]">
                                   Cancellation is allowed only before processing starts.
@@ -1504,7 +1548,7 @@ export function MyOrdersPage() {
                             to="/contact"
                             className="font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
                           >
-                            Need Help?
+                            {t('needHelp')}
                           </Link>
                         </div>
                       </div>

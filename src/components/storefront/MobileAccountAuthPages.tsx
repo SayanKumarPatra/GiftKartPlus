@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  Globe,
   Headset,
   Heart,
   Info,
@@ -26,7 +27,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { BrandLogo } from '../ui/BrandLogo';
+import { LanguageSelector } from './LanguageSelector';
 
 const SIGNUP_ILLUSTRATION =
   '/assets/aistudio/3D_Purple_Clipboard_Registration_Icon_30307bae.png';
@@ -36,7 +39,12 @@ const FORGOT_ILLUSTRATION =
   '/assets/aistudio/Glossy_Purple_Forgot_Password_Envelope_7c26fe9d.png';
 
 type AuthScreenMode = 'login' | 'signup' | 'forgot';
-type AccountSubView = 'main' | 'edit-profile' | 'settings' | 'notifications';
+type AccountSubView =
+  | 'main'
+  | 'edit-profile'
+  | 'settings'
+  | 'notifications'
+  | 'language';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -101,9 +109,13 @@ export function MobileAccountAuthPages() {
   const { customerAccount, isAuthReady, signInCustomerDemo, signOutCustomer } =
     useAuth();
   const { pushToast } = useToast();
+  const { language, languages, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  const currentLanguageLabel =
+    languages.find((l) => l.code === language)?.nativeName ?? 'English';
 
   const navState = location.state as {
     from?: string;
@@ -112,6 +124,7 @@ export function MobileAccountAuthPages() {
   } | null;
 
   const queryMode = searchParams.get('mode') as AuthScreenMode | null;
+  const queryTab = searchParams.get('tab');
   const previewAccount = searchParams.get('view') === 'account';
 
   const initialMode: AuthScreenMode =
@@ -126,7 +139,9 @@ export function MobileAccountAuthPages() {
           : 'login';
 
   const [authMode, setAuthMode] = useState<AuthScreenMode>(initialMode);
-  const [accountSubView, setAccountSubView] = useState<AccountSubView>('main');
+  const [accountSubView, setAccountSubView] = useState<AccountSubView>(
+    queryTab === 'language' ? 'language' : 'main'
+  );
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   // Sign Up form state
@@ -181,6 +196,12 @@ export function MobileAccountAuthPages() {
       setAuthMode(navState.mode);
     }
   }, [queryMode, navState?.mode]);
+
+  useEffect(() => {
+    if (queryTab === 'language') {
+      setAccountSubView('language');
+    }
+  }, [queryTab]);
 
   useEffect(() => {
     if (customerAccount) {
@@ -403,22 +424,27 @@ export function MobileAccountAuthPages() {
       <div className="fixed inset-0 z-50 overflow-y-auto overflow-x-clip bg-gradient-to-b from-[#FDF6FF] via-[#FAF1FF] to-[#F6EEFF] lg:hidden">
         <CompactAuthHeader onBack={handleAuthBack} />
 
+        {/* Instant Language Switcher inside Account (Accessible Before Login) */}
+        <div className="mx-auto w-full max-w-[420px] px-4 pt-1 pb-1">
+          <LanguageSelector compact />
+        </div>
+
         {/* PAGE 1: CREATE NEW ACCOUNT (SIGN UP) */}
         {authMode === 'signup' && (
           <main className="mx-auto flex w-full max-w-[420px] flex-col items-center px-4 pb-6 pt-1">
             <div className="flex w-full items-center justify-center">
               <img
                 src={SIGNUP_ILLUSTRATION}
-                alt="Create New Account Illustration"
+                alt={t('createAccount')}
                 className="h-auto w-full max-w-[138px] object-contain mix-blend-multiply min-[390px]:max-w-[156px]"
               />
             </div>
 
             <h1 className="mt-0.5 text-center text-[21px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[23px]">
-              Create New Account
+              {t('createAccount')}
             </h1>
             <p className="mt-1 max-w-[300px] text-center text-[12px] leading-[1.4] text-[#553F70]">
-              Join GiftKart and explore a world of gifts for every occasion.
+              {t('guestAccountNote')}
             </p>
 
             <form
@@ -645,10 +671,10 @@ export function MobileAccountAuthPages() {
             </div>
 
             <h1 className="mt-1 text-center text-[21px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[23px]">
-              Login to Your Account
+              {t('signIn')}
             </h1>
             <p className="mt-1 max-w-[300px] text-center text-[12.5px] leading-[1.4] text-[#553F70]">
-              Welcome back! Log in to continue shopping on GiftKart.
+              {t('signInPrompt')}
             </p>
 
             {navState?.reason === 'wishlist' && (
@@ -1212,10 +1238,28 @@ export function MobileAccountAuthPages() {
         </section>
       )}
 
+      {/* SUB-VIEW: LANGUAGE */}
+      {accountSubView === 'language' && (
+        <section aria-label={t('language')} className="mx-auto max-w-[420px]">
+          <button
+            type="button"
+            onClick={() => setAccountSubView('main')}
+            className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[12px] font-bold text-[#6A11CB] shadow-[0_2px_8px_rgba(106,17,203,0.08)]"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 stroke-[2.4]" />
+            <span>{t('back')}</span>
+          </button>
+
+          <div className="rounded-[24px] border border-[#EFE2FF] bg-white p-5 shadow-[0_8px_24px_rgba(106,17,203,0.08)]">
+            <LanguageSelector />
+          </div>
+        </section>
+      )}
+
       {/* MAIN MY ACCOUNT SCREEN */}
       {accountSubView === 'main' && (
         <section
-          aria-label="My Account"
+          aria-label={t('myAccount')}
           className="mx-auto max-w-[440px] space-y-2"
         >
           {/* Premium Purple-Pink Gradient Profile Header Card */}
@@ -1253,13 +1297,13 @@ export function MobileAccountAuthPages() {
                   className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-[#6A11CB] shadow-xs transition-transform active:scale-95"
                 >
                   <PencilLine className="h-3 w-3 stroke-[2.2]" />
-                  <span>Edit Profile</span>
+                  <span>{t('editProfile')}</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* 7 Account Menu Option Cards (Compact single-screen fit) */}
+          {/* Account Menu Option Cards */}
           <div className="space-y-1.5">
             {/* 1. My Orders */}
             <Link
@@ -1271,10 +1315,10 @@ export function MobileAccountAuthPages() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
-                  My Orders
+                  {t('myOrders')}
                 </p>
                 <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
-                  Track and view your orders.
+                  {t('trackYourOrder')}
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-[#6A11CB]/80 stroke-[2.2]" />
@@ -1290,10 +1334,10 @@ export function MobileAccountAuthPages() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
-                  My Wishlist
+                  {t('wishlist')}
                 </p>
                 <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
-                  Your saved products.
+                  {t('saveToWishlist')}
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-[#6A11CB]/80 stroke-[2.2]" />
@@ -1309,16 +1353,39 @@ export function MobileAccountAuthPages() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
-                  Delivery Addresses
+                  {t('savedAddresses')}
                 </p>
                 <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
-                  Manage your delivery addresses.
+                  {t('deliveryAddress')}
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-[#6A11CB]/80 stroke-[2.2]" />
             </Link>
 
-            {/* 4. Account Settings */}
+            {/* 4. App Language Selector */}
+            <button
+              type="button"
+              onClick={() => setAccountSubView('language')}
+              className="flex w-full items-center gap-2.5 rounded-[16px] border border-[#EBD8FF] bg-gradient-to-r from-[#FAF5FF] to-[#FFF4F9] px-3 py-2 text-left shadow-[0_3px_10px_rgba(106,17,203,0.06)] transition-transform active:scale-[0.985]"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#6A11CB] to-[#FF4D8D] text-white">
+                <Globe className="h-[18px] w-[18px] stroke-[2]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
+                  {t('appLanguage')}
+                </p>
+                <p className="mt-0.5 truncate text-[11px] font-semibold text-[#6A11CB]">
+                  {currentLanguageLabel}
+                </p>
+              </div>
+              <span className="rounded-full bg-white px-2 py-0.5 text-[10.5px] font-bold text-[#6A11CB] ring-1 ring-[#EBD8FF]">
+                {t('change')}
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[#6A11CB]/80 stroke-[2.2]" />
+            </button>
+
+            {/* 5. Account Settings */}
             <button
               type="button"
               onClick={() => setAccountSubView('settings')}
@@ -1329,16 +1396,16 @@ export function MobileAccountAuthPages() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
-                  Account Settings
+                  {t('accountSettings')}
                 </p>
                 <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
-                  Update your account and preferences.
+                  {t('manageProfile')}
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-[#6A11CB]/80 stroke-[2.2]" />
             </button>
 
-            {/* 5. Notifications */}
+            {/* 6. Notifications */}
             <button
               type="button"
               onClick={() => setAccountSubView('notifications')}
@@ -1349,16 +1416,16 @@ export function MobileAccountAuthPages() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
-                  Notifications
+                  {t('notificationsTitle')}
                 </p>
                 <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
-                  Order, offer and important updates.
+                  {t('offers')}
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-[#6A11CB]/80 stroke-[2.2]" />
             </button>
 
-            {/* 6. Help & Support */}
+            {/* 7. Help & Support */}
             <Link
               to="/contact"
               className="flex items-center gap-2.5 rounded-[16px] border border-[#EFE2FF] bg-white px-3 py-2 shadow-[0_3px_10px_rgba(106,17,203,0.05)] transition-transform active:scale-[0.985]"
@@ -1368,16 +1435,16 @@ export function MobileAccountAuthPages() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[13.5px] font-extrabold leading-tight text-[#2B0B4E]">
-                  Help &amp; Support
+                  {t('helpSupport')}
                 </p>
                 <p className="mt-0.5 truncate text-[11px] font-medium text-[#6C5885]">
-                  Get help on WhatsApp.
+                  {t('chatOnWhatsApp')}
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-[#6A11CB]/80 stroke-[2.2]" />
             </Link>
 
-            {/* 7. Logout (Distinct Soft Pink Accent) */}
+            {/* 8. Logout (Distinct Soft Pink Accent) */}
             <button
               type="button"
               onClick={() => setShowLogoutDialog(true)}
@@ -1387,11 +1454,11 @@ export function MobileAccountAuthPages() {
                 <LogOut className="h-[18px] w-[18px] stroke-[2]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[13.5px] font-extrabold leading-tight text-[#E11D74]">
-                  Logout
+                <p className="text-[13.5px] font-extrabold leading-tight text-[#C81E68]">
+                  {t('signOut')}
                 </p>
                 <p className="mt-0.5 truncate text-[11px] font-medium text-[#8C5B76]">
-                  Sign out from your account.
+                  {t('myAccount')}
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-[#FF4D8D] stroke-[2.2]" />
@@ -1420,10 +1487,10 @@ export function MobileAccountAuthPages() {
               id="gk-logout-title"
               className="mt-3 text-[17px] font-extrabold text-[#2B0B4E]"
             >
-              Log Out
+              {t('signOut')}
             </h2>
             <p className="mt-1.5 text-[13px] leading-relaxed text-[#5E4A77]">
-              Are you sure you want to log out?
+              {t('signOut')}?
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               <button
@@ -1431,14 +1498,14 @@ export function MobileAccountAuthPages() {
                 onClick={() => setShowLogoutDialog(false)}
                 className="min-h-[44px] rounded-full border border-[#E6D3FF] bg-[#FAF6FF] text-[13.5px] font-bold text-[#2B0B4E] active:scale-95"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 type="button"
                 onClick={() => void handleConfirmLogout()}
                 className="min-h-[44px] rounded-full bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] text-[13.5px] font-bold text-white shadow-[0_6px_16px_rgba(255,77,141,0.28)] active:scale-95"
               >
-                Logout
+                {t('signOut')}
               </button>
             </div>
           </div>

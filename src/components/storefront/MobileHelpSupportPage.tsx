@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useStoreSettings } from '../../hooks/useStoreData';
 import { cleanWhatsAppDigits } from '../../utils/storefrontHelpers';
 
@@ -77,6 +78,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 export function MobileHelpSupportPage() {
   const { customerAccount, isAuthReady } = useAuth();
+  const { t } = useLanguage();
   const { data: settings } = useStoreSettings();
   const [searchParams] = useSearchParams();
 
@@ -117,11 +119,11 @@ export function MobileHelpSupportPage() {
           </div>
 
           <h1 className="mt-1.5 text-[22px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[24px]">
-            Help &amp; Support
+            {t('helpSupport')}
           </h1>
 
           <p className="mt-1.5 max-w-[290px] text-[12.5px] leading-[1.45] text-[#523D6D]">
-            Please log in to get support and contact our team on WhatsApp.
+            {t('signInPrompt')}
           </p>
 
           {/* Primary & Secondary Auth Buttons */}
@@ -133,7 +135,7 @@ export function MobileHelpSupportPage() {
             >
               <span className="flex items-center gap-2.5">
                 <User className="h-[19px] w-[19px] shrink-0 stroke-[2]" />
-                <span>Login / Sign In</span>
+                <span>{t('signIn')}</span>
               </span>
               <ChevronRight className="h-[19px] w-[19px] shrink-0 stroke-[2.2]" />
             </Link>
@@ -144,7 +146,7 @@ export function MobileHelpSupportPage() {
               className="flex min-h-[44px] w-full items-center justify-start gap-2.5 rounded-full border border-[#EBD8FF] bg-white px-5 text-[14px] font-bold text-[#6A11CB] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
             >
               <UserPlus className="h-[19px] w-[19px] shrink-0 text-[#6A11CB] stroke-[2]" />
-              <span>Create New Account</span>
+              <span>{t('createAccount')}</span>
             </Link>
           </div>
         </section>
@@ -158,10 +160,10 @@ export function MobileHelpSupportPage() {
           <div className="relative flex items-end justify-between gap-1">
             <div className="min-w-0 flex-1 pb-4 pl-0.5">
               <h1 className="text-[20px] font-extrabold leading-[1.15] tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[22px]">
-                Help &amp; Support
+                {t('helpSupport')}
               </h1>
               <p className="mt-1 text-[12.5px] font-medium text-[#564073]">
-                We&apos;re here to help you!
+                {t('needHelp')}
               </p>
             </div>
 
@@ -184,11 +186,10 @@ export function MobileHelpSupportPage() {
 
               <div className="min-w-0 flex-1">
                 <h2 className="text-[14.5px] font-extrabold leading-tight text-[#2B0B4E] min-[390px]:text-[15.5px]">
-                  Contact Us on WhatsApp
+                  {t('callUs')}
                 </h2>
                 <p className="mt-0.5 text-[11.5px] leading-[1.35] text-[#5B4775] min-[390px]:text-[12px]">
-                  Have an issue? Chat with our support team directly on
-                  WhatsApp.
+                  {t('contactSupport')}
                 </p>
               </div>
             </div>
@@ -202,7 +203,7 @@ export function MobileHelpSupportPage() {
               <span className="w-4 shrink-0" aria-hidden="true" />
               <span className="flex items-center gap-2">
                 <WhatsAppIcon className="h-[17px] w-[17px] shrink-0" />
-                <span>Chat on WhatsApp</span>
+                <span>{t('chatOnWhatsApp')}</span>
               </span>
               <ChevronRight className="h-4 w-4 shrink-0 stroke-[2.4]" />
             </a>

@@ -5,6 +5,7 @@ import { useCategories, useProducts } from '../../hooks/useStoreData';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import type { Product } from '../../types';
 import { formatInr } from '../../utils/format';
 import {
@@ -18,6 +19,7 @@ export function MobileCategoriesPage() {
   const { addToCart, toggleWishlist, isWishlisted } = useCart();
   const { customerAccount } = useAuth();
   const { pushToast } = useToast();
+  const { t, translateCategory, localizeEntity } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -102,7 +104,7 @@ export function MobileCategoriesPage() {
     }
     addToCart(product, { quantity: 1, selectedVariants: defaultVariants });
     pushToast({
-      title: 'Product is added to cart.',
+      title: t('addedToCart'),
       variant: 'success',
       compact: true,
     });
@@ -121,8 +123,8 @@ export function MobileCategoriesPage() {
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search for Gifts, Products & More..."
-            aria-label="Search for Gifts, Products & More"
+            placeholder={t('searchPlaceholder')}
+            aria-label={t('searchPlaceholder')}
             className="h-full w-full min-w-0 bg-transparent text-[13px] font-medium text-[#2B0B4E] placeholder:text-[#7E6B95] focus:outline-none"
           />
         </form>
@@ -156,74 +158,79 @@ export function MobileCategoriesPage() {
                         isSelected ? 'text-white' : 'text-[#6A11CB]'
                       }`}
                     />
-                    <span
-                      className={`min-w-0 flex-1 break-words text-[10.5px] leading-[1.2] tracking-[-0.01em] min-[390px]:text-[11px] ${
-                        isSelected ? 'font-bold text-white' : 'font-semibold text-[#2B0B4E]'
-                      }`}
-                    >
-                      {label}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </aside>
+                      <span
+                        className={`min-w-0 flex-1 break-words text-[10.5px] leading-[1.2] tracking-[-0.01em] min-[390px]:text-[11px] ${
+                          isSelected ? 'font-bold text-white' : 'font-semibold text-[#2B0B4E]'
+                        }`}
+                      >
+                        {translateCategory(label)}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </aside>
 
-        {/* RIGHT SECTION: Direct 2-Column Product Grid (No Subcategories, No Extra Banners, No See All/View All) */}
-        <section
-          ref={rightPanelRef}
-          aria-live="polite"
-          aria-label={activeCategoryDef?.label ?? 'All Gifts'}
-          className="min-w-0 flex-1 px-2 pb-6 pt-2.5 min-[390px]:px-2.5"
-        >
-          {/* Minimal Active Category Title & Count */}
-          <div className="mb-2.5 flex items-baseline justify-between gap-2 px-0.5">
-            <h1 className="truncate text-[14px] font-extrabold tracking-[-0.01em] text-[#2B0B4E] min-[390px]:text-[15px]">
-              {activeCategoryDef?.label ?? 'All Gifts'}
-            </h1>
-            <span className="shrink-0 text-[11px] font-semibold text-[#75628E]">
-              {isLoading
-                ? '...'
-                : `${displayedProducts.length} ${displayedProducts.length === 1 ? 'item' : 'items'}`}
-            </span>
-          </div>
+          {/* RIGHT SECTION: Direct 2-Column Product Grid (No Subcategories, No Extra Banners, No See All/View All) */}
+          <section
+            ref={rightPanelRef}
+            aria-live="polite"
+            aria-label={translateCategory(activeCategoryDef?.label ?? 'All Gifts')}
+            className="min-w-0 flex-1 px-2 pb-6 pt-2.5 min-[390px]:px-2.5"
+          >
+            {/* Minimal Active Category Title & Count */}
+            <div className="mb-2.5 flex items-baseline justify-between gap-2 px-0.5">
+              <h1 className="truncate text-[14px] font-extrabold tracking-[-0.01em] text-[#2B0B4E] min-[390px]:text-[15px]">
+                {translateCategory(activeCategoryDef?.label ?? 'All Gifts')}
+              </h1>
+              <span className="shrink-0 text-[11px] font-semibold text-[#75628E]">
+                {isLoading
+                  ? '...'
+                  : `${displayedProducts.length} ${displayedProducts.length === 1 ? t('item') : t('items')}`}
+              </span>
+            </div>
 
-          {/* 2-Column Product Grid */}
-          {isLoading ? (
-            <div className="grid grid-cols-2 gap-2 min-[390px]:gap-2.5">
-              {Array.from({ length: 6 }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className="h-[200px] animate-pulse rounded-2xl border border-[#EFE3FF] bg-white"
-                />
-              ))}
-            </div>
-          ) : displayedProducts.length === 0 ? (
-            <div className="mt-2 rounded-2xl border border-[#EFE3FF] bg-white px-4 py-8 text-center shadow-[0_4px_14px_rgba(106,17,203,0.05)]">
-              {activeCategoryDef && (
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F5ECFF] text-[#6A11CB]">
-                  <activeCategoryDef.Icon className="h-6 w-6 stroke-[1.9]" />
-                </div>
-              )}
-              <p className="mt-3 text-[13.5px] font-extrabold text-[#2B0B4E]">
-                {activeCategoryDef?.label ?? 'All Gifts'}
-              </p>
-              <p className="mt-1 text-[11.5px] leading-relaxed text-[#6E5B85]">
-                New gifts are being added to this category soon.
-              </p>
-              <button
-                type="button"
-                onClick={() => handleSelectCategory('all-gifts')}
-                className="mt-4 inline-flex min-h-[38px] items-center justify-center rounded-full bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] px-4 text-[12px] font-bold text-white shadow-[0_4px_12px_rgba(106,17,203,0.24)] active:scale-95"
-              >
-                Explore All Gifts
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 min-[390px]:gap-2.5">
-              {displayedProducts.map((product) => {
-                const wishlisted = isWishlisted(product.id);
+            {/* 2-Column Product Grid */}
+            {isLoading ? (
+              <div className="grid grid-cols-2 gap-2 min-[390px]:gap-2.5">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="h-[200px] animate-pulse rounded-2xl border border-[#EFE3FF] bg-white"
+                  />
+                ))}
+              </div>
+            ) : displayedProducts.length === 0 ? (
+              <div className="mt-2 rounded-2xl border border-[#EFE3FF] bg-white px-4 py-8 text-center shadow-[0_4px_14px_rgba(106,17,203,0.05)]">
+                {activeCategoryDef && (
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F5ECFF] text-[#6A11CB]">
+                    <activeCategoryDef.Icon className="h-6 w-6 stroke-[1.9]" />
+                  </div>
+                )}
+                <p className="mt-3 text-[13.5px] font-extrabold text-[#2B0B4E]">
+                  {translateCategory(activeCategoryDef?.label ?? 'All Gifts')}
+                </p>
+                <p className="mt-1 text-[11.5px] leading-relaxed text-[#6E5B85]">
+                  {t('catalogEmptyDesc')}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleSelectCategory('all-gifts')}
+                  className="mt-4 inline-flex min-h-[38px] items-center justify-center rounded-full bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] px-4 text-[12px] font-bold text-white shadow-[0_4px_12px_rgba(106,17,203,0.24)] active:scale-95"
+                >
+                  {t('exploreGifts')}
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 min-[390px]:gap-2.5">
+                {displayedProducts.map((product) => {
+                  const wishlisted = isWishlisted(product.id);
+                  const displayName = localizeEntity(
+                    product.name,
+                    'name',
+                    product.translations
+                  );
                 const hasDiscount =
                   typeof product.compareAtPriceInr === 'number' &&
                   product.compareAtPriceInr > product.priceInr;
@@ -247,14 +254,14 @@ export function MobileCategoriesPage() {
                     >
                       <img
                         src={product.images[0]}
-                        alt={product.name}
+                        alt={displayName}
                         loading="lazy"
                         className="h-full w-full object-cover"
                       />
 
                       {discountPercent > 0 && (
                         <span className="absolute left-1.5 top-1.5 rounded-full bg-[#FF4D8D] px-1.5 py-0.5 text-[9px] font-extrabold leading-none text-white shadow-xs">
-                          {discountPercent}% OFF
+                          {discountPercent}% {t('off')}
                         </span>
                       )}
 
@@ -262,9 +269,7 @@ export function MobileCategoriesPage() {
                         type="button"
                         onClick={(e) => handleWishlistToggle(e, product.id)}
                         aria-label={
-                          wishlisted
-                            ? `Remove ${product.name} from wishlist`
-                            : `Add ${product.name} to wishlist`
+                          wishlisted ? t('removeFromWishlist') : t('saveToWishlist')
                         }
                         className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/92 text-[#6A11CB] shadow-xs active:scale-90"
                       >
@@ -284,7 +289,7 @@ export function MobileCategoriesPage() {
                         to={`/product/${product.slug}`}
                         className="line-clamp-2 text-[11px] font-bold leading-[1.3] text-[#2B0B4E] min-[390px]:text-[11.5px]"
                       >
-                        {product.name}
+                        {displayName}
                       </Link>
 
                       <div className="mt-2 flex items-end justify-between gap-1">
