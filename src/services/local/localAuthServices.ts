@@ -10,7 +10,11 @@ import type {
   AdminSignInInput,
   CustomerAccountStatus,
   CustomerDemoAccount,
+  CustomerPasswordSignInInput,
+  CustomerProfileUpdateInput,
   CustomerSignInInput,
+  CustomerSignUpInput,
+  CustomerSignUpResult,
   RegisteredCustomer,
 } from '../../types';
 import {
@@ -317,9 +321,29 @@ export class LocalCustomerAuthService implements ICustomerAuthService {
     return current;
   }
 
+  async signUp(_input: CustomerSignUpInput): Promise<CustomerSignUpResult> {
+    throw new Error('Supabase Auth is required for customer sign-up. Configure VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.');
+  }
+
+  async signInWithPassword(_input: CustomerPasswordSignInInput): Promise<CustomerDemoAccount> {
+    throw new Error('Supabase Auth is required for customer sign-in. Configure VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.');
+  }
+
+  async signInWithGoogle(): Promise<void> {
+    throw new Error('Supabase Auth is required for Google Sign-In.');
+  }
+
+  async sendPasswordReset(_email: string): Promise<void> {
+    throw new Error('Supabase Auth is required for password reset.');
+  }
+
+  async updateProfile(_input: CustomerProfileUpdateInput): Promise<CustomerDemoAccount> {
+    throw new Error('Supabase Auth is required to update customer profile.');
+  }
+
   async signInDemo(_input: CustomerSignInInput): Promise<CustomerDemoAccount> {
     throw new Error(
-      'Demo customer login has been disabled. Real backend authentication will be connected in the next phase.'
+      'Demo customer login has been disabled. Please sign in with your GiftKart account.'
     );
   }
 

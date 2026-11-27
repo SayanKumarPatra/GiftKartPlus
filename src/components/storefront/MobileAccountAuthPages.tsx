@@ -28,6 +28,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { isSupabaseConfigured, uploadImageToSupabaseStorage } from '../../lib/supabase';
 import { BrandLogo } from '../ui/BrandLogo';
 import { LanguageSelector } from './LanguageSelector';
 
@@ -106,8 +107,16 @@ function getInitials(name: string): string {
 }
 
 export function MobileAccountAuthPages() {
-  const { customerAccount, isAuthReady, signInCustomerDemo, signOutCustomer } =
-    useAuth();
+  const {
+    customerAccount,
+    isAuthReady,
+    signUpCustomer,
+    signInCustomer,
+    signInCustomerWithGoogle,
+    sendCustomerPasswordReset,
+    updateCustomerProfile,
+    signOutCustomer,
+  } = useAuth();
   const { pushToast } = useToast();
   const { language, languages, t, translatePlace } = useLanguage();
   const location = useLocation();
@@ -169,18 +178,27 @@ export function MobileAccountAuthPages() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotError, setForgotError] = useState('');
   const [authStatusNotice, setAuthStatusNotice] = useState<string | null>(null);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
 
   // Edit Profile form state (bound strictly to real authenticated account)
-  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(
+    customerAccount?.avatarUrl ?? null
+  );
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [profileSaving, setProfileSaving] = useState(false);
   const [editName, setEditName] = useState(customerAccount?.fullName ?? '');
   const [editEmail, setEditEmail] = useState(customerAccount?.email ?? '');
   const [editPhone, setEditPhone] = useState(customerAccount?.phone ?? '');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Static preview toggles for Account Settings & Notifications
-  const [orderUpdatesOn, setOrderUpdatesOn] = useState(true);
-  const [offersOn, setOffersOn] = useState(true);
-  const [whatsappUpdatesOn, setWhatsappUpdatesOn] = useState(true);
+  // Customer Notification & WhatsApp Preferences (persisted to Supabase customers table)
+  const [orderUpdatesOn, setOrderUpdatesOn] = useState(
+    customerAccount?.orderUpdatesOn !== false
+  );
+  const [offersOn, setOffersOn] = useState(customerAccount?.offersOn !== false);
+  const [whatsappUpdatesOn, setWhatsappUpdatesOn] = useState(
+    customerAccount?.whatsappUpdatesOn !== false
+  );
 
   useEffect(() => {
     if (queryMode === 'signup' || queryMode === 'login' || queryMode === 'forgot') {
@@ -201,6 +219,10 @@ export function MobileAccountAuthPages() {
       setEditName(customerAccount.fullName);
       setEditEmail(customerAccount.email);
       setEditPhone(customerAccount.phone);
+      setAvatarPreviewUrl(customerAccount.avatarUrl ?? null);
+      setOrderUpdatesOn(customerAccount.orderUpdatesOn !== false);
+      setOffersOn(customerAccount.offersOn !== false);
+      setWhatsappUpdatesOn(customerAccount.whatsappUpdatesOn !== false);
     }
   }, [customerAccount]);
 
@@ -222,31 +244,6 @@ export function MobileAccountAuthPages() {
     } else {
       navigate('/');
     }
-  }
-
-  function showBackendAuthReadyNotice(context: 'login' | 'signup' | 'google' | 'forgot') {
-    const isBn = language === 'bn';
-    const messageByContext: Record<typeof context, string> = {
-      login: isBn
-        ? 'রিয়েল কাস্টমার লগইন ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে। বর্তমানে কোনো ডেমো বা নকল লগইন সক্রিয় নেই।'
-        : 'Customer sign-in is structured for backend authentication and will activate once the backend is connected. Demo login has been removed.',
-      signup: isBn
-        ? 'নতুন অ্যাকাউন্ট রেজিস্ট্রেশন ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে।'
-        : 'Account registration is ready for backend authentication and will activate once the backend is connected.',
-      google: isBn
-        ? 'ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর আসল গুগল সাইন-ইন (OAuth) চালু হবে।'
-        : 'Real Google Sign-In (OAuth) will be enabled once backend authentication is connected.',
-      forgot: isBn
-        ? 'পাসওয়ার্ড রিসেট ইমেইল সেবা ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে।'
-        : 'Password reset emails will be enabled once backend authentication is connected.',
-    };
-    const msg = messageByContext[context];
-    setAuthStatusNotice(msg);
-    pushToast({
-      title: isBn ? 'ব্যাকএন্ড অথেনটিকেশন অপেক্ষমাণ' : 'Backend Authentication Pending',
-      description: msg,
-      variant: 'info',
-    });
   }
 
   async function handleSignUpSubmit(e: React.FormEvent) {
@@ -271,7 +268,58 @@ export function MobileAccountAuthPages() {
     setSignupErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    showBackendAuthReadyNotice('signup');
+    setAuthStatusNotice(null);
+    setAuthSubmitting(true);
+    try {
+      const result = await signUpCustomer({
+        fullName: signupName.trim(),
+        email: signupEmail.trim(),
+        phone: signupPhone.trim(),
+        password: signupPassword.trim(),
+        defaultCity: 'Jalchak',
+      });
+
+      if (result.requiresEmailConfirmation) {
+        const msg = isBn
+          ? 'অ্যাকাউন্ট তৈরি হয়েছে! লগইন করার আগে অনুগ্রহ করে আপনার ইমেইলের কনফার্মেশন লিংকে ক্লিক করুন।'
+          : result.message ||
+            'Account created! Please check your email inbox to confirm your address before logging in.';
+        setAuthStatusNotice(msg);
+        pushToast({
+          title: isBn ? 'ইমেইল ভেরিফিকেশন প্রয়োজন' : 'Verify Your Email',
+          description: msg,
+          variant: 'success',
+        });
+        setAuthMode('login');
+        setLoginEmail(signupEmail.trim());
+      } else {
+        pushToast({
+          title: isBn ? 'GiftKart-এ স্বাগতম!' : 'Welcome to GiftKart!',
+          description: isBn
+            ? 'আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে।'
+            : 'Your account has been created successfully.',
+          variant: 'success',
+        });
+        if (navState?.from && navState.from !== '/account') {
+          navigate(navState.from, { replace: true });
+        }
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : isBn
+            ? 'অ্যাকাউন্ট তৈরি করা যায়নি। আবার চেষ্টা করুন।'
+            : 'Unable to create your account. Please try again.';
+      setAuthStatusNotice(message);
+      pushToast({
+        title: isBn ? 'সাইন-আপ ব্যর্থ' : 'Sign Up Failed',
+        description: message,
+        variant: 'error',
+      });
+    } finally {
+      setAuthSubmitting(false);
+    }
   }
 
   async function handleLoginSubmit(e: React.FormEvent) {
@@ -294,14 +342,65 @@ export function MobileAccountAuthPages() {
     setLoginErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    showBackendAuthReadyNotice('login');
+    setAuthStatusNotice(null);
+    setAuthSubmitting(true);
+    try {
+      await signInCustomer({
+        email: loginEmail.trim(),
+        password: loginPassword.trim(),
+      });
+      pushToast({
+        title: isBn ? 'লগইন সফল হয়েছে' : 'Signed In Successfully',
+        description: isBn
+          ? 'GiftKart-এ আবার স্বাগতম।'
+          : 'Welcome back to GiftKart.',
+        variant: 'success',
+      });
+      if (navState?.from && navState.from !== '/account') {
+        navigate(navState.from, { replace: true });
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : isBn
+            ? 'ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।'
+            : 'Invalid email or password.';
+      setAuthStatusNotice(message);
+      pushToast({
+        title: isBn ? 'লগইন ব্যর্থ' : 'Sign In Failed',
+        description: message,
+        variant: 'error',
+      });
+    } finally {
+      setAuthSubmitting(false);
+    }
   }
 
-  function handleContinueWithGoogle() {
-    showBackendAuthReadyNotice('google');
+  async function handleContinueWithGoogle() {
+    const isBn = language === 'bn';
+    setAuthStatusNotice(null);
+    setAuthSubmitting(true);
+    try {
+      await signInCustomerWithGoogle();
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : isBn
+            ? 'Google সাইন-ইন শুরু করা যায়নি।'
+            : 'Unable to start Google Sign-In.';
+      setAuthStatusNotice(message);
+      pushToast({
+        title: isBn ? 'Google সাইন-ইন ত্রুটি' : 'Google Sign-In Error',
+        description: message,
+        variant: 'error',
+      });
+      setAuthSubmitting(false);
+    }
   }
 
-  function handleForgotSubmit(e: React.FormEvent) {
+  async function handleForgotSubmit(e: React.FormEvent) {
     e.preventDefault();
     const isBn = language === 'bn';
     const trimmed = forgotEmail.trim();
@@ -322,41 +421,110 @@ export function MobileAccountAuthPages() {
       return;
     }
     setForgotError('');
-    showBackendAuthReadyNotice('forgot');
+    setAuthStatusNotice(null);
+    setAuthSubmitting(true);
+    try {
+      await sendCustomerPasswordReset(trimmed);
+      const msg = isBn
+        ? `${trimmed} ইমেইলে পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে। অনুগ্রহ করে ইনবক্স চেক করুন।`
+        : `Password reset link sent to ${trimmed}. Please check your inbox.`;
+      setAuthStatusNotice(msg);
+      pushToast({
+        title: isBn ? 'রিসেট লিংক পাঠানো হয়েছে' : 'Reset Link Sent',
+        description: msg,
+        variant: 'success',
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : isBn
+            ? 'পাসওয়ার্ড রিসেট ইমেইল পাঠানো যায়নি।'
+            : 'Unable to send password reset email.';
+      setAuthStatusNotice(message);
+      pushToast({
+        title: isBn ? 'ত্রুটি' : 'Reset Error',
+        description: message,
+        variant: 'error',
+      });
+    } finally {
+      setAuthSubmitting(false);
+    }
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
     const isBn = language === 'bn';
-    if (!editName.trim() || !EMAIL_PATTERN.test(editEmail.trim())) {
+    if (!editName.trim()) {
       pushToast({
         title: isBn ? 'অবৈধ প্রোফাইল তথ্য' : 'Invalid Profile Details',
         description: isBn
-          ? 'অনুগ্রহ করে সঠিক নাম এবং ইমেইল ঠিকানা লিখুন।'
-          : 'Please enter a valid full name and email address.',
+          ? 'অনুগ্রহ করে আপনার সম্পূর্ণ নাম লিখুন।'
+          : 'Please enter a valid full name.',
         variant: 'error',
       });
       return;
     }
 
-    await signInCustomerDemo({
-      fullName: editName.trim(),
-      email: editEmail.trim(),
-      phone: editPhone.trim(),
-      defaultCity: customerAccount?.defaultCity ?? 'Jalchak',
-    });
+    setProfileSaving(true);
+    try {
+      let nextAvatarUrl: string | undefined = avatarPreviewUrl ?? undefined;
+      if (pendingAvatarFile && customerAccount?.id && isSupabaseConfigured()) {
+        try {
+          nextAvatarUrl = await uploadImageToSupabaseStorage(
+            'avatars',
+            pendingAvatarFile,
+            customerAccount.id
+          );
+        } catch {
+          // Keep preview fallback if storage bucket is not initialized yet
+        }
+      }
 
-    pushToast({
-      title: t('profileUpdatedTitle'),
-      description: t('profileUpdatedDesc'),
-      variant: 'success',
-    });
-    setAccountSubView('main');
+      await updateCustomerProfile({
+        fullName: editName.trim(),
+        phone: editPhone.trim(),
+        defaultCity: customerAccount?.defaultCity ?? 'Jalchak',
+        avatarUrl: nextAvatarUrl,
+      });
+
+      setPendingAvatarFile(null);
+      pushToast({
+        title: t('profileUpdatedTitle'),
+        description: t('profileUpdatedDesc'),
+        variant: 'success',
+      });
+      setAccountSubView('main');
+    } catch (err) {
+      pushToast({
+        title: isBn ? 'প্রোফাইল আপডেট ব্যর্থ' : 'Profile Update Failed',
+        description:
+          err instanceof Error ? err.message : 'Unable to save profile changes.',
+        variant: 'error',
+      });
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
+  async function handleTogglePreference(
+    field: 'whatsappUpdatesOn' | 'orderUpdatesOn' | 'offersOn',
+    nextValue: boolean
+  ) {
+    if (field === 'whatsappUpdatesOn') setWhatsappUpdatesOn(nextValue);
+    if (field === 'orderUpdatesOn') setOrderUpdatesOn(nextValue);
+    if (field === 'offersOn') setOffersOn(nextValue);
+    try {
+      await updateCustomerProfile({ [field]: nextValue });
+    } catch {
+      // Revert silently if offline
+    }
   }
 
   function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPendingAvatarFile(file);
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
@@ -611,12 +779,13 @@ export function MobileAccountAuthPages() {
               {/* Primary Button: Create Account */}
               <button
                 type="submit"
-                className="mt-1.5 flex min-h-[46px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[14.5px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985]"
+                disabled={authSubmitting}
+                className="mt-1.5 flex min-h-[46px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[14.5px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985] disabled:opacity-65"
               >
                 <span className="w-5 shrink-0" aria-hidden="true" />
                 <span className="flex items-center gap-2">
                   <UserPlus className="h-[18px] w-[18px] shrink-0 stroke-[2.1]" />
-                  <span>{t('createAccount')}</span>
+                  <span>{authSubmitting ? (language === 'bn' ? 'অপেক্ষা করুন...' : 'Creating...') : t('createAccount')}</span>
                 </span>
                 <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.3]" />
               </button>
@@ -631,11 +800,12 @@ export function MobileAccountAuthPages() {
               <span className="h-px flex-1 bg-[#E5D4FA]" />
             </div>
 
-            {/* Continue with Google (Backend OAuth Ready) */}
+            {/* Continue with Google (Supabase OAuth) */}
             <button
               type="button"
-              onClick={handleContinueWithGoogle}
-              className="flex min-h-[44px] w-full items-center justify-center gap-2.5 rounded-full border border-[#EAE0F8] bg-white px-5 text-[14px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
+              disabled={authSubmitting}
+              onClick={() => void handleContinueWithGoogle()}
+              className="flex min-h-[44px] w-full items-center justify-center gap-2.5 rounded-full border border-[#EAE0F8] bg-white px-5 text-[14px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985] disabled:opacity-65"
             >
               <GoogleOfficialLogo className="h-[18px] w-[18px] shrink-0" />
               <span>{t('continueWithGoogle')}</span>
@@ -806,12 +976,13 @@ export function MobileAccountAuthPages() {
               {/* Primary Button: Login / Sign In */}
               <button
                 type="submit"
-                className="flex min-h-[46px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[14.5px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985]"
+                disabled={authSubmitting}
+                className="flex min-h-[46px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[14.5px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985] disabled:opacity-65"
               >
                 <span className="w-5 shrink-0" aria-hidden="true" />
                 <span className="flex items-center gap-2">
                   <LogIn className="h-[18px] w-[18px] shrink-0 stroke-[2.1]" />
-                  <span>{t('loginOrSignIn')}</span>
+                  <span>{authSubmitting ? (language === 'bn' ? 'সাইন-ইন হচ্ছে...' : 'Signing In...') : t('loginOrSignIn')}</span>
                 </span>
                 <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.3]" />
               </button>
@@ -826,11 +997,12 @@ export function MobileAccountAuthPages() {
               <span className="h-px flex-1 bg-[#E5D4FA]" />
             </div>
 
-            {/* Continue with Google (Backend OAuth Ready) */}
+            {/* Continue with Google (Supabase OAuth) */}
             <button
               type="button"
-              onClick={handleContinueWithGoogle}
-              className="flex min-h-[44px] w-full items-center justify-center gap-2.5 rounded-full border border-[#EAE0F8] bg-white px-5 text-[14px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
+              disabled={authSubmitting}
+              onClick={() => void handleContinueWithGoogle()}
+              className="flex min-h-[44px] w-full items-center justify-center gap-2.5 rounded-full border border-[#EAE0F8] bg-white px-5 text-[14px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985] disabled:opacity-65"
             >
               <GoogleOfficialLogo className="h-[18px] w-[18px] shrink-0" />
               <span>{t('continueWithGoogle')}</span>
@@ -913,12 +1085,13 @@ export function MobileAccountAuthPages() {
 
               <button
                 type="submit"
-                className="flex min-h-[50px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[15px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985]"
+                disabled={authSubmitting}
+                className="flex min-h-[50px] w-full items-center justify-between rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-5 text-[15px] font-bold text-white shadow-[0_8px_22px_rgba(106,17,203,0.28)] transition-transform active:scale-[0.985] disabled:opacity-65"
               >
                 <span className="w-5 shrink-0" aria-hidden="true" />
                 <span className="flex items-center gap-2.5">
                   <Send className="h-[18px] w-[18px] shrink-0 stroke-[2.1]" />
-                  <span>{t('sendResetLink')}</span>
+                  <span>{authSubmitting ? (language === 'bn' ? 'পাঠানো হচ্ছে...' : 'Sending...') : t('sendResetLink')}</span>
                 </span>
                 <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.3]" />
               </button>
@@ -1084,9 +1257,10 @@ export function MobileAccountAuthPages() {
 
               <button
                 type="submit"
-                className="mt-2 flex min-h-[48px] w-full items-center justify-center rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-[14.5px] font-bold text-white shadow-[0_8px_20px_rgba(106,17,203,0.26)] active:scale-[0.985]"
+                disabled={profileSaving}
+                className="mt-2 flex min-h-[48px] w-full items-center justify-center rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-[14.5px] font-bold text-white shadow-[0_8px_20px_rgba(106,17,203,0.26)] active:scale-[0.985] disabled:opacity-65"
               >
-                {t('saveChanges')}
+                {profileSaving ? (language === 'bn' ? 'সংরক্ষণ হচ্ছে...' : 'Saving...') : t('saveChanges')}
               </button>
             </form>
           </div>
@@ -1141,7 +1315,7 @@ export function MobileAccountAuthPages() {
                   type="button"
                   role="switch"
                   aria-checked={whatsappUpdatesOn}
-                  onClick={() => setWhatsappUpdatesOn((v) => !v)}
+                  onClick={() => void handleTogglePreference('whatsappUpdatesOn', !whatsappUpdatesOn)}
                   className={`relative h-6 w-11 rounded-full transition-colors ${
                     whatsappUpdatesOn ? 'bg-[#6A11CB]' : 'bg-[#D8CBEB]'
                   }`}
@@ -1192,7 +1366,7 @@ export function MobileAccountAuthPages() {
                   type="button"
                   role="switch"
                   aria-checked={orderUpdatesOn}
-                  onClick={() => setOrderUpdatesOn((v) => !v)}
+                  onClick={() => void handleTogglePreference('orderUpdatesOn', !orderUpdatesOn)}
                   className={`relative h-6 w-11 rounded-full transition-colors ${
                     orderUpdatesOn ? 'bg-[#6A11CB]' : 'bg-[#D8CBEB]'
                   }`}
@@ -1218,7 +1392,7 @@ export function MobileAccountAuthPages() {
                   type="button"
                   role="switch"
                   aria-checked={offersOn}
-                  onClick={() => setOffersOn((v) => !v)}
+                  onClick={() => void handleTogglePreference('offersOn', !offersOn)}
                   className={`relative h-6 w-11 rounded-full transition-colors ${
                     offersOn ? 'bg-[#6A11CB]' : 'bg-[#D8CBEB]'
                   }`}

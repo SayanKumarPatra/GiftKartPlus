@@ -1,66 +1,79 @@
-/**
- * Future Supabase Integration Contract (UNCONNECTED).
- *
- * Prepared for future migration of Catalog, Orders, GiftWrap, DeliveryZones,
- * StoreSettings, Storage (product media), and Production Auth (Customer + Single Admin).
- * Do NOT connect or invoke live Supabase credentials during initial frontend phases.
- */
+import { getSupabaseProjectUrl, isSupabaseConfigured, SUPABASE_MEDIA_BUCKET } from '../../lib/supabase';
 
 export interface SupabaseIntegrationConfig {
   projectUrl?: string;
-  anonKey?: string;
   storageBucket: string;
   tables: {
+    adminUsers: string;
+    customers: string;
+    customerAddresses: string;
+    customerWishlists: string;
+    customerCarts: string;
     categories: string;
     subcategories: string;
     products: string;
+    giftWrapConfig: string;
     giftWrapStyles: string;
+    deliveryZones: string;
+    heroBanners: string;
+    coupons: string;
+    storeSettings: string;
+    storeNotifications: string;
     orders: string;
     orderItems: string;
     orderStatusHistory: string;
-    coupons: string;
-    deliveryZones: string;
-    storeSettings: string;
+    orderPayments: string;
+    orderNotifications: string;
+    productReviews: string;
+    newsletterSubscribers: string;
+    adminActivityLogs: string;
   };
 }
 
 export const SUPABASE_CONTRACT_META = {
   provider: 'SUPABASE' as const,
-  connected: false as const,
-  statusLabel: 'Integration Ready — Not Connected' as const,
+  get connected(): boolean {
+    return isSupabaseConfigured();
+  },
+  get statusLabel(): string {
+    return isSupabaseConfigured() ? 'Connected — Supabase Backend' : 'Not Configured';
+  },
+  storageBucket: SUPABASE_MEDIA_BUCKET,
   expectedTables: [
+    'admin_users',
+    'customers',
+    'customer_addresses',
+    'customer_wishlists',
+    'customer_carts',
     'categories',
     'subcategories',
     'products',
+    'gift_wrap_config',
     'gift_wrap_styles',
+    'delivery_zones',
+    'hero_banners',
+    'coupons',
+    'store_settings',
+    'store_notifications',
     'orders',
     'order_items',
     'order_status_history',
-    'coupons',
-    'delivery_zones',
-    'store_settings',
+    'order_payments',
+    'order_notifications',
+    'product_reviews',
+    'newsletter_subscribers',
+    'admin_activity_logs',
   ],
 };
 
-export class SupabaseNotConnectedError extends Error {
-  constructor(operation: string) {
-    super(
-      `Supabase integration is not connected yet (attempted: ${operation}). GiftKart is currently running on the LocalStorage demo adapter.`
-    );
-    this.name = 'SupabaseNotConnectedError';
-  }
-}
-
 export interface ISupabaseClientAdapter {
-  isConnected(): false;
+  isConnected(): boolean;
+  getProjectUrl(): string;
   getSchemaPlan(): typeof SUPABASE_CONTRACT_META;
-  assertConnected(operation: string): never;
 }
 
 export const supabasePlaceholderAdapter: ISupabaseClientAdapter = {
-  isConnected: () => false,
+  isConnected: () => isSupabaseConfigured(),
+  getProjectUrl: () => getSupabaseProjectUrl(),
   getSchemaPlan: () => SUPABASE_CONTRACT_META,
-  assertConnected(operation: string): never {
-    throw new SupabaseNotConnectedError(operation);
-  },
 };

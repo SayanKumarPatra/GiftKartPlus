@@ -25,6 +25,7 @@ export default defineConfig(() => {
         'react-router-dom',
         'lucide-react',
         'jspdf',
+        '@supabase/supabase-js',
       ],
     },
     server: {

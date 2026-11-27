@@ -4,7 +4,11 @@ export interface CustomerDemoAccount {
   email: string;
   phone: string;
   defaultCity: string;
-  isDemoMode: true;
+  avatarUrl?: string;
+  whatsappUpdatesOn?: boolean;
+  orderUpdatesOn?: boolean;
+  offersOn?: boolean;
+  isDemoMode: boolean;
   signedInAt: string;
 }
 
@@ -13,6 +17,35 @@ export interface CustomerSignInInput {
   email: string;
   phone: string;
   defaultCity: string;
+}
+
+export interface CustomerSignUpInput {
+  fullName: string;
+  email: string;
+  phone?: string;
+  password: string;
+  defaultCity?: string;
+}
+
+export interface CustomerPasswordSignInInput {
+  email: string;
+  password: string;
+}
+
+export interface CustomerSignUpResult {
+  account: CustomerDemoAccount | null;
+  requiresEmailConfirmation: boolean;
+  message?: string;
+}
+
+export interface CustomerProfileUpdateInput {
+  fullName?: string;
+  phone?: string;
+  defaultCity?: string;
+  avatarUrl?: string | null;
+  whatsappUpdatesOn?: boolean;
+  orderUpdatesOn?: boolean;
+  offersOn?: boolean;
 }
 
 export type CustomerAccountStatus = 'ACTIVE' | 'BLOCKED';

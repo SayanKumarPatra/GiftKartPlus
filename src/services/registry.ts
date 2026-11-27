@@ -10,6 +10,7 @@ import type {
   IPromotionService,
   IStoreSettingsService,
 } from './interfaces';
+import { isSupabaseConfigured } from '../lib/supabase';
 import { LocalCatalogService } from './local/localCatalogService';
 import { LocalGiftWrapService } from './local/localGiftWrapService';
 import { LocalNotificationService } from './local/localNotificationService';
@@ -27,6 +28,20 @@ import {
   LocalCommunityDataService,
   type ICommunityDataService,
 } from './local/localCommunityService';
+import { SupabaseCatalogService } from './supabase/supabaseCatalogService';
+import {
+  SupabaseGiftWrapService,
+  SupabaseNotificationService,
+  SupabasePromotionService,
+  SupabaseStoreSettingsService,
+} from './supabase/supabaseSettingsAndPromoService';
+import { SupabaseOrderService } from './supabase/supabaseOrderService';
+import {
+  SupabaseAdminAuthService,
+  SupabaseCustomerAuthService,
+  SupabaseCustomerDirectoryService,
+} from './supabase/supabaseAuthServices';
+import { SupabaseCommunityDataService } from './supabase/supabaseCommunityService';
 import { CashfreePlaceholderAdapter } from './integrations/cashfree.interface';
 import { supabasePlaceholderAdapter } from './integrations/supabase.interface';
 import {
@@ -60,20 +75,36 @@ export interface GiftKartServices {
   community: ICommunityDataService;
 }
 
+const useSupabase = isSupabaseConfigured();
+
 export const services: GiftKartServices = {
-  catalog: new LocalCatalogService(),
-  giftWrap: new LocalGiftWrapService(),
-  notifications: new LocalNotificationService(),
-  orders: new LocalOrderService(),
-  promotions: new LocalPromotionService(),
-  settings: new LocalStoreSettingsService(),
-  customers: sharedCustomerDirectory,
-  customerAuth: new LocalCustomerAuthService(),
-  adminAuth: new LocalAdminAuthService(),
+  catalog: useSupabase ? new SupabaseCatalogService() : new LocalCatalogService(),
+  giftWrap: useSupabase ? new SupabaseGiftWrapService() : new LocalGiftWrapService(),
+  notifications: useSupabase
+    ? new SupabaseNotificationService()
+    : new LocalNotificationService(),
+  orders: useSupabase ? new SupabaseOrderService() : new LocalOrderService(),
+  promotions: useSupabase
+    ? new SupabasePromotionService()
+    : new LocalPromotionService(),
+  settings: useSupabase
+    ? new SupabaseStoreSettingsService()
+    : new LocalStoreSettingsService(),
+  customers: useSupabase
+    ? new SupabaseCustomerDirectoryService()
+    : sharedCustomerDirectory,
+  customerAuth: useSupabase
+    ? new SupabaseCustomerAuthService()
+    : new LocalCustomerAuthService(),
+  adminAuth: useSupabase
+    ? new SupabaseAdminAuthService()
+    : new LocalAdminAuthService(),
   paymentGateway: new CashfreePlaceholderAdapter(),
   supabaseContract: supabasePlaceholderAdapter,
   whatsapp: whatsappPlaceholderAdapter,
   email: emailPlaceholderAdapter,
   analytics: analyticsPlaceholderAdapter,
-  community: new LocalCommunityDataService(),
+  community: useSupabase
+    ? new SupabaseCommunityDataService()
+    : new LocalCommunityDataService(),
 };

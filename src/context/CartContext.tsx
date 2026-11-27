@@ -1,6 +1,19 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { CartItem, GiftWrapSelection, GiftWrapStyle, Product } from '../types';
 import { STORAGE_KEYS, readStorage, writeStorage } from '../storage/localStorageEngine';
+import {
+  getSupabaseClient,
+  isSupabaseConfigured,
+  isSupabaseSchemaMissingError,
+} from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
 const DEFAULT_GIFT_WRAP: GiftWrapSelection = {
@@ -39,7 +52,9 @@ interface CartContextValue {
   isWishlisted: (productId: string) => boolean;
   setGiftWrapEnabled: (enabled: boolean, defaultStyle?: GiftWrapStyle) => void;
   selectGiftWrapStyle: (style: GiftWrapStyle) => void;
-  updateGiftWrapDetails: (details: Partial<Pick<GiftWrapSelection, 'recipientName' | 'giftMessage'>>) => void;
+  updateGiftWrapDetails: (
+    details: Partial<Pick<GiftWrapSelection, 'recipientName' | 'giftMessage'>>
+  ) => void;
   resetGiftWrap: () => void;
 }
 
@@ -53,6 +68,7 @@ function getAccountWishlistKey(email?: string | null): string | null {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { customerAccount } = useAuth();
+  const customerId = customerAccount?.id ?? null;
   const wishlistStorageKey = getAccountWishlistKey(customerAccount?.email);
 
   const [items, setItems] = useState<CartItem[]>(() =>
@@ -64,23 +80,124 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
 
+  const hydratedRemoteCartForRef = useRef<string | null>(null);
+  const cartSyncTimerRef = useRef<number | null>(null);
+
   useEffect(() => {
     writeStorage(STORAGE_KEYS.CART_ITEMS, items);
   }, [items]);
 
-  // Hydrate wishlist strictly for the currently authenticated customer account
-  useEffect(() => {
-    if (!wishlistStorageKey) {
-      setWishlistIds([]);
-      return;
-    }
-    const storedForUser = readStorage<string[]>(wishlistStorageKey, []);
-    setWishlistIds(storedForUser);
-  }, [wishlistStorageKey]);
-
   useEffect(() => {
     writeStorage(STORAGE_KEYS.CART_GIFT_WRAP, giftWrap);
   }, [giftWrap]);
+
+  // Hydrate wishlist & cart from Supabase for the currently signed-in customer
+  useEffect(() => {
+    if (!wishlistStorageKey || !customerId) {
+      setWishlistIds([]);
+      hydratedRemoteCartForRef.current = null;
+      return;
+    }
+
+    const storedForUser = readStorage<string[]>(wishlistStorageKey, []);
+    setWishlistIds(storedForUser);
+
+    if (!isSupabaseConfigured()) return;
+    let active = true;
+
+    void (async () => {
+      try {
+        const client = getSupabaseClient();
+
+        // 1. Hydrate Wishlist
+        const { data: wishRows, error: wishErr } = await client
+          .from('customer_wishlists')
+          .select('product_id')
+          .eq('customer_id', customerId);
+
+        if (!active) return;
+        if (!wishErr && Array.isArray(wishRows)) {
+          const remoteIds = wishRows
+            .map((r) => String((r as { product_id?: unknown }).product_id ?? ''))
+            .filter(Boolean);
+          setWishlistIds(remoteIds);
+          writeStorage(wishlistStorageKey, remoteIds);
+        } else if (wishErr && !isSupabaseSchemaMissingError(wishErr)) {
+          console.warn('[GiftKart] Wishlist hydration skipped:', wishErr.message);
+        }
+
+        // 2. Hydrate Persistent Cart (once per logged-in customer)
+        if (hydratedRemoteCartForRef.current !== customerId) {
+          hydratedRemoteCartForRef.current = customerId;
+          const { data: cartRow, error: cartErr } = await client
+            .from('customer_carts')
+            .select('items, gift_wrap')
+            .eq('customer_id', customerId)
+            .maybeSingle();
+
+          if (!active) return;
+          if (!cartErr && cartRow) {
+            const remoteItems = Array.isArray(cartRow.items)
+              ? (cartRow.items as CartItem[])
+              : [];
+            const remoteWrap =
+              cartRow.gift_wrap &&
+              typeof cartRow.gift_wrap === 'object' &&
+              'enabled' in cartRow.gift_wrap
+                ? (cartRow.gift_wrap as GiftWrapSelection)
+                : null;
+
+            setItems((localItems) =>
+              localItems.length === 0 && remoteItems.length > 0 ? remoteItems : localItems
+            );
+            if (remoteWrap) {
+              setGiftWrap((localWrap) =>
+                !localWrap.enabled && remoteWrap.enabled ? remoteWrap : localWrap
+              );
+            }
+          }
+        }
+      } catch {
+        // Keep localStorage cache seamlessly
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [wishlistStorageKey, customerId]);
+
+  // Debounce-persist cart + gift wrap to Supabase customer_carts when authenticated
+  useEffect(() => {
+    if (!customerId || !isSupabaseConfigured() || typeof window === 'undefined') {
+      return;
+    }
+    if (cartSyncTimerRef.current !== null) {
+      window.clearTimeout(cartSyncTimerRef.current);
+    }
+    cartSyncTimerRef.current = window.setTimeout(() => {
+      const client = getSupabaseClient();
+      void client
+        .from('customer_carts')
+        .upsert(
+          {
+            customer_id: customerId,
+            items,
+            gift_wrap: giftWrap,
+          },
+          { onConflict: 'customer_id' }
+        )
+        .then(() => {
+          // Synced silently
+        });
+    }, 450);
+
+    return () => {
+      if (cartSyncTimerRef.current !== null) {
+        window.clearTimeout(cartSyncTimerRef.current);
+      }
+    };
+  }, [customerId, items, giftWrap]);
 
   const addToCart = useCallback((product: Product, options?: AddToCartOptions) => {
     const qty = Math.max(1, options?.quantity ?? 1);
@@ -149,11 +266,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           ? ((added = false), prev.filter((id) => id !== productId))
           : ((added = true), [...prev, productId]);
         writeStorage(wishlistStorageKey, next);
+
+        if (customerId && isSupabaseConfigured()) {
+          const client = getSupabaseClient();
+          if (added) {
+            void client
+              .from('customer_wishlists')
+              .upsert(
+                { customer_id: customerId, product_id: productId },
+                { onConflict: 'customer_id,product_id' }
+              );
+          } else {
+            void client
+              .from('customer_wishlists')
+              .delete()
+              .eq('customer_id', customerId)
+              .eq('product_id', productId);
+          }
+        }
+
         return next;
       });
       return added;
     },
-    [wishlistStorageKey]
+    [wishlistStorageKey, customerId]
   );
 
   const isWishlisted = useCallback(

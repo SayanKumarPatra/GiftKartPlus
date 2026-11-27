@@ -8,7 +8,11 @@ import type {
   CreateDemoOrderInput,
   CustomerAccountStatus,
   CustomerDemoAccount,
+  CustomerPasswordSignInInput,
+  CustomerProfileUpdateInput,
   CustomerSignInInput,
+  CustomerSignUpInput,
+  CustomerSignUpResult,
   DeliveryZone,
   DemoOrder,
   GiftWrapConfig,
@@ -152,6 +156,11 @@ export interface ICustomerAuthService {
   readonly isDemoImplementation: boolean;
   readonly providerLabel: string;
   getCurrentAccount(): Promise<CustomerDemoAccount | null>;
+  signUp(input: CustomerSignUpInput): Promise<CustomerSignUpResult>;
+  signInWithPassword(input: CustomerPasswordSignInInput): Promise<CustomerDemoAccount>;
+  signInWithGoogle(): Promise<void>;
+  sendPasswordReset(email: string): Promise<void>;
+  updateProfile(input: CustomerProfileUpdateInput): Promise<CustomerDemoAccount>;
   signInDemo(input: CustomerSignInInput): Promise<CustomerDemoAccount>;
   signOut(): Promise<void>;
 }

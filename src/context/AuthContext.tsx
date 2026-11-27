@@ -5,7 +5,11 @@ import type {
   AdminDemoSession,
   AdminSignInInput,
   CustomerDemoAccount,
+  CustomerPasswordSignInInput,
+  CustomerProfileUpdateInput,
   CustomerSignInInput,
+  CustomerSignUpInput,
+  CustomerSignUpResult,
 } from '../types';
 
 interface AuthContextValue {
@@ -17,6 +21,13 @@ interface AuthContextValue {
   customerAuthProviderLabel: string;
   adminAuthProviderLabel: string;
   adminSecurityDisclaimer: string;
+  signUpCustomer: (input: CustomerSignUpInput) => Promise<CustomerSignUpResult>;
+  signInCustomer: (input: CustomerPasswordSignInInput) => Promise<CustomerDemoAccount>;
+  signInCustomerWithGoogle: () => Promise<void>;
+  sendCustomerPasswordReset: (email: string) => Promise<void>;
+  updateCustomerProfile: (
+    input: CustomerProfileUpdateInput
+  ) => Promise<CustomerDemoAccount>;
   signInCustomerDemo: (input: CustomerSignInInput) => Promise<CustomerDemoAccount>;
   signOutCustomer: () => Promise<void>;
   setupAdminPasscode: (
@@ -59,6 +70,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
   }, [hydrate]);
+
+  const signUpCustomer = useCallback(async (input: CustomerSignUpInput) => {
+    const result = await services.customerAuth.signUp(input);
+    if (result.account) {
+      setCustomerAccount(result.account);
+    }
+    return result;
+  }, []);
+
+  const signInCustomer = useCallback(async (input: CustomerPasswordSignInInput) => {
+    const account = await services.customerAuth.signInWithPassword(input);
+    setCustomerAccount(account);
+    return account;
+  }, []);
+
+  const signInCustomerWithGoogle = useCallback(async () => {
+    await services.customerAuth.signInWithGoogle();
+  }, []);
+
+  const sendCustomerPasswordReset = useCallback(async (email: string) => {
+    await services.customerAuth.sendPasswordReset(email);
+  }, []);
+
+  const updateCustomerProfile = useCallback(
+    async (input: CustomerProfileUpdateInput) => {
+      const updated = await services.customerAuth.updateProfile(input);
+      setCustomerAccount(updated);
+      return updated;
+    },
+    []
+  );
 
   const signInCustomerDemo = useCallback(async (input: CustomerSignInInput) => {
     const account = await services.customerAuth.signInDemo(input);
@@ -116,6 +158,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         customerAuthProviderLabel: services.customerAuth.providerLabel,
         adminAuthProviderLabel: services.adminAuth.providerLabel,
         adminSecurityDisclaimer: services.adminAuth.securityDisclaimer,
+        signUpCustomer,
+        signInCustomer,
+        signInCustomerWithGoogle,
+        sendCustomerPasswordReset,
+        updateCustomerProfile,
         signInCustomerDemo,
         signOutCustomer,
         setupAdminPasscode,
