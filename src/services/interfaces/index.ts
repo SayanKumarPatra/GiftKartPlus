@@ -3,6 +3,7 @@ import type {
   AdminDemoSession,
   AdminSignInInput,
   Category,
+  ConfirmOrderPaymentInput,
   Coupon,
   CreateDemoOrderInput,
   CustomerAccountStatus,
@@ -13,6 +14,7 @@ import type {
   GiftWrapConfig,
   GiftWrapStyle,
   OrderFulfillmentStatus,
+  OrderNotificationRecord,
   PaymentRecordStatus,
   Product,
   ProductFilterParams,
@@ -20,6 +22,7 @@ import type {
   StoreNotification,
   StoreSettings,
   Subcategory,
+  UpdateOrderStatusInput,
 } from '../../types';
 
 export interface ICatalogService {
@@ -48,21 +51,45 @@ export interface IGiftWrapService {
   deleteStyle(styleId: string): Promise<GiftWrapConfig>;
 }
 
+export interface OrderStatusUpdateResult {
+  order: DemoOrder;
+  notificationSent: boolean;
+  duplicateSkipped: boolean;
+  notification?: OrderNotificationRecord | null;
+}
+
+export interface OrderPaymentUpdateResult {
+  order: DemoOrder;
+  notificationSent: boolean;
+}
+
 export interface IOrderService {
   listOrders(): Promise<DemoOrder[]>;
   getOrderByNumber(orderNumber: string): Promise<DemoOrder | null>;
-  getOrdersByCustomerAccount(customerAccountId: string): Promise<DemoOrder[]>;
+  getOrdersByCustomerAccount(customerAccountId?: string, email?: string): Promise<DemoOrder[]>;
+  getCustomerOrderNotifications(
+    customerAccountId?: string,
+    email?: string
+  ): Promise<OrderNotificationRecord[]>;
   createDemoOrder(input: CreateDemoOrderInput): Promise<DemoOrder>;
   updateOrderStatus(
     orderId: string,
     nextStatus: OrderFulfillmentStatus,
     note?: string
   ): Promise<DemoOrder>;
+  updateOrderStatusDetailed(
+    orderId: string,
+    input: UpdateOrderStatusInput
+  ): Promise<OrderStatusUpdateResult>;
   updatePaymentStatus(
     orderId: string,
     paymentStatus: PaymentRecordStatus,
     note?: string
   ): Promise<DemoOrder>;
+  confirmOrderPayment(
+    orderId: string,
+    input: ConfirmOrderPaymentInput
+  ): Promise<OrderPaymentUpdateResult>;
   cancelOrderByCustomer(orderId: string, reason?: string): Promise<DemoOrder>;
 }
 

@@ -310,19 +310,25 @@ export function getCustomerOrderStatusLabel(
   status: OrderFulfillmentStatus
 ): CustomerOrderDisplayStatus {
   switch (status) {
+    case 'New Order':
     case 'New':
     case 'Demo Placed':
+    case 'Confirmed':
       return 'Order Placed';
     case 'Processing':
-    case 'Confirmed':
     case 'Preparing':
+    case 'Packed':
       return 'Processing';
+    case 'Shipped':
+    case 'In Transit':
     case 'Out for Delivery':
       return 'Shipped';
     case 'Completed':
     case 'Delivered':
       return 'Delivered';
     case 'Cancelled':
+    case 'Delivery Failed':
+    case 'Returned':
       return 'Cancelled';
     default:
       return 'Order Placed';
@@ -331,24 +337,30 @@ export function getCustomerOrderStatusLabel(
 
 export function canCustomerCancelOrder(status: OrderFulfillmentStatus): boolean {
   // Strictly allowed ONLY before Processing starts
-  return status === 'New' || status === 'Demo Placed';
+  return status === 'New Order' || status === 'New' || status === 'Demo Placed';
 }
 
 export function getOrderTimelineStepIndex(status: OrderFulfillmentStatus): number {
   switch (status) {
+    case 'New Order':
     case 'New':
     case 'Demo Placed':
+    case 'Confirmed':
       return 0;
     case 'Processing':
-    case 'Confirmed':
     case 'Preparing':
+    case 'Packed':
       return 1;
+    case 'Shipped':
+    case 'In Transit':
     case 'Out for Delivery':
       return 2;
     case 'Completed':
     case 'Delivered':
       return 3;
     case 'Cancelled':
+    case 'Delivery Failed':
+    case 'Returned':
       return -1;
     default:
       return 0;
@@ -359,15 +371,15 @@ export function getOrderStatusBadgeClasses(status: OrderFulfillmentStatus): stri
   const label = getCustomerOrderStatusLabel(status);
   switch (label) {
     case 'Delivered':
-      return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+      return 'bg-[#6A11CB] text-white border border-[#6A11CB]';
     case 'Shipped':
-      return 'bg-sky-50 text-sky-700 border border-sky-200';
+      return 'bg-[#FFF0F6] text-[#FF4D8D] border border-[#FF4D8D]/35';
     case 'Processing':
-      return 'bg-[#F4EBFF] text-[#6A11CB] border border-[#EBD8FF]';
+      return 'bg-[#F3E5FF] text-[#540CA6] border border-[#D8B4FE]';
     case 'Cancelled':
-      return 'bg-rose-50 text-rose-700 border border-rose-200';
+      return 'bg-[#FFF0F6] text-[#B8205B] border border-[#FF4D8D]/40';
     default:
-      return 'bg-amber-50 text-amber-800 border border-amber-200';
+      return 'bg-[#F8F2FF] text-[#6A11CB] border border-[#EBD8FF]';
   }
 }
 

@@ -39,7 +39,10 @@ export function AdminDashboardPage() {
   const activeNotifCount = notifications.filter((n) => n.isActive).length;
 
   const pendingOrdersCount = orders.filter(
-    (o) => o.fulfillmentStatus === 'New' || o.fulfillmentStatus === 'Demo Placed'
+    (o) =>
+      o.fulfillmentStatus === 'New Order' ||
+      o.fulfillmentStatus === 'New' ||
+      o.fulfillmentStatus === 'Demo Placed'
   ).length;
   const isMaintenance = Boolean(settings?.maintenanceMode);
 

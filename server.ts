@@ -849,15 +849,31 @@ async function startServer(): Promise<void> {
       giftMessage: giftWrap.giftMessage,
     };
 
-    const paymentStatus =
+    const isPrepaidPaid =
       input.paymentStatus === 'PAID' ||
-      input.paymentStatus === 'FAILED' ||
-      input.paymentStatus === 'REFUNDED'
-        ? input.paymentStatus
-        : 'PENDING';
+      input.paymentStatus === 'Paid' ||
+      input.paymentStatus === 'SUCCESS';
+    const canonicalPaymentStatus = isPrepaidPaid ? 'Paid' : 'Unpaid';
+    const paymentStatus = isPrepaidPaid ? 'PAID' : 'UNPAID';
+    const orderId = `ord-${Date.now()}-${sequence}`;
+    const initialNotifId = `notif-${Date.now()}-${sequence}`;
+    const initialNotification = {
+      id: initialNotifId,
+      orderId,
+      orderNumber,
+      customerAccountId: syncedCustomer.id,
+      customerEmail,
+      eventKey: 'STATUS:New Order',
+      status: 'New Order',
+      title: `Order ${orderNumber} • New Order`,
+      message: 'Your GiftKart order has been received successfully.',
+      sentAt: now,
+      deliveryStatus: 'DELIVERED_TO_APP',
+      triggeredBy: 'System',
+    };
 
     const newOrder: Record<string, unknown> = {
-      id: `ord-${Date.now()}-${sequence}`,
+      id: orderId,
       orderNumber,
       mode: 'LIVE_ORDER',
       customerAccountId: syncedCustomer.id,
@@ -874,13 +890,45 @@ async function startServer(): Promise<void> {
       paymentStatus,
       paymentReference: `TXN-${orderNumber.replace(/[^A-Z0-9]/g, '')}`,
       paymentGatewayStatus: 'CASHFREE_NOT_CONNECTED',
-      fulfillmentStatus: 'New',
+      fulfillmentStatus: 'New Order',
+      shippingDetails: {},
+      paymentDetails: {
+        status: canonicalPaymentStatus,
+        collectedAmountInr: isPrepaidPaid ? Number(input.grandTotalInr) || 0 : 0,
+        collectionDate: isPrepaidPaid ? now : undefined,
+        confirmedAt: isPrepaidPaid ? now : undefined,
+        note: isPrepaidPaid ? 'Prepaid at checkout.' : 'Awaiting Cash on Delivery payment collection.',
+      },
+      paymentHistory: isPrepaidPaid
+        ? [
+            {
+              id: `pay-${Date.now()}-1`,
+              status: 'Paid',
+              amountInr: Number(input.grandTotalInr) || 0,
+              timestamp: now,
+              collectionDate: now,
+              note: 'Prepaid at checkout.',
+            },
+          ]
+        : [],
+      notifications: [initialNotification],
       statusHistory: [
         {
-          status: 'New',
+          id: `hist-${Date.now()}-1`,
+          type: 'ORDER_CREATED',
+          status: 'New Order',
           timestamp: now,
-          note: 'Order received and awaiting store review.',
+          note: 'Order placed by customer and received at GiftKart.',
           updatedBy: 'System',
+        },
+        {
+          id: `hist-${Date.now()}-2`,
+          type: 'NOTIFICATION_SENT',
+          status: 'New Order',
+          timestamp: now,
+          note: initialNotification.message,
+          updatedBy: 'System',
+          metadataSummary: 'Automatic customer notification delivered to GiftKart App',
         },
       ],
       createdAt: now,
@@ -906,14 +954,49 @@ async function startServer(): Promise<void> {
 
   app.get('/api/public/orders/customer', (req, res) => {
     const accountId = String(req.query.accountId || '').trim();
-    if (!accountId) {
+    const email = String(req.query.email || '').trim().toLowerCase();
+    if (!accountId && !email) {
       res.json({ orders: [] });
       return;
     }
     const matching = storeDb.orders
-      .filter((o) => o.customerAccountId === accountId)
+      .filter((o) => {
+        const cust = (o.customer || {}) as Record<string, unknown>;
+        const orderEmail = String(cust.email || '').trim().toLowerCase();
+        return (
+          (accountId && o.customerAccountId === accountId) ||
+          (email && orderEmail === email)
+        );
+      })
       .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     res.json({ orders: matching });
+  });
+
+  app.get('/api/public/notifications/customer', (req, res) => {
+    const accountId = String(req.query.accountId || '').trim();
+    const email = String(req.query.email || '').trim().toLowerCase();
+    if (!accountId && !email) {
+      res.json({ notifications: [] });
+      return;
+    }
+    const notifications: Record<string, unknown>[] = [];
+    for (const order of storeDb.orders) {
+      const cust = (order.customer || {}) as Record<string, unknown>;
+      const orderEmail = String(cust.email || '').trim().toLowerCase();
+      const matchesCustomer =
+        (accountId && order.customerAccountId === accountId) ||
+        (email && orderEmail === email);
+      if (!matchesCustomer) continue;
+      if (Array.isArray(order.notifications)) {
+        for (const notif of order.notifications) {
+          if (notif && typeof notif === 'object') {
+            notifications.push(notif as Record<string, unknown>);
+          }
+        }
+      }
+    }
+    notifications.sort((a, b) => String(b.sentAt || '').localeCompare(String(a.sentAt || '')));
+    res.json({ notifications });
   });
 
   app.post('/api/public/orders/:orderId/cancel', (req, res) => {
@@ -931,24 +1014,70 @@ async function startServer(): Promise<void> {
       res.status(403).json({ error: 'You do not have permission to cancel this order.' });
       return;
     }
-    if (target.fulfillmentStatus !== 'New' && target.fulfillmentStatus !== 'Demo Placed') {
+    const currentStatus = String(target.fulfillmentStatus || '');
+    if (
+      currentStatus !== 'New Order' &&
+      currentStatus !== 'New' &&
+      currentStatus !== 'Demo Placed'
+    ) {
       res.status(400).json({ error: 'Order cannot be cancelled once processing has started.' });
       return;
     }
 
     const now = new Date().toISOString();
     const existingHistory = Array.isArray(target.statusHistory) ? target.statusHistory : [];
+    const existingNotifications = Array.isArray(target.notifications)
+      ? (target.notifications as Record<string, unknown>[])
+      : [];
+    const hasCancelledNotif = existingNotifications.some(
+      (n) => String(n.eventKey || '') === 'STATUS:Cancelled'
+    );
+    const cust = (target.customer || {}) as Record<string, unknown>;
+    const cancelNotif = hasCancelledNotif
+      ? null
+      : {
+          id: `notif-${Date.now()}-cancel`,
+          orderId: String(target.id || ''),
+          orderNumber: String(target.orderNumber || ''),
+          customerAccountId: target.customerAccountId,
+          customerEmail: String(cust.email || '').trim().toLowerCase(),
+          eventKey: 'STATUS:Cancelled',
+          status: 'Cancelled',
+          title: `Order ${String(target.orderNumber || '')} • Cancelled`,
+          message: 'Your order has been cancelled.',
+          sentAt: now,
+          deliveryStatus: 'DELIVERED_TO_APP',
+          triggeredBy: 'Customer',
+          customerNote: reason || undefined,
+        };
+
     const updated = {
       ...target,
       fulfillmentStatus: 'Cancelled',
+      notifications: cancelNotif ? [cancelNotif, ...existingNotifications] : existingNotifications,
       statusHistory: [
         ...existingHistory,
         {
+          id: `hist-${Date.now()}-cancel`,
+          type: 'CUSTOMER_ACTION',
           status: 'Cancelled',
           timestamp: now,
           note: reason || 'Cancelled by customer before processing.',
           updatedBy: 'Customer',
         },
+        ...(cancelNotif
+          ? [
+              {
+                id: `hist-${Date.now()}-cancel-notif`,
+                type: 'NOTIFICATION_SENT',
+                status: 'Cancelled',
+                timestamp: now,
+                note: cancelNotif.message,
+                updatedBy: 'System',
+                metadataSummary: 'Automatic customer notification delivered to GiftKart App',
+              },
+            ]
+          : []),
       ],
       updatedAt: now,
     };
@@ -1257,6 +1386,382 @@ async function startServer(): Promise<void> {
       ok: true,
       version: storeDb.version,
       updatedAt: storeDb.updatedAt,
+    });
+  });
+
+  const ALLOWED_ADMIN_ORDER_STATUSES = new Set([
+    'New Order',
+    'Processing',
+    'Packed',
+    'Shipped',
+    'In Transit',
+    'Out for Delivery',
+    'Delivered',
+    'Cancelled',
+    'Delivery Failed',
+    'Returned',
+  ]);
+
+  const AUTO_NOTIFICATION_MESSAGES: Record<string, string> = {
+    'New Order': 'Your GiftKart order has been received successfully.',
+    Processing: 'Your order is being prepared.',
+    Packed: 'Your gift has been packed and is ready for dispatch.',
+    Shipped: 'Your order has been shipped.',
+    'In Transit': 'Your order is on the way.',
+    'Out for Delivery': 'Your order is out for delivery. Please stay available.',
+    Delivered: 'Your order has been successfully delivered. Thank you for shopping with GiftKart!',
+    Cancelled: 'Your order has been cancelled.',
+    'Delivery Failed': 'We were unable to deliver your order. Please contact us.',
+    Returned: 'Your order return has been recorded by GiftKart.',
+  };
+
+  app.post('/api/admin/orders/:orderId/status', requireAdminAuth, (req: AuthedRequest, res) => {
+    const orderId = String(req.params.orderId || '');
+    const body = sanitizeDeepStrings(req.body) as Record<string, unknown>;
+    const status = String(body?.status || '').trim();
+
+    if (!ALLOWED_ADMIN_ORDER_STATUSES.has(status)) {
+      res.status(400).json({ error: `Invalid order status: "${status}".` });
+      return;
+    }
+
+    const idx = storeDb.orders.findIndex((o) => String(o.id || '') === orderId);
+    if (idx < 0) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    const target = storeDb.orders[idx];
+    const adminName = req.adminPayload?.displayName || 'GiftKart Admin';
+    const adminEmail = req.adminPayload?.email || AUTHORIZED_ADMIN_EMAIL;
+    const now = new Date().toISOString();
+    const rawUpdateDateTime = String(body?.updateDateTime || '').trim();
+    const effectiveTimestamp =
+      rawUpdateDateTime && !Number.isNaN(Date.parse(rawUpdateDateTime))
+        ? new Date(rawUpdateDateTime).toISOString()
+        : now;
+    const customerNote = String(body?.customerNote || '').trim();
+
+    const incomingShipping =
+      body?.shippingDetails && typeof body.shippingDetails === 'object'
+        ? (body.shippingDetails as Record<string, unknown>)
+        : {};
+    const existingShipping =
+      target.shippingDetails && typeof target.shippingDetails === 'object'
+        ? (target.shippingDetails as Record<string, unknown>)
+        : {};
+
+    const mergedShipping: Record<string, unknown> = { ...existingShipping };
+    const shippingKeys = [
+      'packingCompletedAt',
+      'packingNote',
+      'courierName',
+      'trackingId',
+      'shippedDate',
+      'currentShippingUpdate',
+      'expectedDeliveryDate',
+      'outForDeliveryDate',
+      'deliveryRemarks',
+      'deliveredAt',
+      'deliveryConfirmation',
+      'exceptionReason',
+    ];
+    for (const key of shippingKeys) {
+      if (incomingShipping[key] !== undefined) {
+        const val = String(incomingShipping[key] ?? '').trim();
+        if (val) {
+          mergedShipping[key] = val;
+        }
+      }
+    }
+
+    const metaParts: string[] = [];
+    if (status === 'Packed') {
+      if (mergedShipping.packingCompletedAt) metaParts.push(`Packed on ${mergedShipping.packingCompletedAt}`);
+      if (mergedShipping.packingNote) metaParts.push(`Packing: ${mergedShipping.packingNote}`);
+    } else if (status === 'Shipped') {
+      if (mergedShipping.courierName) metaParts.push(`Courier: ${mergedShipping.courierName}`);
+      if (mergedShipping.trackingId) metaParts.push(`Tracking ID: ${mergedShipping.trackingId}`);
+      if (mergedShipping.shippedDate) metaParts.push(`Shipped: ${mergedShipping.shippedDate}`);
+    } else if (status === 'In Transit') {
+      if (mergedShipping.currentShippingUpdate) metaParts.push(`Transit: ${mergedShipping.currentShippingUpdate}`);
+      if (mergedShipping.expectedDeliveryDate) metaParts.push(`ETA: ${mergedShipping.expectedDeliveryDate}`);
+    } else if (status === 'Out for Delivery') {
+      if (mergedShipping.outForDeliveryDate) metaParts.push(`Delivery Date: ${mergedShipping.outForDeliveryDate}`);
+      if (mergedShipping.deliveryRemarks) metaParts.push(`Remarks: ${mergedShipping.deliveryRemarks}`);
+    } else if (status === 'Delivered') {
+      if (mergedShipping.deliveredAt) metaParts.push(`Delivered: ${mergedShipping.deliveredAt}`);
+      if (mergedShipping.deliveryConfirmation) metaParts.push(`Confirmed: ${mergedShipping.deliveryConfirmation}`);
+    } else if (status === 'Cancelled' || status === 'Delivery Failed' || status === 'Returned') {
+      if (mergedShipping.exceptionReason) metaParts.push(`Reason: ${mergedShipping.exceptionReason}`);
+      if (mergedShipping.deliveryRemarks) metaParts.push(`Remarks: ${mergedShipping.deliveryRemarks}`);
+    }
+    const metadataSummary = metaParts.length > 0 ? metaParts.join(' • ') : undefined;
+
+    const existingNotifications = Array.isArray(target.notifications)
+      ? (target.notifications as Record<string, unknown>[])
+      : [];
+    const eventKey = `STATUS:${status}`;
+    const alreadySentForStatus = existingNotifications.some(
+      (n) => String(n.eventKey || '') === eventKey
+    );
+
+    const cust = (target.customer || {}) as Record<string, unknown>;
+    const orderNumber = String(target.orderNumber || '');
+    const displayStatus = status === 'Shipped' ? 'Shipped / Dispatched' : status;
+    const autoMessage = AUTO_NOTIFICATION_MESSAGES[status] || `Order status updated to ${displayStatus}.`;
+
+    const newNotification = alreadySentForStatus
+      ? null
+      : {
+          id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          orderId,
+          orderNumber,
+          customerAccountId: target.customerAccountId,
+          customerEmail: String(cust.email || '').trim().toLowerCase(),
+          eventKey,
+          status,
+          title: `Order ${orderNumber} • ${displayStatus}`,
+          message: autoMessage,
+          sentAt: now,
+          deliveryStatus: 'DELIVERED_TO_APP',
+          triggeredBy: 'Admin',
+          adminName,
+          customerNote: customerNote || undefined,
+        };
+
+    const existingHistory = Array.isArray(target.statusHistory) ? target.statusHistory : [];
+    const nextHistory = [
+      ...existingHistory,
+      {
+        id: `hist-${Date.now()}-st`,
+        type: 'STATUS_UPDATE',
+        status,
+        timestamp: effectiveTimestamp,
+        note: customerNote || `Order status updated to ${displayStatus}.`,
+        updatedBy: 'Admin',
+        adminName,
+        adminEmail,
+        metadataSummary,
+      },
+      ...(newNotification
+        ? [
+            {
+              id: `hist-${Date.now()}-nf`,
+              type: 'NOTIFICATION_SENT',
+              status,
+              timestamp: now,
+              note: newNotification.message,
+              updatedBy: 'System',
+              adminName,
+              metadataSummary: 'Automatic customer notification sent to GiftKart App',
+            },
+          ]
+        : []),
+    ];
+
+    const updatedOrder = {
+      ...target,
+      fulfillmentStatus: status,
+      shippingDetails: mergedShipping,
+      notifications: newNotification
+        ? [newNotification, ...existingNotifications]
+        : existingNotifications,
+      statusHistory: nextHistory,
+      updatedAt: now,
+    };
+
+    storeDb.orders[idx] = updatedOrder;
+    appendAdminLog(`Updated Order Status → ${displayStatus}`, orderNumber);
+    commitStoreChange(['orders', 'activity']);
+
+    res.json({
+      order: updatedOrder,
+      notificationSent: Boolean(newNotification),
+      duplicateSkipped: alreadySentForStatus,
+      notification: newNotification,
+    });
+  });
+
+  const ALLOWED_PAYMENT_STATUSES = new Set([
+    'Unpaid',
+    'Payment Collected',
+    'Paid',
+    'Refunded',
+  ]);
+
+  app.post('/api/admin/orders/:orderId/payment', requireAdminAuth, (req: AuthedRequest, res) => {
+    const orderId = String(req.params.orderId || '');
+    const body = sanitizeDeepStrings(req.body) as Record<string, unknown>;
+    const nextPaymentStatus = String(body?.status || '').trim();
+
+    if (!ALLOWED_PAYMENT_STATUSES.has(nextPaymentStatus)) {
+      res.status(400).json({ error: `Invalid payment status: "${nextPaymentStatus}".` });
+      return;
+    }
+
+    const idx = storeDb.orders.findIndex((o) => String(o.id || '') === orderId);
+    if (idx < 0) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    const target = storeDb.orders[idx];
+    const existingPaymentDetails =
+      target.paymentDetails && typeof target.paymentDetails === 'object'
+        ? (target.paymentDetails as Record<string, unknown>)
+        : {};
+    const currentCanonicalPayment =
+      String(existingPaymentDetails.status || '') ||
+      (target.paymentStatus === 'PAID' || target.paymentStatus === 'SUCCESS'
+        ? 'Paid'
+        : target.paymentStatus === 'PAYMENT_COLLECTED'
+        ? 'Payment Collected'
+        : target.paymentStatus === 'REFUNDED'
+        ? 'Refunded'
+        : 'Unpaid');
+
+    // Strictly prevent duplicate Paid confirmation
+    if (currentCanonicalPayment === 'Paid' && nextPaymentStatus === 'Paid') {
+      res.status(409).json({
+        error: 'Payment has already been confirmed as Paid for this order. Duplicate confirmation is blocked.',
+      });
+      return;
+    }
+
+    const adminName = req.adminPayload?.displayName || 'GiftKart Admin';
+    const adminEmail = req.adminPayload?.email || AUTHORIZED_ADMIN_EMAIL;
+    const now = new Date().toISOString();
+    const orderTotal = Number(target.grandTotalInr) || 0;
+    const parsedCollected =
+      body?.collectedAmountInr !== undefined && body?.collectedAmountInr !== ''
+        ? Math.max(0, Number(body.collectedAmountInr) || 0)
+        : nextPaymentStatus === 'Unpaid'
+        ? 0
+        : orderTotal;
+
+    const rawCollectionDate = String(body?.collectionDate || '').trim();
+    const collectionDate =
+      rawCollectionDate && !Number.isNaN(Date.parse(rawCollectionDate))
+        ? new Date(rawCollectionDate).toISOString()
+        : nextPaymentStatus === 'Unpaid'
+        ? undefined
+        : now;
+    const note = String(body?.note || '').trim();
+
+    const legacyPaymentStatus =
+      nextPaymentStatus === 'Paid'
+        ? 'PAID'
+        : nextPaymentStatus === 'Payment Collected'
+        ? 'PAYMENT_COLLECTED'
+        : nextPaymentStatus === 'Refunded'
+        ? 'REFUNDED'
+        : 'UNPAID';
+
+    const nextPaymentDetails = {
+      status: nextPaymentStatus,
+      collectedAmountInr: parsedCollected,
+      collectionDate,
+      confirmedByAdminName: adminName,
+      confirmedByAdminEmail: adminEmail,
+      confirmedAt: now,
+      note: note || undefined,
+    };
+
+    const existingPaymentHistory = Array.isArray(target.paymentHistory) ? target.paymentHistory : [];
+    const paymentHistoryEntry = {
+      id: `pay-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      status: nextPaymentStatus,
+      amountInr: parsedCollected,
+      timestamp: now,
+      collectionDate,
+      adminName,
+      adminEmail,
+      note:
+        note ||
+        (nextPaymentStatus === 'Paid'
+          ? `COD payment of ₹${Math.round(parsedCollected).toLocaleString('en-IN')} confirmed by ${adminName}.`
+          : `Payment status updated to ${nextPaymentStatus}.`),
+    };
+
+    const existingNotifications = Array.isArray(target.notifications)
+      ? (target.notifications as Record<string, unknown>[])
+      : [];
+    const paymentEventKey = 'PAYMENT:Paid';
+    const alreadySentPaidNotif = existingNotifications.some(
+      (n) => String(n.eventKey || '') === paymentEventKey
+    );
+
+    const cust = (target.customer || {}) as Record<string, unknown>;
+    const orderNumber = String(target.orderNumber || '');
+    const paymentNotification =
+      nextPaymentStatus === 'Paid' && !alreadySentPaidNotif
+        ? {
+            id: `notif-${Date.now()}-pay`,
+            orderId,
+            orderNumber,
+            customerAccountId: target.customerAccountId,
+            customerEmail: String(cust.email || '').trim().toLowerCase(),
+            eventKey: paymentEventKey,
+            status: 'Payment Confirmed',
+            title: `Order ${orderNumber} • Payment Successful`,
+            message: `Payment of ₹${Math.round(parsedCollected).toLocaleString('en-IN')} has been confirmed for order ${orderNumber}. Thank you for shopping with GiftKart!`,
+            sentAt: now,
+            deliveryStatus: 'DELIVERED_TO_APP',
+            triggeredBy: 'Admin',
+            adminName,
+          }
+        : null;
+
+    const existingHistory = Array.isArray(target.statusHistory) ? target.statusHistory : [];
+    const nextHistory = [
+      ...existingHistory,
+      {
+        id: `hist-${Date.now()}-pay`,
+        type: 'PAYMENT_UPDATE',
+        status: target.fulfillmentStatus || 'New Order',
+        timestamp: now,
+        note: paymentHistoryEntry.note,
+        updatedBy: 'Admin',
+        adminName,
+        adminEmail,
+        metadataSummary: `Payment: ${nextPaymentStatus} • Collected ₹${Math.round(parsedCollected).toLocaleString('en-IN')}`,
+      },
+      ...(paymentNotification
+        ? [
+            {
+              id: `hist-${Date.now()}-pay-nf`,
+              type: 'NOTIFICATION_SENT',
+              status: target.fulfillmentStatus || 'New Order',
+              timestamp: now,
+              note: paymentNotification.message,
+              updatedBy: 'System',
+              adminName,
+              metadataSummary: 'Automatic payment confirmation sent to Customer App',
+            },
+          ]
+        : []),
+    ];
+
+    const updatedOrder = {
+      ...target,
+      paymentStatus: legacyPaymentStatus,
+      paymentDetails: nextPaymentDetails,
+      paymentHistory: [paymentHistoryEntry, ...existingPaymentHistory],
+      notifications: paymentNotification
+        ? [paymentNotification, ...existingNotifications]
+        : existingNotifications,
+      statusHistory: nextHistory,
+      updatedAt: now,
+    };
+
+    storeDb.orders[idx] = updatedOrder;
+    appendAdminLog(`Payment ${nextPaymentStatus} (₹${Math.round(parsedCollected)})`, orderNumber);
+    commitStoreChange(['orders', 'activity']);
+
+    res.json({
+      order: updatedOrder,
+      notificationSent: Boolean(paymentNotification),
     });
   });
 

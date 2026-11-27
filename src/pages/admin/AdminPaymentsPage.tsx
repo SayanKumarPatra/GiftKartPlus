@@ -1,41 +1,22 @@
 import { useMemo, useState } from 'react';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, Lock } from 'lucide-react';
 import { useOrders } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
 import { formatDateTime, formatInr } from '../../utils/format';
-import type { DemoOrder, PaymentRecordStatus } from '../../types';
+import {
+  CANONICAL_PAYMENT_STATUSES,
+  getPaymentBadgeClasses,
+  normalizePaymentStatus,
+} from '../../utils/orderLifecycle';
+import type { CanonicalPaymentStatus } from '../../types';
 import {
   AdminEmptyState,
   AdminSheetModal,
   AdminToast,
 } from '../../components/admin/AdminSharedUI';
 
-type PaymentTab = 'All' | 'Successful' | 'Pending' | 'Failed';
-const PAYMENT_TABS: PaymentTab[] = ['All', 'Successful', 'Pending', 'Failed'];
-
-function derivePaymentStatus(order: DemoOrder): PaymentRecordStatus {
-  if (order.paymentStatus) return order.paymentStatus;
-  if (order.fulfillmentStatus === 'Cancelled') return 'FAILED';
-  if (
-    order.fulfillmentStatus === 'Completed' ||
-    order.fulfillmentStatus === 'Delivered'
-  ) {
-    return 'SUCCESS';
-  }
-  return 'PENDING';
-}
-
-function getPaymentLabel(status: PaymentRecordStatus): Exclude<PaymentTab, 'All'> {
-  if (status === 'SUCCESS') return 'Successful';
-  if (status === 'FAILED') return 'Failed';
-  return 'Pending';
-}
-
-function getPaymentBadgeClass(status: PaymentRecordStatus): string {
-  if (status === 'SUCCESS') return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-  if (status === 'FAILED') return 'bg-rose-50 text-rose-700 border border-rose-200';
-  return 'bg-amber-50 text-amber-800 border border-amber-200';
-}
+type PaymentTab = 'All' | CanonicalPaymentStatus;
+const PAYMENT_TABS: PaymentTab[] = ['All', ...CANONICAL_PAYMENT_STATUSES];
 
 export function AdminPaymentsPage() {
   const { data: orders } = useOrders();
@@ -51,14 +32,14 @@ export function AdminPaymentsPage() {
         reference:
           order.paymentReference ||
           `TXN-${order.orderNumber.replace(/[^A-Z0-9]/g, '')}`,
-        status: derivePaymentStatus(order),
+        status: normalizePaymentStatus(order),
       })),
     [orders]
   );
 
   const filtered = useMemo(() => {
     if (activeTab === 'All') return transactions;
-    return transactions.filter((t) => getPaymentLabel(t.status) === activeTab);
+    return transactions.filter((t) => t.status === activeTab);
   }, [transactions, activeTab]);
 
   const selectedTxn = useMemo(
@@ -74,20 +55,21 @@ export function AdminPaymentsPage() {
   async function handleMarkPayment(
     orderId: string,
     orderNumber: string,
-    nextStatus: PaymentRecordStatus
+    amountInr: number,
+    nextStatus: CanonicalPaymentStatus
   ) {
     setUpdating(true);
     try {
-      await services.orders.updatePaymentStatus(
-        orderId,
-        nextStatus,
-        `Payment status marked as ${getPaymentLabel(nextStatus)} by Admin.`
+      const res = await services.orders.confirmOrderPayment(orderId, {
+        status: nextStatus,
+        collectedAmountInr: nextStatus === 'Unpaid' ? 0 : amountInr,
+        note: `Payment status updated to ${nextStatus} from Payments Management.`,
+      });
+      showNotice(
+        res.notificationSent
+          ? `Payment for #${orderNumber} confirmed as ${nextStatus}. Customer notified.`
+          : `Payment for #${orderNumber} saved as ${nextStatus}.`
       );
-      await services.adminAuth.logActivity(
-        `Updated payment for #${orderNumber} to ${getPaymentLabel(nextStatus)}`,
-        'Payments Management'
-      );
-      showNotice(`Payment for #${orderNumber} saved as ${getPaymentLabel(nextStatus)}.`);
     } catch (err) {
       showNotice(
         err instanceof Error ? err.message : 'Unable to update payment status.',
@@ -113,7 +95,7 @@ export function AdminPaymentsPage() {
           const count =
             tab === 'All'
               ? transactions.length
-              : transactions.filter((t) => getPaymentLabel(t.status) === tab).length;
+              : transactions.filter((t) => t.status === tab).length;
           return (
             <button
               key={tab}
@@ -121,8 +103,8 @@ export function AdminPaymentsPage() {
               onClick={() => setActiveTab(tab)}
               className={`shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-all ${
                 active
-                  ? 'bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-white shadow-xs'
-                  : 'border border-[#E5D5FA] bg-white text-[#4A3860]'
+                  ? 'bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] text-white shadow-xs'
+                  : 'border border-[#EBD8FF] bg-white text-[#4A3860]'
               }`}
             >
               {tab} {count > 0 ? `(${count})` : ''}
@@ -136,7 +118,7 @@ export function AdminPaymentsPage() {
         <AdminEmptyState
           icon={<CreditCard className="h-5 w-5" />}
           title="No payment transactions recorded yet."
-          description="Real payment records from customer orders will appear here automatically."
+          description="Real COD and online payment records from customer orders will appear here automatically."
         />
       ) : (
         <div className="space-y-2.5">
@@ -152,25 +134,25 @@ export function AdminPaymentsPage() {
                   <CreditCard className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-extrabold text-[#1E1035]">
+                  <p className="truncate text-[13px] font-extrabold text-[#2B0B4E]">
                     {reference}
                   </p>
-                  <p className="truncate text-[11.5px] text-[#75648E]">
+                  <p className="truncate text-[11.5px] text-[#6E5B85]">
                     #{order.orderNumber} · {order.paymentMethod || 'COD'}
                   </p>
                 </div>
               </div>
 
               <div className="flex shrink-0 flex-col items-end gap-1">
-                <span className="text-[13.5px] font-extrabold tabular-nums text-[#1E1035]">
+                <span className="text-[13.5px] font-extrabold tabular-nums text-[#2B0B4E]">
                   {formatInr(order.grandTotalInr)}
                 </span>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${getPaymentBadgeClass(
+                  className={`rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${getPaymentBadgeClasses(
                     status
                   )}`}
                 >
-                  {getPaymentLabel(status)}
+                  {status}
                 </span>
               </div>
             </button>
@@ -181,14 +163,14 @@ export function AdminPaymentsPage() {
       {/* Transaction Details Sheet Modal */}
       <AdminSheetModal
         open={Boolean(selectedTxn)}
-        title="Transaction Details"
+        title="Payment Settlement Details"
         subtitle={selectedTxn?.reference}
         onClose={() => setSelectedOrderId(null)}
         footer={
           <button
             type="button"
             onClick={() => setSelectedOrderId(null)}
-            className="h-11 w-full cursor-pointer rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] text-xs font-extrabold text-white"
+            className="h-11 w-full cursor-pointer rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#540CA6] text-xs font-extrabold text-white"
           >
             Done
           </button>
@@ -198,35 +180,52 @@ export function AdminPaymentsPage() {
           <div>
             <dl className="space-y-2 text-xs">
               <div className="flex justify-between">
-                <dt className="text-[#75648E]">Reference ID</dt>
-                <dd className="font-extrabold text-[#1E1035]">{selectedTxn.reference}</dd>
+                <dt className="text-[#6E5B85]">Reference ID</dt>
+                <dd className="font-extrabold text-[#2B0B4E]">{selectedTxn.reference}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-[#75648E]">Order Number</dt>
-                <dd className="font-bold text-[#1E1035]">
+                <dt className="text-[#6E5B85]">Order Number</dt>
+                <dd className="font-bold text-[#2B0B4E]">
                   #{selectedTxn.order.orderNumber}
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-[#75648E]">Customer</dt>
-                <dd className="font-bold text-[#1E1035]">
+                <dt className="text-[#6E5B85]">Customer</dt>
+                <dd className="font-bold text-[#2B0B4E]">
                   {selectedTxn.order.customer.fullName}
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-[#75648E]">Payment Method</dt>
-                <dd className="font-semibold text-[#1E1035]">
+                <dt className="text-[#6E5B85]">Payment Method</dt>
+                <dd className="font-semibold text-[#2B0B4E]">
                   {selectedTxn.order.paymentMethod || 'Cash on Delivery (COD)'}
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-[#75648E]">Amount</dt>
+                <dt className="text-[#6E5B85]">Order Total</dt>
                 <dd className="text-sm font-extrabold tabular-nums text-[#6A11CB]">
                   {formatInr(selectedTxn.order.grandTotalInr)}
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-[#75648E]">Recorded On</dt>
+                <dt className="text-[#6E5B85]">Collected Amount</dt>
+                <dd className="font-extrabold tabular-nums text-[#2B0B4E]">
+                  {formatInr(
+                    selectedTxn.order.paymentDetails?.collectedAmountInr ??
+                      (selectedTxn.status === 'Paid' ? selectedTxn.order.grandTotalInr : 0)
+                  )}
+                </dd>
+              </div>
+              {selectedTxn.order.paymentDetails?.confirmedByAdminName && (
+                <div className="flex justify-between">
+                  <dt className="text-[#6E5B85]">Confirmed By</dt>
+                  <dd className="font-semibold text-[#2B0B4E]">
+                    {selectedTxn.order.paymentDetails.confirmedByAdminName}
+                  </dd>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <dt className="text-[#6E5B85]">Recorded On</dt>
                 <dd className="font-medium text-[#4A3860]">
                   {formatDateTime(selectedTxn.order.createdAt)}
                 </dd>
@@ -235,32 +234,35 @@ export function AdminPaymentsPage() {
 
             <div className="mt-4 border-t border-[#EFE3FF] pt-3">
               <p className="mb-2 text-[11.5px] font-bold text-[#4A3860]">
-                Record Payment Settlement Status
+                Update Payment Status
               </p>
-              <div className="grid grid-cols-3 gap-2">
-                {(['SUCCESS', 'PENDING', 'FAILED'] as PaymentRecordStatus[]).map(
-                  (st) => (
+              <div className="grid grid-cols-2 gap-2">
+                {CANONICAL_PAYMENT_STATUSES.map((st) => {
+                  const isLockedPaid = selectedTxn.status === 'Paid' && st === 'Paid';
+                  return (
                     <button
                       key={st}
                       type="button"
-                      disabled={updating}
+                      disabled={updating || isLockedPaid}
                       onClick={() =>
                         void handleMarkPayment(
                           selectedTxn.order.id,
                           selectedTxn.order.orderNumber,
+                          selectedTxn.order.grandTotalInr,
                           st
                         )
                       }
-                      className={`h-9 cursor-pointer rounded-xl border text-xs font-bold transition-colors ${
+                      className={`inline-flex h-9 cursor-pointer items-center justify-center gap-1 rounded-xl border text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-65 ${
                         selectedTxn.status === st
                           ? 'border-[#6A11CB] bg-[#6A11CB] text-white'
-                          : 'border-[#E5D5FA] bg-[#FAF6FF] text-[#4A3860]'
+                          : 'border-[#EBD8FF] bg-[#FAF6FF] text-[#4A3860]'
                       }`}
                     >
-                      {getPaymentLabel(st)}
+                      {isLockedPaid && <Lock className="h-3 w-3" />}
+                      <span>{st}</span>
                     </button>
-                  )
-                )}
+                  );
+                })}
               </div>
             </div>
           </div>

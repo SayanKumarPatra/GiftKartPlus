@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Ban,
@@ -13,6 +14,7 @@ import {
 import { useOrders, useRegisteredCustomers } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
 import { formatDateTime, formatInr } from '../../utils/format';
+import { getStatusDisplayLabel, normalizePaymentStatus } from '../../utils/orderLifecycle';
 import type { DemoOrder, RegisteredCustomer } from '../../types';
 import {
   AdminConfirmDialog,
@@ -21,6 +23,7 @@ import {
 } from '../../components/admin/AdminSharedUI';
 
 export function AdminCustomersPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: customers } = useRegisteredCustomers();
   const { data: orders } = useOrders();
 
@@ -28,6 +31,20 @@ export function AdminCustomersPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [blockTarget, setBlockTarget] = useState<RegisteredCustomer | null>(null);
   const [toast, setToast] = useState<{ message: string; tone?: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    const paramId = searchParams.get('customerId')?.trim();
+    const paramEmail = searchParams.get('email')?.trim().toLowerCase();
+    if (!paramId && !paramEmail) return;
+    const match = customers.find(
+      (c) =>
+        (paramId && c.id === paramId) ||
+        (paramEmail && c.email.toLowerCase() === paramEmail)
+    );
+    if (match) {
+      setSelectedId(match.id);
+    }
+  }, [customers, searchParams]);
 
   function showNotice(message: string, tone: 'success' | 'error' = 'success') {
     setToast({ message, tone });
@@ -94,7 +111,12 @@ export function AdminCustomersPage() {
 
         <button
           type="button"
-          onClick={() => setSelectedId(null)}
+          onClick={() => {
+            setSelectedId(null);
+            if (searchParams.has('customerId') || searchParams.has('email')) {
+              setSearchParams({}, { replace: true });
+            }
+          }}
           className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-extrabold text-[#6A11CB]"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -209,7 +231,8 @@ export function AdminCustomersPage() {
                     {order.items.map((i) => `${i.productNameSnapshot} ×${i.quantity}`).join(', ')}
                   </p>
                   <p className="mt-0.5 text-[10.5px] font-semibold text-[#594A6B]">
-                    Status: {order.fulfillmentStatus} · Payment: {order.paymentStatus ?? 'PENDING'}
+                    Status: {getStatusDisplayLabel(order.fulfillmentStatus)} · Payment:{' '}
+                    {normalizePaymentStatus(order)}
                   </p>
                 </div>
               ))}

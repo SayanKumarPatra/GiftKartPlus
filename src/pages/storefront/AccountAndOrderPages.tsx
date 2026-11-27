@@ -30,17 +30,22 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { useOrders, useProducts } from '../../hooks/useStoreData';
+import { useCustomerOrders, useProducts } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
 import type { DemoOrder } from '../../types';
 import { formatDateTime, formatInr } from '../../utils/format';
 import {
   canCustomerCancelOrder,
   getCustomerOrderStatusLabel,
-  getOrderStatusBadgeClasses,
   getOrderTimelineStepIndex,
   type CustomerOrderDisplayStatus,
 } from '../../utils/storefrontHelpers';
+import {
+  getOrderBadgeClasses,
+  getPaymentBadgeClasses,
+  getStatusDisplayLabel,
+  normalizePaymentStatus,
+} from '../../utils/orderLifecycle';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { ProductImage } from '../../components/ui/ProductImage';
@@ -97,7 +102,10 @@ export function CustomerAccountPage() {
     useAuth();
   const { wishlistIds } = useCart();
   const { language, languages, t } = useLanguage();
-  const { data: orders } = useOrders();
+  const { data: orders } = useCustomerOrders(
+    customerAccount?.id,
+    customerAccount?.email
+  );
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1077,9 +1085,12 @@ const ORDER_FILTER_TABS: Array<'All' | CustomerOrderDisplayStatus> = [
 const PROGRESS_STAGES = ['Order Placed', 'Processing', 'Shipped', 'Delivered'] as const;
 
 export function MyOrdersPage() {
-  const { data: orders } = useOrders();
-  const { data: products } = useProducts();
   const { customerAccount, isAuthReady } = useAuth();
+  const { data: orders } = useCustomerOrders(
+    customerAccount?.id,
+    customerAccount?.email
+  );
+  const { data: products } = useProducts();
   const { addToCart } = useCart();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -1093,12 +1104,7 @@ export function MyOrdersPage() {
 
   const customerOrders = useMemo(() => {
     if (!customerAccount) return [];
-    const matched = orders.filter(
-      (o) =>
-        o.customerAccountId === customerAccount.id ||
-        o.customer.email.toLowerCase() === customerAccount.email.toLowerCase()
-    );
-    return matched.length > 0 ? matched : orders;
+    return orders;
   }, [orders, customerAccount]);
 
   const countsByStatus = useMemo(() => {
@@ -1332,9 +1338,9 @@ export function MyOrdersPage() {
                   const statusLabel = getCustomerOrderStatusLabel(
                     order.fulfillmentStatus
                   );
-                  const badgeClass = getOrderStatusBadgeClasses(
-                    order.fulfillmentStatus
-                  );
+                  const exactStatusLabel = getStatusDisplayLabel(order.fulfillmentStatus);
+                  const badgeClass = getOrderBadgeClasses(order.fulfillmentStatus);
+                  const paymentStatus = normalizePaymentStatus(order);
                   const stepIdx = getOrderTimelineStepIndex(order.fulfillmentStatus);
                   const cancellable = canCustomerCancelOrder(order.fulfillmentStatus);
                   const primaryItem = order.items[0];
@@ -1382,11 +1388,20 @@ export function MyOrdersPage() {
                           </div>
                         </div>
 
-                        <span
-                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${badgeClass}`}
-                        >
-                          {statusLabel}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${getPaymentBadgeClasses(
+                              paymentStatus
+                            )}`}
+                          >
+                            {paymentStatus}
+                          </span>
+                          <span
+                            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${badgeClass}`}
+                          >
+                            {exactStatusLabel}
+                          </span>
+                        </div>
                       </div>
 
                       {/* Body: Product Preview + 4-Step Live Progress Stepper */}

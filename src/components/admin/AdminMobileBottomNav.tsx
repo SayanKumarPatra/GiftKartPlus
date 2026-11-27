@@ -24,7 +24,10 @@ export function AdminMobileBottomNav() {
   }
 
   const pendingOrdersCount = orders.filter(
-    (o) => o.fulfillmentStatus === 'New' || o.fulfillmentStatus === 'Demo Placed'
+    (o) =>
+      o.fulfillmentStatus === 'New Order' ||
+      o.fulfillmentStatus === 'New' ||
+      o.fulfillmentStatus === 'Demo Placed'
   ).length;
 
   const isHomeActive = pathname === '/admin' || pathname === '/admin/';

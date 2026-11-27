@@ -23,11 +23,19 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { useOrders } from '../../hooks/useStoreData';
+import { useCustomerOrders } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
 import type { DemoOrder, OrderFulfillmentStatus } from '../../types';
 import { ProductImage } from '../ui/ProductImage';
+import { DeliveryVanTracker } from '../order/DeliveryVanTracker';
 import { formatInr } from '../../utils/format';
+import {
+  getOrderBadgeClasses,
+  getPaymentBadgeClasses,
+  getStatusDisplayLabel,
+  normalizeOrderStatus,
+  normalizePaymentStatus,
+} from '../../utils/orderLifecycle';
 
 const VIEW_ORDERS_ILLUSTRATION =
   '/assets/aistudio/Vibrant_3D_Shopping_Essentials_49dd2758.png';
@@ -48,6 +56,7 @@ interface TimelineStep {
 }
 
 interface MobileOrderViewModel {
+  rawOrder: DemoOrder;
   id: string;
   orderNumber: string;
   orderIdLabel: string;
@@ -65,6 +74,7 @@ interface MobileOrderViewModel {
   grandTotalInr: number;
   rawStatus: OrderFulfillmentStatus;
   displayStatus: DisplayOrderStatus;
+  exactStatusLabel: string;
   canCancel: boolean;
   paymentMethod: string;
   paymentBadge: string;
@@ -101,20 +111,22 @@ function formatFullDate(iso: string): string {
 function mapFulfillmentToDisplayStatus(
   status: OrderFulfillmentStatus
 ): DisplayOrderStatus {
-  switch (status) {
-    case 'New':
-    case 'Demo Placed':
+  const canonical = normalizeOrderStatus(status);
+  switch (canonical) {
+    case 'New Order':
       return 'Order Placed';
     case 'Processing':
-    case 'Confirmed':
-    case 'Preparing':
+    case 'Packed':
       return 'Processing';
+    case 'Shipped':
+    case 'In Transit':
     case 'Out for Delivery':
       return 'Shipped';
-    case 'Completed':
     case 'Delivered':
       return 'Delivered';
     case 'Cancelled':
+    case 'Delivery Failed':
+    case 'Returned':
       return 'Cancelled';
     default:
       return 'Order Placed';
@@ -123,15 +135,17 @@ function mapFulfillmentToDisplayStatus(
 
 function buildOrderTimeline(order: DemoOrder): TimelineStep[] {
   const placedEntry = order.statusHistory.find(
-    (h) => h.status === 'New' || h.status === 'Demo Placed'
+    (h) => h.status === 'New Order' || h.status === 'New' || h.status === 'Demo Placed'
   );
   const processingEntry =
+    order.statusHistory.find((h) => h.status === 'Packed') ??
     order.statusHistory.find((h) => h.status === 'Processing') ??
     order.statusHistory.find((h) => h.status === 'Preparing') ??
     order.statusHistory.find((h) => h.status === 'Confirmed');
-  const shippedEntry = order.statusHistory.find(
-    (h) => h.status === 'Out for Delivery'
-  );
+  const shippedEntry =
+    order.statusHistory.find((h) => h.status === 'Out for Delivery') ??
+    order.statusHistory.find((h) => h.status === 'In Transit') ??
+    order.statusHistory.find((h) => h.status === 'Shipped');
   const deliveredEntry = order.statusHistory.find(
     (h) => h.status === 'Completed' || h.status === 'Delivered'
   );
@@ -195,33 +209,25 @@ function buildOrderTimeline(order: DemoOrder): TimelineStep[] {
   ];
 }
 
-function getPaymentBadge(
-  paymentMethod: string,
-  status: OrderFulfillmentStatus
-): string {
-  if (status === 'Cancelled') return 'Cancelled';
-  const lower = paymentMethod.toLowerCase();
-  if (lower.includes('cash on delivery') || lower.includes('cod')) {
-    return status === 'Completed' || status === 'Delivered'
-      ? 'Paid on Delivery'
-      : 'Pay on Delivery';
-  }
-  return 'Paid';
-}
-
 function toMobileOrderViewModel(order: DemoOrder): MobileOrderViewModel {
   const displayStatus = mapFulfillmentToDisplayStatus(order.fulfillmentStatus);
+  const canonicalStatus = normalizeOrderStatus(order.fulfillmentStatus);
+  const canonicalPayment = normalizePaymentStatus(order);
   const firstItem = order.items[0];
   const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
   const deliveredEntry = order.statusHistory.find(
     (h) => h.status === 'Completed' || h.status === 'Delivered'
   );
   const cancelledEntry = order.statusHistory.find(
-    (h) => h.status === 'Cancelled'
+    (h) =>
+      h.status === 'Cancelled' ||
+      h.status === 'Delivery Failed' ||
+      h.status === 'Returned'
   );
   const paymentMethod = order.paymentMethod?.trim() || 'Cash on Delivery (COD)';
 
   return {
+    rawOrder: order,
     id: order.id,
     orderNumber: order.orderNumber,
     orderIdLabel: `Order #${order.orderNumber}`,
@@ -241,12 +247,11 @@ function toMobileOrderViewModel(order: DemoOrder): MobileOrderViewModel {
     grandTotalInr: order.grandTotalInr,
     rawStatus: order.fulfillmentStatus,
     displayStatus,
+    exactStatusLabel: getStatusDisplayLabel(canonicalStatus),
     // Strictly cancellable ONLY before Processing begins
-    canCancel:
-      order.fulfillmentStatus === 'New' ||
-      order.fulfillmentStatus === 'Demo Placed',
+    canCancel: canonicalStatus === 'New Order',
     paymentMethod,
-    paymentBadge: getPaymentBadge(paymentMethod, order.fulfillmentStatus),
+    paymentBadge: canonicalPayment,
     deliveryAddress: {
       name: order.customer.fullName,
       line1: order.customer.addressLine1,
@@ -422,11 +427,11 @@ function MobileOrderDetailsView({
               </p>
             </div>
             <span
-              className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold ${getStatusBadgeClasses(
-                order.displayStatus
+              className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold ${getOrderBadgeClasses(
+                order.rawStatus
               )}`}
             >
-              {order.displayStatus}
+              {order.exactStatusLabel}
             </span>
           </div>
 
@@ -460,6 +465,9 @@ function MobileOrderDetailsView({
           </div>
         </div>
 
+        {/* Animated Live GiftKart Delivery Van Tracker */}
+        <DeliveryVanTracker order={order.rawOrder} compact />
+
         {/* Order Status / Tracking Timeline */}
         {order.displayStatus === 'Cancelled' ? (
           <div className="rounded-[22px] border border-[#FFD1E5] bg-[#FFF0F6] p-4 shadow-[0_6px_18px_rgba(255,77,141,0.08)]">
@@ -467,11 +475,11 @@ function MobileOrderDetailsView({
               <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#C81E68]" />
               <div>
                 <h2 className="text-[14px] font-extrabold text-[#9D174D]">
-                  {t('orderCancelled')}
+                  {order.exactStatusLabel}
                 </h2>
                 <p className="mt-0.5 text-[12px] leading-snug text-[#C81E68]">
                   {order.cancellationNote ||
-                    'This order was cancelled before processing started.'}
+                    'Please check your order updates or contact GiftKart support.'}
                 </p>
               </div>
             </div>
@@ -581,7 +589,11 @@ function MobileOrderDetailsView({
                 {t('paymentMethod')}
               </h2>
             </div>
-            <span className="rounded-full bg-[#F5ECFF] px-2.5 py-0.5 text-[10.5px] font-bold text-[#6A11CB]">
+            <span
+              className={`rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold ${getPaymentBadgeClasses(
+                normalizePaymentStatus(order.rawOrder)
+              )}`}
+            >
               {order.paymentBadge}
             </span>
           </div>
@@ -742,7 +754,10 @@ function MobileEmptyOrdersState() {
 
 export function MobileOrdersPage() {
   const { customerAccount } = useAuth();
-  const { data: rawOrders, refresh: reloadOrders } = useOrders();
+  const { data: rawOrders, refresh: reloadOrders } = useCustomerOrders(
+    customerAccount?.id,
+    customerAccount?.email
+  );
   const { pushToast } = useToast();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -764,17 +779,8 @@ export function MobileOrdersPage() {
   const isEmptyPreview = previewParam === 'empty';
 
   const ordersSource = useMemo<MobileOrderViewModel[]>(() => {
-    if (isEmptyPreview) return [];
-    const matching = customerAccount
-      ? rawOrders.filter(
-          (o) =>
-            o.customerAccountId === customerAccount.id ||
-            o.customer.email.toLowerCase() ===
-              customerAccount.email.toLowerCase()
-        )
-      : rawOrders;
-
-    return matching.map(toMobileOrderViewModel);
+    if (isEmptyPreview || !customerAccount) return [];
+    return rawOrders.map(toMobileOrderViewModel);
   }, [rawOrders, customerAccount, isEmptyPreview]);
 
   const statusCounts = useMemo(
@@ -1008,11 +1014,11 @@ export function MobileOrdersPage() {
                           {order.orderIdLabel}
                         </h2>
                         <span
-                          className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10.5px] font-bold min-[390px]:text-[11px] ${getStatusBadgeClasses(
-                            order.displayStatus
+                          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold min-[390px]:text-[11px] ${getOrderBadgeClasses(
+                            order.rawStatus
                           )}`}
                         >
-                          {order.displayStatus}
+                          {order.exactStatusLabel}
                         </span>
                       </div>
 

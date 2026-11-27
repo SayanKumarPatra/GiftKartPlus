@@ -47,14 +47,15 @@ import {
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ProductImage } from '../../components/ui/ProductImage';
+import { DeliveryVanTracker } from '../../components/order/DeliveryVanTracker';
 import { MobileSavedAddressesPage } from '../../components/storefront/MobileSavedAddressesPage';
-
-const ORDER_DETAIL_STAGES = [
-  'Order Placed',
-  'Processing',
-  'Shipped',
-  'Delivered',
-] as const;
+import { storeEvents } from '../../storage/storeEvents';
+import {
+  getOrderBadgeClasses,
+  getPaymentBadgeClasses,
+  getStatusDisplayLabel,
+  normalizePaymentStatus,
+} from '../../utils/orderLifecycle';
 
 /* ============================================================================
  * #14 ORDER DETAILS PAGE (/order/:orderNumber)
@@ -70,17 +71,26 @@ export function OrderDetailsPage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    void services.orders
-      .getOrderByNumber(orderNumber ?? '')
-      .then((found) => {
-        if (active) setOrder(found);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    const loadOrder = (showLoader: boolean) => {
+      if (showLoader) setLoading(true);
+      void services.orders
+        .getOrderByNumber(orderNumber ?? '')
+        .then((found) => {
+          if (active) setOrder(found);
+        })
+        .finally(() => {
+          if (active && showLoader) setLoading(false);
+        });
+    };
+    loadOrder(true);
+    const unsubscribe = storeEvents.subscribe((topic) => {
+      if (topic === 'all' || topic === 'orders') {
+        loadOrder(false);
+      }
+    });
     return () => {
       active = false;
+      unsubscribe();
     };
   }, [orderNumber]);
 
@@ -132,8 +142,9 @@ export function OrderDetailsPage() {
   }
 
   const displayStatus = getCustomerOrderStatusLabel(order.fulfillmentStatus);
-  const statusBadgeClass = getOrderStatusBadgeClasses(order.fulfillmentStatus);
-  const timelineStepIdx = getOrderTimelineStepIndex(order.fulfillmentStatus);
+  const exactStatusLabel = getStatusDisplayLabel(order.fulfillmentStatus);
+  const statusBadgeClass = getOrderBadgeClasses(order.fulfillmentStatus);
+  const paymentStatus = normalizePaymentStatus(order);
   const cancellable = canCustomerCancelOrder(order.fulfillmentStatus);
 
   return (
@@ -158,67 +169,36 @@ export function OrderDetailsPage() {
               {order.orderNumber}
             </h1>
             <p className="mt-1 text-xs text-[#594A6B]">
-              Placed on {formatDateTime(order.createdAt)} · Payment:{' '}
+              Placed on {formatDateTime(order.createdAt)} · Method:{' '}
               <strong className="text-[#6A11CB]">
                 {order.paymentMethod || 'Cash on Delivery (COD)'}
               </strong>
             </p>
           </div>
           <div className="text-left sm:text-right">
-            <span
-              className={`inline-flex rounded-full px-3.5 py-1 text-xs font-bold ${statusBadgeClass}`}
-            >
-              {displayStatus}
-            </span>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <span
+                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPaymentBadgeClasses(
+                  paymentStatus
+                )}`}
+              >
+                Payment: {paymentStatus}
+              </span>
+              <span
+                className={`inline-flex rounded-full border px-3.5 py-1 text-xs font-bold ${statusBadgeClass}`}
+              >
+                {exactStatusLabel}
+              </span>
+            </div>
             <p className="mt-2 font-mono text-2xl font-extrabold tabular-nums text-[#1E1035]">
               {formatInr(order.grandTotalInr)}
             </p>
           </div>
         </div>
-
-        {/* 4-Step Live Horizontal Progress Bar */}
-        {displayStatus !== 'Cancelled' ? (
-          <div className="mt-5 border-t border-[#EFE3FF] pt-5">
-            <ol className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {ORDER_DETAIL_STAGES.map((stage, idx) => {
-                const done = timelineStepIdx >= idx;
-                return (
-                  <li key={stage} className="flex items-center gap-2">
-                    <span
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                        done
-                          ? 'bg-[#6A11CB] text-white'
-                          : 'border border-[#DFD2F2] bg-[#FAF8FC] text-[#9B8AB4]'
-                      }`}
-                    >
-                      {done ? <Check className="h-3.5 w-3.5 stroke-[2.8]" /> : idx + 1}
-                    </span>
-                    <span
-                      className={`text-xs font-bold ${
-                        done ? 'text-[#1E1035]' : 'text-[#9B8AB4]'
-                      }`}
-                    >
-                      {stage}
-                    </span>
-                    {idx < ORDER_DETAIL_STAGES.length - 1 && (
-                      <span
-                        className={`hidden h-0.5 flex-1 rounded-full sm:block ${
-                          timelineStepIdx > idx ? 'bg-[#6A11CB]' : 'bg-[#EFE3FF]'
-                        }`}
-                      />
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-        ) : (
-          <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#FFD1E5] bg-[#FFF0F6] px-3.5 py-2.5 text-xs font-semibold text-[#C81E68]">
-            <XCircle className="h-4 w-4 shrink-0" />
-            <span>{t('orderCancelled')}</span>
-          </div>
-        )}
       </div>
+
+      {/* Live Animated GiftKart Delivery Van Tracker */}
+      <DeliveryVanTracker order={order} />
 
       {/* Ordered Items */}
       <div className="space-y-4 rounded-2xl border border-[#EFE3FF] bg-white p-6 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.1)]">

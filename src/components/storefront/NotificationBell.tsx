@@ -1,15 +1,35 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, X } from 'lucide-react';
-import { useStoreNotifications } from '../../hooks/useStoreData';
+import { Link } from 'react-router-dom';
+import { Bell, Package, X } from 'lucide-react';
+import {
+  useCustomerOrderNotifications,
+  useStoreNotifications,
+} from '../../hooks/useStoreData';
+import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { readStorage, STORAGE_KEYS, writeStorage } from '../../storage/localStorageEngine';
+import { formatDateTime } from '../../utils/format';
 
 interface NotificationBellProps {
   variant: 'mobile' | 'desktop';
 }
 
+interface CombinedNotificationItem {
+  id: string;
+  kind: 'order' | 'store';
+  title: string;
+  message: string;
+  timestamp: string;
+  orderNumber?: string;
+}
+
 export function NotificationBell({ variant }: NotificationBellProps) {
-  const { data: activeNotifications } = useStoreNotifications(false);
+  const { customerAccount } = useAuth();
+  const { data: activeStoreNotifications } = useStoreNotifications(false);
+  const { data: orderNotifications } = useCustomerOrderNotifications(
+    customerAccount?.id,
+    customerAccount?.email
+  );
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [lastSeenStamp, setLastSeenStamp] = useState<string>(() =>
@@ -17,13 +37,31 @@ export function NotificationBell({ variant }: NotificationBellProps) {
   );
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const latestActiveStamp = useMemo(() => {
-    if (activeNotifications.length === 0) return '';
-    return activeNotifications.reduce(
-      (latest, item) => (item.updatedAt > latest ? item.updatedAt : latest),
-      activeNotifications[0].updatedAt
+  const combinedNotifications = useMemo<CombinedNotificationItem[]>(() => {
+    const orderItems: CombinedNotificationItem[] = orderNotifications.map((n) => ({
+      id: n.id,
+      kind: 'order',
+      title: n.title,
+      message: n.message,
+      timestamp: n.sentAt,
+      orderNumber: n.orderNumber,
+    }));
+    const storeItems: CombinedNotificationItem[] = activeStoreNotifications.map((n) => ({
+      id: n.id,
+      kind: 'store',
+      title: n.title,
+      message: n.message,
+      timestamp: n.updatedAt || n.createdAt,
+    }));
+    return [...orderItems, ...storeItems].sort((a, b) =>
+      b.timestamp.localeCompare(a.timestamp)
     );
-  }, [activeNotifications]);
+  }, [orderNotifications, activeStoreNotifications]);
+
+  const latestActiveStamp = useMemo(() => {
+    if (combinedNotifications.length === 0) return '';
+    return combinedNotifications[0].timestamp;
+  }, [combinedNotifications]);
 
   // Subtle pink indicator dot ONLY when an active notification exists and hasn't been opened yet
   const showIndicator = Boolean(latestActiveStamp && latestActiveStamp > lastSeenStamp);
@@ -103,8 +141,8 @@ export function NotificationBell({ variant }: NotificationBellProps) {
           aria-label={t('notificationsTitle')}
           className={
             variant === 'mobile'
-              ? 'fixed right-3 top-[60px] z-50 w-[min(320px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-[#EBD8FF] bg-white/98 shadow-[0_18px_40px_-14px_rgba(106,17,203,0.28)] backdrop-blur-xl'
-              : 'absolute right-0 top-full z-50 mt-2.5 w-80 overflow-hidden rounded-2xl border border-[#EBD8FF] bg-white/98 shadow-[0_18px_40px_-14px_rgba(106,17,203,0.28)] backdrop-blur-xl'
+              ? 'fixed right-3 top-[60px] z-50 w-[min(336px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-[#EBD8FF] bg-white/98 shadow-[0_18px_40px_-14px_rgba(106,17,203,0.28)] backdrop-blur-xl'
+              : 'absolute right-0 top-full z-50 mt-2.5 w-88 overflow-hidden rounded-2xl border border-[#EBD8FF] bg-white/98 shadow-[0_18px_40px_-14px_rgba(106,17,203,0.28)] backdrop-blur-xl'
           }
         >
           {/* Minimal Popup Header */}
@@ -125,27 +163,50 @@ export function NotificationBell({ variant }: NotificationBellProps) {
             </button>
           </div>
 
-          {/* Strictly Minimal Notification Content: ONLY Title and Message */}
-          <div className="max-h-[300px] overflow-y-auto p-3">
-            {activeNotifications.length === 0 ? (
+          <div className="max-h-[340px] overflow-y-auto p-3">
+            {combinedNotifications.length === 0 ? (
               <p className="py-5 text-center text-xs font-medium text-[#75648E]">
                 {t('notificationsEmpty')}
               </p>
             ) : (
               <div className="space-y-2.5">
-                {activeNotifications.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-xl border border-[#EFE3FF] bg-[#FCFAFF] px-3.5 py-2.5"
-                  >
-                    <p className="text-[13px] font-bold leading-snug text-[#1E1035]">
-                      {item.title}
-                    </p>
-                    <p className="mt-1 whitespace-pre-line text-[12px] leading-relaxed text-[#594A6B]">
-                      {item.message}
-                    </p>
-                  </div>
-                ))}
+                {combinedNotifications.map((item) =>
+                  item.kind === 'order' && item.orderNumber ? (
+                    <Link
+                      key={item.id}
+                      to={`/order/${item.orderNumber}`}
+                      onClick={() => setOpen(false)}
+                      className="block rounded-xl border border-[#EBD8FF] bg-gradient-to-r from-[#FAF5FF] to-[#FFF5FA] px-3.5 py-2.5 transition-colors hover:border-[#6A11CB]/40"
+                    >
+                      <div className="flex items-start gap-2">
+                        <Package className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12.5px] font-extrabold leading-snug text-[#2B0B4E]">
+                            {item.title}
+                          </p>
+                          <p className="mt-0.5 whitespace-pre-line text-[11.5px] leading-relaxed text-[#4A3860]">
+                            {item.message}
+                          </p>
+                          <p className="mt-1 text-[10px] font-semibold text-[#6E5B85]">
+                            {formatDateTime(item.timestamp)}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div
+                      key={item.id}
+                      className="rounded-xl border border-[#EFE3FF] bg-[#FCFAFF] px-3.5 py-2.5"
+                    >
+                      <p className="text-[13px] font-bold leading-snug text-[#1E1035]">
+                        {item.title}
+                      </p>
+                      <p className="mt-1 whitespace-pre-line text-[12px] leading-relaxed text-[#594A6B]">
+                        {item.message}
+                      </p>
+                    </div>
+                  )
+                )}
               </div>
             )}
           </div>

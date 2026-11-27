@@ -8,6 +8,7 @@ import type {
   DemoOrder,
   GiftWrapConfig,
   NewsletterSubscriber,
+  OrderNotificationRecord,
   Product,
   ProductFilterParams,
   ProductReview,
@@ -113,6 +114,28 @@ export function useStoreNotifications(
 
 export function useOrders(): AsyncState<DemoOrder[]> {
   const fetcher = useCallback(() => services.orders.listOrders(), []);
+  return useAsyncStoreResource(fetcher, [], ORDER_TOPICS);
+}
+
+export function useCustomerOrders(
+  customerAccountId?: string,
+  email?: string
+): AsyncState<DemoOrder[]> {
+  const fetcher = useCallback(
+    () => services.orders.getOrdersByCustomerAccount(customerAccountId, email),
+    [customerAccountId, email]
+  );
+  return useAsyncStoreResource(fetcher, [], ORDER_TOPICS);
+}
+
+export function useCustomerOrderNotifications(
+  customerAccountId?: string,
+  email?: string
+): AsyncState<OrderNotificationRecord[]> {
+  const fetcher = useCallback(
+    () => services.orders.getCustomerOrderNotifications(customerAccountId, email),
+    [customerAccountId, email]
+  );
   return useAsyncStoreResource(fetcher, [], ORDER_TOPICS);
 }
 
