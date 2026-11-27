@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Gift, Heart, Share2, ShoppingCart, Zap } from 'lucide-react';
+import { ArrowRight, Gift, Heart, Share2, ShoppingCart, Star, Zap } from 'lucide-react';
 import type { Category, Product } from '../../types';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useProductReviews } from '../../hooks/useStoreData';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
-import { getCategoryPresentation } from '../../utils/storefrontHelpers';
+import {
+  cleanWhatsAppDigits,
+  getCategoryPresentation,
+} from '../../utils/storefrontHelpers';
 import { openProductShare } from './ProductShareModal';
+import { ProductReviewsSection } from './ProductReviewsSection';
 
 interface MobileProductDetailPageProps {
   product: Product;
@@ -68,6 +73,17 @@ export function MobileProductDetailPage({
   const { items, addToCart, toggleWishlist, isWishlisted } = useCart();
   const { pushToast } = useToast();
   const { t, translateCategory, localizeEntity } = useLanguage();
+  const { data: productReviews } = useProductReviews(product.id);
+
+  const liveReviewSummary = useMemo(() => {
+    const approved = productReviews.filter((r) => r.isApproved !== false && !r.isSampleData);
+    if (approved.length === 0) return null;
+    const sum = approved.reduce((acc, r) => acc + Math.min(5, Math.max(1, Number(r.rating) || 5)), 0);
+    return {
+      avg: (sum / approved.length).toFixed(1),
+      count: approved.length,
+    };
+  }, [productReviews]);
 
   const displayName = localizeEntity(product.name, 'name', product.translations);
   const displayDesc = localizeEntity(
@@ -135,10 +151,8 @@ export function MobileProductDetailPage({
       ? `Hello GiftKart! After placing my order, I would like to send my photo and custom message for "${product.name}".`
       : `Hello GiftKart! After placing my order, I would like to send my custom text for "${product.name}".`;
     const encoded = encodeURIComponent(prefilled);
-    const digitsOnly = (supportPhone ?? '').replace(/[^\d]/g, '');
-    return digitsOnly
-      ? `https://wa.me/${digitsOnly}?text=${encoded}`
-      : `https://api.whatsapp.com/send?text=${encoded}`;
+    const digitsOnly = cleanWhatsAppDigits(supportPhone);
+    return `https://wa.me/${digitsOnly}?text=${encoded}`;
   }, [product.name, product.supportsPhotoUpload, supportPhone]);
 
   /**
@@ -337,10 +351,24 @@ export function MobileProductDetailPage({
           {displayName}
         </h1>
 
-        {/* Normal Selling Price ONLY */}
-        <p className="mt-1.5 text-[27px] font-extrabold leading-none tracking-[-0.02em] text-[#FF4D8D] tabular-nums">
-          {formatInr(product.priceInr)}
-        </p>
+        {/* Normal Selling Price + Live Verified Rating Summary */}
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[27px] font-extrabold leading-none tracking-[-0.02em] text-[#FF4D8D] tabular-nums">
+            {formatInr(product.priceInr)}
+          </p>
+          {liveReviewSummary && (
+            <a
+              href="#customer-reviews"
+              className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11.5px] font-extrabold text-amber-800"
+            >
+              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+              <span className="tabular-nums">{liveReviewSummary.avg}</span>
+              <span className="font-semibold text-amber-700">
+                ({liveReviewSummary.count})
+              </span>
+            </a>
+          )}
+        </div>
 
         {/* Product Description */}
         {displayDesc && (
@@ -424,6 +452,9 @@ export function MobileProductDetailPage({
           </div>
         </section>
       )}
+
+      {/* 5.5 LIVE VERIFIED CUSTOMER RATINGS & REVIEWS */}
+      <ProductReviewsSection product={product} compact />
 
       {/* 6. YOU MAY ALSO LIKE — 3 COMPACT CARDS IN ONE SINGLE ROW */}
       {recommendedProducts.length > 0 && (

@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   ShoppingCart,
+  Star,
   Truck,
   X,
   Zap,
@@ -20,6 +21,7 @@ import {
 import {
   useCategories,
   useGiftWrapConfig,
+  useProductReviews,
   useProducts,
   useStoreSettings,
 } from '../../hooks/useStoreData';
@@ -31,6 +33,7 @@ import { ProductImage } from '../../components/ui/ProductImage';
 import { ProductCard } from '../../components/storefront/ProductCard';
 import { MobileProductDetailPage } from '../../components/storefront/MobileProductDetailPage';
 import { openProductShare } from '../../components/storefront/ProductShareModal';
+import { ProductReviewsSection } from '../../components/storefront/ProductReviewsSection';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { formatInr } from '../../utils/format';
@@ -61,6 +64,17 @@ export function ProductDetailPage() {
   const { t, translateCategory, localizeEntity } = useLanguage();
 
   const product = products.find((p) => p.slug === slug);
+  const { data: productReviews } = useProductReviews(product?.id);
+  const approvedReviews = productReviews.filter((r) => r.isApproved !== false && !r.isSampleData);
+  const liveRatingAvg =
+    approvedReviews.length > 0
+      ? (
+          approvedReviews.reduce(
+            (sum, r) => sum + Math.min(5, Math.max(1, Number(r.rating) || 5)),
+            0
+          ) / approvedReviews.length
+        ).toFixed(1)
+      : null;
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [personalizationText, setPersonalizationText] = useState('');
@@ -336,6 +350,22 @@ export function ProductDetailPage() {
               <h1 className="mt-1.5 font-display text-2xl font-bold leading-snug text-[#1E1035] xl:text-[28px]">
                 {displayProductName}
               </h1>
+
+              {liveRatingAvg && (
+                <a
+                  href="#customer-reviews"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[#4B3963] hover:text-[#6A11CB]"
+                >
+                  <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-50 px-2 py-0.5 font-extrabold text-amber-700 tabular-nums">
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                    {liveRatingAvg}
+                  </span>
+                  <span>
+                    {approvedReviews.length} Verified{' '}
+                    {approvedReviews.length === 1 ? 'Review' : 'Reviews'}
+                  </span>
+                </a>
+              )}
 
               {/* Pricing Row */}
               <div className="mt-3.5 flex flex-wrap items-baseline gap-3">
@@ -621,6 +651,9 @@ export function ProductDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Live Verified Customer Reviews */}
+        <ProductReviewsSection product={product} />
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (

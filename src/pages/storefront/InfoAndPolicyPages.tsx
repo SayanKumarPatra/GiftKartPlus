@@ -4,6 +4,8 @@ import {
   ChevronDown,
   ChevronRight,
   CreditCard,
+  Facebook,
+  Instagram,
   Mail,
   MapPin,
   MessageCircle,
@@ -127,18 +129,57 @@ export function AboutUsPage() {
             </dd>
           </div>
           <div>
-            <dt className="text-[11.5px] text-neutral-500">Support Phone</dt>
+            <dt className="text-[11.5px] text-neutral-500">Support Phone &amp; WhatsApp</dt>
             <dd className="mt-0.5 text-[13px] font-medium text-neutral-900 tabular-nums">
-              {settings?.supportPhone ?? '+91 9239505791'}
+              <a
+                href={`tel:+${(settings?.supportPhone ?? '919239505791').replace(/\D/g, '')}`}
+                className="hover:text-[#6A11CB] hover:underline"
+              >
+                {settings?.supportPhone ?? '+91 9239505791'}
+              </a>
             </dd>
           </div>
           <div>
             <dt className="text-[11.5px] text-neutral-500">Support Email</dt>
             <dd className="mt-0.5 truncate text-[13px] font-medium text-neutral-900">
-              {settings?.supportEmail ?? 'hello.giftkart@gmail.com'}
+              <a
+                href={`mailto:${settings?.supportEmail ?? 'hello.giftkart@gmail.com'}`}
+                className="hover:text-[#6A11CB] hover:underline"
+              >
+                {settings?.supportEmail ?? 'hello.giftkart@gmail.com'}
+              </a>
             </dd>
           </div>
         </dl>
+        <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
+          <a
+            href={settings?.socialLinks?.instagram?.trim() || 'https://www.instagram.com/giftkart.online'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#EBD8FF] bg-[#FAF6FF] px-3 py-1 text-xs font-bold text-[#6A11CB] transition-colors hover:bg-[#F3E8FF]"
+          >
+            <Instagram className="h-3.5 w-3.5" />
+            <span>Instagram</span>
+          </a>
+          <a
+            href={settings?.socialLinks?.facebook?.trim() || 'https://www.facebook.com/share/18v7Ev2crP/'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#EBD8FF] bg-[#FAF6FF] px-3 py-1 text-xs font-bold text-[#1877F2] transition-colors hover:bg-[#EFF6FF]"
+          >
+            <Facebook className="h-3.5 w-3.5" />
+            <span>Facebook</span>
+          </a>
+          <a
+            href={settings?.socialLinks?.whatsapp?.trim() || 'https://wa.me/919239505791'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            <span>WhatsApp</span>
+          </a>
+        </div>
       </section>
 
       {/* Legal Policies Directory */}
@@ -266,14 +307,20 @@ export function ContactUsPage() {
                   here to help! Select a topic below or chat with our support team directly on WhatsApp.
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-5 text-xs font-semibold text-[#594A6B]">
-                  <span className="inline-flex items-center gap-1.5">
+                  <a
+                    href={`tel:+${(settings?.supportPhone ?? '919239505791').replace(/\D/g, '')}`}
+                    className="inline-flex items-center gap-1.5 transition-colors hover:text-[#6A11CB]"
+                  >
                     <Phone className="h-3.5 w-3.5 text-[#6A11CB]" />
                     {settings?.supportPhone ?? '+91 9239505791'}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
+                  </a>
+                  <a
+                    href={`mailto:${settings?.supportEmail ?? 'hello.giftkart@gmail.com'}`}
+                    className="inline-flex items-center gap-1.5 transition-colors hover:text-[#6A11CB]"
+                  >
                     <Mail className="h-3.5 w-3.5 text-[#6A11CB]" />
                     {settings?.supportEmail ?? 'hello.giftkart@gmail.com'}
-                  </span>
+                  </a>
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5 text-[#FF4D8D]" />
                     Jalchak, Paschim Medinipur, WB
@@ -383,6 +430,27 @@ export function ContactUsPage() {
                     </span>
                     <ChevronRight className="h-4 w-4" />
                   </a>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <a
+                      href={settings?.socialLinks?.instagram?.trim() || 'https://www.instagram.com/giftkart.online'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#EBD8FF] bg-[#FAF6FF] text-xs font-bold text-[#6A11CB] transition-colors hover:bg-[#F3E8FF]"
+                    >
+                      <Instagram className="h-3.5 w-3.5" />
+                      <span>Instagram</span>
+                    </a>
+                    <a
+                      href={settings?.socialLinks?.facebook?.trim() || 'https://www.facebook.com/share/18v7Ev2crP/'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/60 text-xs font-bold text-[#1877F2] transition-colors hover:bg-blue-50"
+                    >
+                      <Facebook className="h-3.5 w-3.5" />
+                      <span>Facebook</span>
+                    </a>
+                  </div>
                 </div>
 
                 <div className="rounded-2xl border border-[#EFE3FF] bg-white p-5">

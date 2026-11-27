@@ -15,6 +15,7 @@ import {
   RefreshCw,
   RotateCcw,
   ShieldCheck,
+  Star,
   Truck,
   User,
   UserPlus,
@@ -23,11 +24,12 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { useCustomerOrders } from '../../hooks/useStoreData';
+import { useCustomerOrders, useProductReviews } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
-import type { DemoOrder, OrderFulfillmentStatus } from '../../types';
+import type { DemoOrder, OrderFulfillmentStatus, ProductReview } from '../../types';
 import { ProductImage } from '../ui/ProductImage';
 import { DeliveryVanTracker } from '../order/DeliveryVanTracker';
+import { ProductReviewModal, type ReviewModalTarget } from './ProductReviewModal';
 import { formatInr } from '../../utils/format';
 import {
   getOrderBadgeClasses,
@@ -363,15 +365,20 @@ function MobileOrderDetailsView({
   order,
   onBack,
   onOrderCancelled,
+  allReviews,
+  onOpenReview,
 }: {
   order: MobileOrderViewModel;
   onBack: () => void;
   onOrderCancelled: () => void;
+  allReviews: ProductReview[];
+  onOpenReview: (item: DemoOrder['items'][number], orderObj: DemoOrder, existing?: ProductReview) => void;
 }) {
   const { pushToast } = useToast();
   const { t } = useLanguage();
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const isDeliveredOrder = order.displayStatus === 'Delivered';
 
   async function handleConfirmCancel() {
     if (!order.canCancel || cancelling) return;
@@ -437,31 +444,64 @@ function MobileOrderDetailsView({
 
           {/* Product Items List */}
           <div className="mt-3.5 divide-y divide-[#F2E8FF] border-t border-[#F2E8FF] pt-3">
-            {order.items.map((item, idx) => (
-              <div
-                key={`${item.productSkuSnapshot}-${idx}`}
-                className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
-              >
-                <div className="h-[70px] w-[70px] shrink-0 overflow-hidden rounded-2xl border border-[#EFE2FF] bg-[#FAF6FF]">
-                  <ProductImage
-                    src={item.imageSnapshot}
-                    alt={item.productNameSnapshot}
-                    aspectClass="aspect-square"
-                  />
+            {order.items.map((item, idx) => {
+              const existingRev = allReviews.find(
+                (r) => r.orderId === order.id && r.productId === item.productId
+              );
+              return (
+                <div
+                  key={`${item.productSkuSnapshot}-${idx}`}
+                  className="py-2.5 first:pt-0 last:pb-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-[70px] w-[70px] shrink-0 overflow-hidden rounded-2xl border border-[#EFE2FF] bg-[#FAF6FF]">
+                      <ProductImage
+                        src={item.imageSnapshot}
+                        alt={item.productNameSnapshot}
+                        aspectClass="aspect-square"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13.5px] font-extrabold leading-snug text-[#2B0B4E]">
+                        {item.productNameSnapshot}
+                      </p>
+                      <p className="mt-0.5 text-[12px] font-semibold text-[#6F5C88]">
+                        Quantity: {item.quantity}
+                      </p>
+                      <p className="mt-0.5 text-[14.5px] font-extrabold tabular-nums text-[#6A11CB]">
+                        {formatInr(item.lineTotalInr)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {isDeliveredOrder && (
+                    <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-[#FAF6FF] px-2.5 py-1.5">
+                      <span className="text-[11px] font-semibold text-[#5E4A77]">
+                        {existingRev
+                          ? `Rated ${existingRev.rating}/5 ★ · Live on store`
+                          : 'Delivered! Share rating, photo & review'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onOpenReview(item, order.rawOrder, existingRev)}
+                        className={`inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold active:scale-95 ${
+                          existingRev
+                            ? 'border border-[#DEC7FF] bg-white text-[#6A11CB]'
+                            : 'bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] text-white shadow-xs'
+                        }`}
+                      >
+                        <Star
+                          className={`h-3 w-3 ${
+                            existingRev ? 'fill-amber-400 text-amber-400' : 'fill-white text-white'
+                          }`}
+                        />
+                        <span>{existingRev ? 'Edit Review' : 'Rate & Review'}</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13.5px] font-extrabold leading-snug text-[#2B0B4E]">
-                    {item.productNameSnapshot}
-                  </p>
-                  <p className="mt-0.5 text-[12px] font-semibold text-[#6F5C88]">
-                    Quantity: {item.quantity}
-                  </p>
-                  <p className="mt-0.5 text-[14.5px] font-extrabold tabular-nums text-[#6A11CB]">
-                    {formatInr(item.lineTotalInr)}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -758,6 +798,27 @@ export function MobileOrdersPage() {
     customerAccount?.id,
     customerAccount?.email
   );
+  const { data: allReviews, refresh: refreshReviews } = useProductReviews();
+  const [reviewTarget, setReviewTarget] = useState<ReviewModalTarget | null>(null);
+
+  function handleOpenReview(
+    item: DemoOrder['items'][number],
+    orderObj: DemoOrder,
+    existing?: ProductReview
+  ) {
+    setReviewTarget({
+      orderId: orderObj.id,
+      orderNumber: orderObj.orderNumber,
+      productId: item.productId,
+      productName: item.productNameSnapshot,
+      productImage: item.imageSnapshot,
+      customerId: customerAccount?.id || orderObj.customerAccountId,
+      customerEmail: customerAccount?.email || orderObj.customer.email,
+      customerPhone: customerAccount?.phone || orderObj.customer.phone,
+      authorName: customerAccount?.fullName || orderObj.customer.fullName,
+      existingReview: existing,
+    });
+  }
   const { pushToast } = useToast();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -917,6 +978,8 @@ export function MobileOrdersPage() {
           order={selectedOrder}
           onBack={() => setSelectedOrderId(null)}
           onOrderCancelled={reloadOrders}
+          allReviews={allReviews}
+          onOpenReview={handleOpenReview}
         />
       ) : ordersSource.length === 0 ? (
         /* EMPTY ORDERS SCREEN */
@@ -1064,36 +1127,76 @@ export function MobileOrdersPage() {
                   )}
 
                   {/* Delivered Order Footer */}
-                  {order.displayStatus === 'Delivered' && order.deliveredOn && (
-                    <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl bg-[#F8F3FF] px-3 py-2">
+                  {order.displayStatus === 'Delivered' && (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-[#F8F3FF] px-3 py-2">
                       <div className="flex min-w-0 items-center gap-1.5">
                         <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#16A34A] text-white">
                           <Check className="h-2.5 w-2.5 stroke-[3]" />
                         </span>
                         <span className="truncate text-[11px] font-medium text-[#4A3566] min-[390px]:text-[11.5px]">
-                          Delivered on{' '}
-                          <strong className="font-bold text-[#2B0B4E]">
-                            {order.deliveredOn}
-                          </strong>
+                          {order.deliveredOn ? (
+                            <>
+                              Delivered on{' '}
+                              <strong className="font-bold text-[#2B0B4E]">
+                                {order.deliveredOn}
+                              </strong>
+                            </>
+                          ) : (
+                            <strong className="font-bold text-[#2B0B4E]">Delivered</strong>
+                          )}
                         </span>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          pushToast({
-                            title: 'Ready to Reorder',
-                            description: `Exploring "${order.primaryProductName}" in GiftKart store.`,
-                            variant: 'success',
-                          });
-                          navigate('/shop');
-                        }}
-                        className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#DEC7FF] bg-white px-3 py-1.5 text-[11px] font-bold text-[#6A11CB] shadow-[0_2px_6px_rgba(106,17,203,0.08)] active:scale-[0.97]"
-                      >
-                        <RefreshCw className="h-3 w-3 stroke-[2.4]" />
-                        <span>Buy Again</span>
-                      </button>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {order.items[0] && (() => {
+                          const firstItem = order.items[0];
+                          const existingRev = allReviews.find(
+                            (r) => r.orderId === order.id && r.productId === firstItem.productId
+                          );
+                          return (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenReview(firstItem, order.rawOrder, existingRev);
+                              }}
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold active:scale-[0.97] ${
+                                existingRev
+                                  ? 'border border-amber-200 bg-amber-50 text-amber-800'
+                                  : 'bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] text-white shadow-xs'
+                              }`}
+                            >
+                              <Star
+                                className={`h-3 w-3 ${
+                                  existingRev
+                                    ? 'fill-amber-400 text-amber-400'
+                                    : 'fill-white text-white'
+                                }`}
+                              />
+                              <span>
+                                {existingRev ? `Rated ${existingRev.rating}★` : 'Rate & Review'}
+                              </span>
+                            </button>
+                          );
+                        })()}
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            pushToast({
+                              title: 'Ready to Reorder',
+                              description: `Exploring "${order.primaryProductName}" in GiftKart store.`,
+                              variant: 'success',
+                            });
+                            navigate('/shop');
+                          }}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#DEC7FF] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#6A11CB] shadow-[0_2px_6px_rgba(106,17,203,0.08)] active:scale-[0.97]"
+                        >
+                          <RefreshCw className="h-3 w-3 stroke-[2.4]" />
+                          <span>Buy Again</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </article>
@@ -1102,6 +1205,14 @@ export function MobileOrdersPage() {
           )}
         </section>
       )}
+
+      <ProductReviewModal
+        target={reviewTarget}
+        onClose={() => setReviewTarget(null)}
+        onSubmitted={() => {
+          refreshReviews();
+        }}
+      />
     </div>
   );
 }

@@ -329,12 +329,22 @@ function mergePublicData(
     }
   }
   if (data.storeSettings && typeof data.storeSettings === 'object') {
+    const incomingSocial = data.storeSettings.socialLinks;
     liveStore.storeSettings = {
       ...SEED_STORE_SETTINGS,
       ...data.storeSettings,
+      supportEmail:
+        data.storeSettings.supportEmail?.trim() || SEED_STORE_SETTINGS.supportEmail,
+      supportPhone:
+        data.storeSettings.supportPhone?.trim() || SEED_STORE_SETTINGS.supportPhone,
       socialLinks: {
-        ...SEED_STORE_SETTINGS.socialLinks!,
-        ...(data.storeSettings.socialLinks ?? {}),
+        instagram:
+          incomingSocial?.instagram?.trim() || SEED_STORE_SETTINGS.socialLinks!.instagram,
+        facebook:
+          incomingSocial?.facebook?.trim() || SEED_STORE_SETTINGS.socialLinks!.facebook,
+        whatsapp:
+          incomingSocial?.whatsapp?.trim() || SEED_STORE_SETTINGS.socialLinks!.whatsapp,
+        youtube: incomingSocial?.youtube?.trim() || '',
       },
       seo: {
         ...SEED_STORE_SETTINGS.seo!,

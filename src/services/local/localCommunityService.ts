@@ -139,10 +139,35 @@ export class LocalCommunityDataService implements ICommunityDataService {
       }
 
       await ensureServerHydrated();
-      const existing = getLiveStore().productReviews;
-      const next = existing.some((r) => r.id === review.id)
-        ? existing.map((r) => (r.id === review.id ? review : r))
-        : [review, ...existing];
+      const store = getLiveStore();
+      if (review.orderId) {
+        const matchedOrder = store.orders.find((o) => o.id === review.orderId);
+        if (matchedOrder && matchedOrder.fulfillmentStatus !== 'Delivered') {
+          throw new Error('Reviews can only be submitted after your order has been delivered.');
+        }
+      }
+
+      const nowIso = new Date().toISOString();
+      const existing = store.productReviews;
+      const existingMatch = existing.find(
+        (r) =>
+          (review.orderId && r.orderId === review.orderId && r.productId === review.productId) ||
+          r.id === review.id
+      );
+
+      const normalizedReview: ProductReview = {
+        ...review,
+        id: existingMatch?.id ?? review.id,
+        verifiedPurchase: true,
+        isSampleData: false,
+        isApproved: true,
+        createdAt: existingMatch?.createdAt ?? review.createdAt ?? nowIso,
+        updatedAt: nowIso,
+      };
+
+      const next = existingMatch
+        ? existing.map((r) => (r.id === existingMatch.id ? normalizedReview : r))
+        : [normalizedReview, ...existing];
       savePublicLocalCollection('productReviews', next, 'community');
       return next;
     }

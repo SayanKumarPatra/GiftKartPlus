@@ -115,12 +115,20 @@ export interface ProductReview {
   id: string;
   productId: string;
   productName: string;
+  orderId?: string;
+  orderNumber?: string;
+  customerId?: string;
+  customerEmail?: string;
+  customerPhone?: string;
   authorName: string;
   rating: number;
   comment: string;
+  photos?: string[];
+  verifiedPurchase?: boolean;
   isSampleData: boolean;
   isApproved: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface NewsletterSubscriber {

@@ -85,8 +85,8 @@ export async function downloadOrderReceiptPdf(
   const storeAddress =
     storeSettings?.serviceCitiesSummary ||
     'Jalchak, Pingla, Paschim Medinipur, West Bengal - 721155';
-  const supportPhone = storeSettings?.supportPhone || '';
-  const supportEmail = storeSettings?.supportEmail || '';
+  const supportPhone = storeSettings?.supportPhone || '+91 9239505791';
+  const supportEmail = storeSettings?.supportEmail || 'hello.giftkart@gmail.com';
   const currentStatus = getStatusDisplayLabel(order.fulfillmentStatus);
   const paymentStatus = normalizePaymentStatus(order);
   const shipping = order.shippingDetails || {};

@@ -2,8 +2,12 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   ChevronRight,
   CreditCard,
+  Facebook,
+  Instagram,
+  Mail,
   MessageCircle,
   Package,
+  Phone,
   RotateCcw,
   ShoppingBag,
   Truck,
@@ -94,6 +98,12 @@ export function MobileHelpSupportPage() {
   const encodedMessage = encodeURIComponent(WHATSAPP_PREFILLED_MESSAGE);
   const cleanPhone = cleanWhatsAppDigits(settings?.supportPhone);
   const whatsappHref = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+  const supportPhoneDisplay = settings?.supportPhone?.trim() || '+91 9239505791';
+  const supportEmail = settings?.supportEmail?.trim() || 'hello.giftkart@gmail.com';
+  const instagramUrl =
+    settings?.socialLinks?.instagram?.trim() || 'https://www.instagram.com/giftkart.online';
+  const facebookUrl =
+    settings?.socialLinks?.facebook?.trim() || 'https://www.facebook.com/share/18v7Ev2crP/';
 
   return (
     <div className="min-h-[calc(100dvh-132px)] w-full overflow-x-clip bg-gradient-to-b from-[#FCE9F6] via-[#FAF0FF] to-[#F6EEFF] pt-1.5">
@@ -229,6 +239,49 @@ export function MobileHelpSupportPage() {
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Direct Contact & Official Social Channels */}
+          <div className="mt-3.5 rounded-[20px] border border-[#EFE2FF] bg-white p-3.5 shadow-[0_4px_14px_rgba(106,17,203,0.06)]">
+            <h2 className="text-[12.5px] font-extrabold text-[#2B0B4E]">
+              Connect with GiftKart
+            </h2>
+            <div className="mt-2 space-y-1.5 text-[12px] font-semibold text-[#4B3568]">
+              <a
+                href={`tel:+${cleanPhone}`}
+                className="flex items-center gap-2 rounded-xl bg-[#FAF6FF] px-3 py-2 text-[#2B0B4E] active:bg-[#F2E6FF]"
+              >
+                <Phone className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
+                <span className="tabular-nums">{supportPhoneDisplay}</span>
+              </a>
+              <a
+                href={`mailto:${supportEmail}`}
+                className="flex items-center gap-2 rounded-xl bg-[#FAF6FF] px-3 py-2 text-[#2B0B4E] active:bg-[#F2E6FF]"
+              >
+                <Mail className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
+                <span className="truncate">{supportEmail}</span>
+              </a>
+            </div>
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-9 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#F58529] via-[#DD2A7B] to-[#8134AF] px-3 text-[11.5px] font-bold text-white shadow-xs active:scale-95"
+              >
+                <Instagram className="h-3.5 w-3.5" />
+                <span>Instagram</span>
+              </a>
+              <a
+                href={facebookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#1877F2] px-3 text-[11.5px] font-bold text-white shadow-xs active:scale-95"
+              >
+                <Facebook className="h-3.5 w-3.5 fill-white" />
+                <span>Facebook</span>
+              </a>
             </div>
           </div>
         </section>

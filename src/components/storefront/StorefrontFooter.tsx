@@ -56,6 +56,17 @@ export function StorefrontFooter() {
     ];
 
   const socialLinks = settings?.socialLinks;
+  const instagramUrl =
+    socialLinks?.instagram?.trim() || 'https://www.instagram.com/giftkart.online';
+  const facebookUrl =
+    socialLinks?.facebook?.trim() || 'https://www.facebook.com/share/18v7Ev2crP/';
+  const whatsappUrl =
+    socialLinks?.whatsapp?.trim() || 'https://wa.me/919239505791';
+  const youtubeUrl = socialLinks?.youtube?.trim() || '';
+  const supportEmail = settings?.supportEmail?.trim() || 'hello.giftkart@gmail.com';
+  const supportPhone = settings?.supportPhone?.trim() || '+91 9239505791';
+  const supportPhoneTel = `tel:+${supportPhone.replace(/\D/g, '').replace(/^91/, '91')}`;
+
   const footerDesc =
     settings?.footerContent?.description?.trim() ||
     'Har Gift Mein Ek Kahani. Personalized mugs, T-shirts, photo frames, and boutique gift wrapping for Jalchak.';
@@ -64,20 +75,23 @@ export function StorefrontFooter() {
     '© 2026 GiftKart. All Rights Reserved.';
   const footerLogoSrc = settings?.logoUrl?.trim() || BRAND_ASSETS.logo;
 
+  const socialItems = [
+    { label: 'Instagram', href: instagramUrl, Icon: Instagram, bg: 'bg-[#6A11CB]/10 text-[#6A11CB]' },
+    { label: 'Facebook', href: facebookUrl, Icon: Facebook, bg: 'bg-[#6A11CB]/10 text-[#6A11CB]' },
+    { label: 'WhatsApp', href: whatsappUrl, Icon: MessageCircle, bg: 'bg-[#25D366]/15 text-[#15803D]' },
+    ...(youtubeUrl
+      ? [{ label: 'YouTube', href: youtubeUrl, Icon: Youtube, bg: 'bg-[#FF4D8D]/12 text-[#FF4D8D]' }]
+      : []),
+  ];
+
   const socialButtons = (
     <div className="flex items-center gap-2">
-      {[
-        { label: 'YouTube', href: socialLinks?.youtube, Icon: Youtube, bg: 'bg-[#FF4D8D]/12 text-[#FF4D8D]' },
-        { label: 'Instagram', href: socialLinks?.instagram, Icon: Instagram, bg: 'bg-[#6A11CB]/10 text-[#6A11CB]' },
-        { label: 'Facebook', href: socialLinks?.facebook, Icon: Facebook, bg: 'bg-[#6A11CB]/10 text-[#6A11CB]' },
-        { label: 'WhatsApp', href: socialLinks?.whatsapp, Icon: MessageCircle, bg: 'bg-[#FF4D8D]/12 text-[#FF4D8D]' },
-      ].map(({ label, href, Icon, bg }) => (
+      {socialItems.map(({ label, href, Icon, bg }) => (
         <a
           key={label}
-          href={href || '#social'}
-          target={href ? '_blank' : undefined}
-          rel={href ? 'noopener noreferrer' : undefined}
-          onClick={!href ? (e) => e.preventDefault() : undefined}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
           aria-label={`GiftKart on ${label}`}
           className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:opacity-80 ${bg}`}
         >
@@ -180,14 +194,20 @@ export function StorefrontFooter() {
               ))}
             </ul>
             <div className="mt-3 space-y-1.5 text-xs text-[#594A6B]">
-              <p className="flex items-center gap-1.5">
+              <a
+                href={`mailto:${supportEmail}`}
+                className="flex items-center gap-1.5 transition-colors hover:text-[#6A11CB]"
+              >
                 <Mail className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
-                <span>{settings?.supportEmail ?? 'hello.giftkart@gmail.com'}</span>
-              </p>
-              <p className="flex items-center gap-1.5">
+                <span>{supportEmail}</span>
+              </a>
+              <a
+                href={supportPhoneTel}
+                className="flex items-center gap-1.5 transition-colors hover:text-[#6A11CB]"
+              >
                 <Phone className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
-                <span>{settings?.supportPhone ?? '+91 9239505791'}</span>
-              </p>
+                <span>{supportPhone}</span>
+              </a>
             </div>
           </div>
         </div>
@@ -215,30 +235,27 @@ export function StorefrontFooter() {
 
             <div className="mt-2.5 flex items-center justify-center gap-2 min-[390px]:gap-2.5">
               <a
-                href={socialLinks?.instagram || '#instagram'}
-                target={socialLinks?.instagram ? '_blank' : undefined}
-                rel={socialLinks?.instagram ? 'noopener noreferrer' : undefined}
-                onClick={!socialLinks?.instagram ? (e) => e.preventDefault() : undefined}
+                href={instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="GiftKart on Instagram"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white shadow-xs transition-transform active:scale-95 min-[390px]:h-9 min-[390px]:w-9"
               >
                 <Instagram className="h-4 w-4 stroke-[2.2]" />
               </a>
               <a
-                href={socialLinks?.facebook || '#facebook'}
-                target={socialLinks?.facebook ? '_blank' : undefined}
-                rel={socialLinks?.facebook ? 'noopener noreferrer' : undefined}
-                onClick={!socialLinks?.facebook ? (e) => e.preventDefault() : undefined}
+                href={facebookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="GiftKart on Facebook"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1877F2] text-white shadow-xs transition-transform active:scale-95 min-[390px]:h-9 min-[390px]:w-9"
               >
                 <Facebook className="h-4 w-4 fill-white stroke-white stroke-[1.5]" />
               </a>
               <a
-                href={socialLinks?.whatsapp || '#whatsapp'}
-                target={socialLinks?.whatsapp ? '_blank' : undefined}
-                rel={socialLinks?.whatsapp ? 'noopener noreferrer' : undefined}
-                onClick={!socialLinks?.whatsapp ? (e) => e.preventDefault() : undefined}
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="GiftKart on WhatsApp"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-[#25D366] text-white shadow-xs transition-transform active:scale-95 min-[390px]:h-9 min-[390px]:w-9"
               >
@@ -340,12 +357,18 @@ export function StorefrontFooter() {
                       <span>{zone}, West Bengal</span>
                     </p>
                   ))}
-                  <p className="text-[10.5px] leading-snug text-[#594A6B]">
-                    {settings?.supportEmail ?? 'hello.giftkart@gmail.com'}
-                  </p>
-                  <p className="text-[10.5px] leading-snug text-[#594A6B]">
-                    {settings?.supportPhone ?? '+91 9239505791'}
-                  </p>
+                  <a
+                    href={`mailto:${supportEmail}`}
+                    className="block text-[10.5px] leading-snug text-[#594A6B] hover:text-[#6A11CB]"
+                  >
+                    {supportEmail}
+                  </a>
+                  <a
+                    href={supportPhoneTel}
+                    className="block text-[10.5px] leading-snug text-[#594A6B] hover:text-[#6A11CB]"
+                  >
+                    {supportPhone}
+                  </a>
                 </div>
               )}
             </div>

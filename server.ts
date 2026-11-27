@@ -1112,17 +1112,122 @@ async function startServer(): Promise<void> {
   });
 
   app.post('/api/public/reviews', (req, res) => {
-    const review = sanitizeDeepStrings(req.body) as Record<string, unknown>;
-    if (!review?.id || !review?.productId || !review?.comment) {
-      res.status(400).json({ error: 'Invalid review data.' });
+    const rawBody = (req.body ?? {}) as Record<string, unknown>;
+    const cleanText = (val: unknown, maxLen: number): string =>
+      typeof val === 'string'
+        ? val.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, maxLen)
+        : '';
+
+    const productId = cleanText(rawBody.productId, 120);
+    const orderId = cleanText(rawBody.orderId, 120);
+    const customerId = cleanText(rawBody.customerId, 120);
+    const customerEmail = cleanText(rawBody.customerEmail, 160).toLowerCase();
+    const customerPhone = cleanText(rawBody.customerPhone, 30).replace(/\D/g, '').slice(-10);
+    const comment = cleanText(rawBody.comment, 1000);
+    const ratingNum = Number(rawBody.rating);
+
+    if (!productId || !orderId) {
+      res.status(400).json({ error: 'Order and product information are required to submit a review.' });
       return;
     }
-    const exists = storeDb.productReviews.some((r) => r.id === review.id);
-    storeDb.productReviews = exists
-      ? storeDb.productReviews.map((r) => (r.id === review.id ? review : r))
-      : [review, ...storeDb.productReviews];
+    if (!Number.isInteger(ratingNum) || ratingNum < 1 || ratingNum > 5) {
+      res.status(400).json({ error: 'Please select a star rating between 1 and 5.' });
+      return;
+    }
+    if (comment.length < 2) {
+      res.status(400).json({ error: 'Please write a short comment about your product.' });
+      return;
+    }
+
+    // Verify order exists, belongs to this customer, is Delivered, and contains this product
+    const matchedOrder = storeDb.orders.find((o) => String(o.id || '') === orderId);
+    if (!matchedOrder) {
+      res.status(404).json({ error: 'Order not found for review verification.' });
+      return;
+    }
+
+    const orderStatusLower = String(matchedOrder.fulfillmentStatus || '').trim().toLowerCase();
+    if (orderStatusLower !== 'delivered' && orderStatusLower !== 'completed') {
+      res.status(403).json({
+        error: 'Reviews can only be submitted after your order has been delivered.',
+      });
+      return;
+    }
+
+    const orderCustomer = (matchedOrder.customer ?? {}) as Record<string, unknown>;
+    const orderCustomerId = String(
+      matchedOrder.customerAccountId || matchedOrder.customerId || ''
+    ).trim();
+    const orderEmail = String(orderCustomer.email || '').trim().toLowerCase();
+    const orderPhone = String(orderCustomer.phone || '').replace(/\D/g, '').slice(-10);
+
+    const ownsOrder =
+      (Boolean(customerId) && Boolean(orderCustomerId) && customerId === orderCustomerId) ||
+      (Boolean(customerEmail) && Boolean(orderEmail) && customerEmail === orderEmail) ||
+      (Boolean(customerPhone) && Boolean(orderPhone) && customerPhone === orderPhone);
+
+    if (!ownsOrder) {
+      res.status(403).json({ error: 'Only the customer who received this order can review it.' });
+      return;
+    }
+
+    const orderItems = Array.isArray(matchedOrder.items)
+      ? (matchedOrder.items as Array<Record<string, unknown>>)
+      : [];
+    const matchedItem = orderItems.find((item) => String(item.productId || '') === productId);
+    if (!matchedItem) {
+      res.status(400).json({ error: 'This product was not part of the specified order.' });
+      return;
+    }
+
+    // Validate optional customer review photos (max 3 safe compressed raster images)
+    const SAFE_IMAGE_DATA_URL = /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/i;
+    const rawPhotos = Array.isArray(rawBody.photos) ? rawBody.photos.slice(0, 3) : [];
+    const safePhotos: string[] = [];
+    for (const p of rawPhotos) {
+      if (typeof p === 'string' && p.length <= 400_000 && SAFE_IMAGE_DATA_URL.test(p)) {
+        safePhotos.push(p);
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    const existing = storeDb.productReviews.find(
+      (r) => String(r.orderId || '') === orderId && String(r.productId || '') === productId
+    );
+    const authorName =
+      cleanText(rawBody.authorName, 80) ||
+      String(orderCustomer.fullName || 'Verified Buyer').trim();
+
+    const verifiedReview: Record<string, unknown> = {
+      id: existing ? String(existing.id) : `rev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      productId,
+      productName:
+        String(matchedItem.productNameSnapshot || cleanText(rawBody.productName, 140) || 'GiftKart Gift'),
+      orderId,
+      orderNumber: String(matchedOrder.orderNumber || ''),
+      customerId: orderCustomerId || customerId || undefined,
+      customerEmail: orderEmail || customerEmail || undefined,
+      customerPhone: orderPhone || customerPhone || undefined,
+      authorName,
+      rating: ratingNum,
+      comment,
+      photos: safePhotos,
+      verifiedPurchase: true,
+      isSampleData: false,
+      isApproved: true,
+      createdAt: existing ? String(existing.createdAt || nowIso) : nowIso,
+      updatedAt: nowIso,
+    };
+
+    storeDb.productReviews = existing
+      ? storeDb.productReviews.map((r) => (String(r.id) === String(existing.id) ? verifiedReview : r))
+      : [verifiedReview, ...storeDb.productReviews];
+
     commitStoreChange(['community']);
-    res.json({ reviews: storeDb.productReviews });
+    res.status(existing ? 200 : 201).json({
+      review: verifiedReview,
+      reviews: storeDb.productReviews,
+    });
   });
 
   // =========================================================================

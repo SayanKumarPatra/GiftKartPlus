@@ -14,11 +14,13 @@ import {
   PencilLine,
   Phone,
   Plus,
+  Star,
   Trash2,
   XCircle,
 } from 'lucide-react';
 import { services } from '../../services/registry';
 import {
+  useProductReviews,
   useSavedAddresses,
   useStoreSettings,
 } from '../../hooks/useStoreData';
@@ -49,6 +51,10 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { ProductImage } from '../../components/ui/ProductImage';
 import { DeliveryVanTracker } from '../../components/order/DeliveryVanTracker';
 import { MobileSavedAddressesPage } from '../../components/storefront/MobileSavedAddressesPage';
+import {
+  ProductReviewModal,
+  type ReviewModalTarget,
+} from '../../components/storefront/ProductReviewModal';
 import { storeEvents } from '../../storage/storeEvents';
 import {
   getOrderBadgeClasses,
@@ -62,12 +68,15 @@ import {
  * ========================================================================== */
 export function OrderDetailsPage() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
+  const { customerAccount } = useAuth();
   const { t } = useLanguage();
+  const { data: allReviews, refresh: refreshReviews } = useProductReviews();
   const [order, setOrder] = useState<DemoOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<ReviewModalTarget | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -250,6 +259,49 @@ export function OrderDetailsPage() {
                     Photo Attached: {item.customPhotoFileName}
                   </p>
                 )}
+                {displayStatus === 'Delivered' && (() => {
+                  const existingRev = allReviews.find(
+                    (r) => r.orderId === order.id && r.productId === item.productId
+                  );
+                  return (
+                    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] px-3 py-2">
+                      <span className="text-xs font-semibold text-[#594A6B]">
+                        {existingRev
+                          ? `You rated ${existingRev.rating}/5 ★ — Live on product page`
+                          : 'Order delivered! Rate this product, add photos & share feedback.'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setReviewTarget({
+                            orderId: order.id,
+                            orderNumber: order.orderNumber,
+                            productId: item.productId,
+                            productName: item.productNameSnapshot,
+                            productImage: item.imageSnapshot,
+                            customerId: customerAccount?.id || order.customerAccountId,
+                            customerEmail: customerAccount?.email || order.customer.email,
+                            customerPhone: customerAccount?.phone || order.customer.phone,
+                            authorName: customerAccount?.fullName || order.customer.fullName,
+                            existingReview: existingRev,
+                          })
+                        }
+                        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-transform active:scale-95 ${
+                          existingRev
+                            ? 'border border-[#DEC7FF] bg-white text-[#6A11CB] hover:bg-[#F5ECFF]'
+                            : 'bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] text-white shadow-xs'
+                        }`}
+                      >
+                        <Star
+                          className={`h-3.5 w-3.5 ${
+                            existingRev ? 'fill-amber-400 text-amber-400' : 'fill-white text-white'
+                          }`}
+                        />
+                        <span>{existingRev ? 'Edit Review' : 'Rate & Review'}</span>
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           ))}
@@ -426,6 +478,14 @@ export function OrderDetailsPage() {
           )}
         </div>
       </div>
+
+      <ProductReviewModal
+        target={reviewTarget}
+        onClose={() => setReviewTarget(null)}
+        onSubmitted={() => {
+          refreshReviews();
+        }}
+      />
     </div>
   );
 }
