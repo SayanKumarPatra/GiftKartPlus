@@ -230,22 +230,22 @@ export function NotificationBell({ variant }: NotificationBellProps) {
             </button>
           </div>
 
-          {/* Lock-Screen Push & Sound Opt-In Bar */}
+          {/* Website Browser Push & Sound Opt-In Bar */}
           {pushSupport !== 'unsupported' && (
             <div className="border-b border-[#EFE3FF] bg-[#FCFAFF] px-3.5 py-2.5">
               {pushSupport === 'ios-needs-install' ? (
                 <p className="text-[11px] font-medium leading-snug text-[#594A6B]">
-                  For iPhone lock-screen alerts, tap <strong>Share → Add to Home Screen</strong> first.
+                  On iPhone Safari, tap <strong>Share → Add to Home Screen</strong> once to allow browser push alerts.
                 </p>
               ) : permissionState === 'denied' ? (
                 <p className="text-[11px] font-medium leading-snug text-rose-700">
-                  Notifications are blocked in browser site settings. Allow them to get phone alerts.
+                  Website notifications are blocked in browser settings. Allow them to get alerts.
                 </p>
               ) : pushEnabled ? (
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-1.5 text-[11.5px] font-bold text-emerald-700">
                     <BellRing className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">Phone &amp; Sound Alerts On</span>
+                    <span className="truncate">Website Push &amp; Sound On</span>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <button
@@ -270,10 +270,10 @@ export function NotificationBell({ variant }: NotificationBellProps) {
                 <div className="flex items-center justify-between gap-2.5">
                   <div className="min-w-0">
                     <p className="text-[11.5px] font-extrabold text-[#1E1035]">
-                      Phone Lock-Screen Alerts
+                      Instant Browser &amp; Mobile Alerts
                     </p>
                     <p className="text-[10.5px] leading-tight text-[#685782]">
-                      Get instant offer &amp; order updates with sound
+                      Get website offer &amp; order notifications with sound
                     </p>
                   </div>
                   <button

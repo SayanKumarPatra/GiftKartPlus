@@ -286,10 +286,10 @@ export function AdminNotificationsPage() {
             </span>
             <div>
               <h2 className="text-[14.5px] font-extrabold text-[#1E1035]">
-                Store &amp; Phone Push Alerts
+                Website &amp; Browser Push Alerts
               </h2>
               <p className="text-[11.5px] text-[#75648E]">
-                {activeCount}/{notifications.length} active · Lock-screen push &amp; GiftKart chime
+                {activeCount}/{notifications.length} active · Lock-screen web push &amp; GiftKart chime
               </p>
             </div>
           </div>
@@ -316,7 +316,7 @@ export function AdminNotificationsPage() {
           </div>
         </div>
 
-        {/* Live Subscribed Phones Strip */}
+        {/* Live Subscribed Browsers/Devices Strip */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#EBD8FF] bg-[#FAF6FF] px-3 py-2.5 text-[11.5px] text-[#4A3860]">
           <div className="flex items-center gap-2">
             <Smartphone className="h-4 w-4 shrink-0 text-[#6A11CB]" />
@@ -324,7 +324,7 @@ export function AdminNotificationsPage() {
               <strong className="font-extrabold text-[#1E1035] tabular-nums">
                 {pushStats ? pushStats.totalDevices : 0}
               </strong>{' '}
-              {(pushStats?.totalDevices ?? 0) === 1 ? 'device' : 'devices'} subscribed for lock-screen push
+              {(pushStats?.totalDevices ?? 0) === 1 ? 'browser' : 'browsers'} subscribed for web push alerts
             </span>
           </div>
           <span className="text-[10.5px] font-semibold text-[#685782]">

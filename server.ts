@@ -1,10 +1,14 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import dotenv from 'dotenv';
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
-import webpush from 'web-push';
+import type * as WebPushType from 'web-push';
+
+const require = createRequire(import.meta.url);
+const webpush = require('web-push') as typeof WebPushType;
 
 dotenv.config();
 
