@@ -1,35 +1,47 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  AlertTriangle,
   ArrowLeft,
   Bell,
+  Box,
+  Calendar,
   CalendarClock,
+  Check,
   CheckCircle2,
   ChevronRight,
   Clock,
+  Coins,
   CreditCard,
-  Download,
+  FileDown,
+  FileText,
   Gift,
   History,
   Lock,
   Mail,
   MapPin,
+  Navigation,
   Package,
   Phone,
   Printer,
+  RefreshCw,
+  RotateCcw,
   Search,
+  Settings,
   ShieldCheck,
   ShoppingBag,
-  Sparkles,
   Truck,
   User,
+  Wallet,
+  XCircle,
 } from 'lucide-react';
 import { useOrders, useStoreSettings } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
 import { formatDateTime, formatInr } from '../../utils/format';
 import {
-  ALL_ADMIN_ORDER_STATUSES,
   CANONICAL_PAYMENT_STATUSES,
+  CORE_ORDER_STAGES,
+  EXCEPTION_ORDER_STATUSES,
   getAutoNotificationMessage,
   getOrderBadgeClasses,
   getPaymentBadgeClasses,
@@ -100,6 +112,52 @@ function matchesFilter(order: DemoOrder, tab: OrderFilterTab): boolean {
   return canonical === tab;
 }
 
+function getTileShortLabel(status: CanonicalOrderStatus): string {
+  switch (status) {
+    case 'New Order':
+      return 'New';
+    case 'Processing':
+      return 'Processing';
+    case 'Packed':
+      return 'Packed';
+    case 'Shipped':
+      return 'Shipped';
+    case 'In Transit':
+      return 'In Transit';
+    case 'Out for Delivery':
+      return 'Out for Delivery';
+    case 'Delivered':
+      return 'Delivered';
+    default:
+      return status;
+  }
+}
+
+function StatusTileIcon({ status }: { status: CanonicalOrderStatus }) {
+  switch (status) {
+    case 'New Order':
+      return <Box className="h-5 w-5" />;
+    case 'Processing':
+      return <Settings className="h-5 w-5" />;
+    case 'Packed':
+      return <Gift className="h-5 w-5" />;
+    case 'Shipped':
+      return <Truck className="h-5 w-5" />;
+    case 'In Transit':
+      return <Navigation className="h-5 w-5" />;
+    case 'Out for Delivery':
+      return <Truck className="h-5 w-5" />;
+    case 'Delivered':
+      return <CheckCircle2 className="h-5 w-5" />;
+    case 'Cancelled':
+      return <XCircle className="h-4 w-4" />;
+    case 'Delivery Failed':
+      return <AlertTriangle className="h-4 w-4" />;
+    case 'Returned':
+      return <RotateCcw className="h-4 w-4" />;
+  }
+}
+
 export function AdminOrdersPage() {
   const navigate = useNavigate();
   const { data: orders } = useOrders();
@@ -122,6 +180,7 @@ export function AdminOrdersPage() {
   const [collectedAmountDraft, setCollectedAmountDraft] = useState<string>('0');
   const [collectionDateDraft, setCollectionDateDraft] = useState<string>(toDateTimeLocalValue());
   const [paymentNoteDraft, setPaymentNoteDraft] = useState<string>('');
+  const [paymentEditorOpen, setPaymentEditorOpen] = useState(false);
   const [confirmPaidOpen, setConfirmPaidOpen] = useState(false);
   const [savingPayment, setSavingPayment] = useState(false);
 
@@ -174,6 +233,7 @@ export function AdminOrdersPage() {
         : toDateTimeLocalValue()
     );
     setPaymentNoteDraft(existingPay?.note || '');
+    setPaymentEditorOpen(false);
   }, [selectedOrder?.id, selectedOrder?.updatedAt]);
 
   const filteredOrders = useMemo(() => {
@@ -278,6 +338,7 @@ export function AdminOrdersPage() {
         note: paymentNoteDraft.trim() || undefined,
       });
       setConfirmPaidOpen(false);
+      setPaymentEditorOpen(false);
       if (result.notificationSent) {
         showNotice(
           `Payment marked as ${targetStatus} for #${selectedOrder.orderNumber}. Customer notified.`
@@ -327,7 +388,7 @@ export function AdminOrdersPage() {
   }
 
   // =========================================================================
-  // ORDER DETAILS PROFESSIONAL MANAGEMENT VIEW
+  // ORDER DETAILS VIEW — STYLED TO MATCH USER'S GIFTKART PREMIUM MOCKUP
   // =========================================================================
   if (selectedOrder) {
     const canonicalStatus = normalizeOrderStatus(selectedOrder.fulfillmentStatus);
@@ -344,772 +405,784 @@ export function AdminOrdersPage() {
       : [];
     const activityTimeline = [...(selectedOrder.statusHistory || [])].reverse();
     const cleanPhone = (selectedOrder.customer.phone || '').replace(/[^+\d]/g, '');
+    const collectedDisplay =
+      selectedOrder.paymentDetails?.collectedAmountInr ??
+      (isAlreadyPaid ? selectedOrder.grandTotalInr : 0);
 
     return (
-      <div className="space-y-4 pb-6">
+      <div className="mx-auto max-w-4xl pb-6">
         <AdminToast
           message={toast?.message ?? null}
           tone={toast?.tone}
           onClose={() => setToast(null)}
         />
 
-        {/* Top Back Navigation + Received Copy Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
-          <button
-            type="button"
-            onClick={() => setSelectedOrderId(null)}
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs font-extrabold text-[#6A11CB] shadow-xs transition-colors hover:bg-[#F8F2FF]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Orders</span>
-          </button>
-
-          <div className="flex flex-wrap items-center gap-2">
+        {/* Purple Branded Top Header + Soft Lavender Surface Wrapper */}
+        <div className="overflow-hidden rounded-[28px] border border-[#EBD8FF] bg-gradient-to-b from-[#EDE0FF] via-[#F6EEFF] to-[#FCEFF8] shadow-[0_18px_42px_-20px_rgba(106,17,203,0.3)]">
+          {/* Top Purple Navigation Bar */}
+          <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-[#6A11CB] via-[#7B1FE0] to-[#9333EA] px-4 py-3.5 text-white">
             <button
               type="button"
-              disabled={generatingPdf}
-              onClick={() => void handleDownloadReceivedCopy()}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#540CA6] px-3.5 py-2 text-xs font-extrabold text-white shadow-sm transition-all hover:opacity-95 disabled:opacity-60"
+              onClick={() => setSelectedOrderId(null)}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-extrabold text-white backdrop-blur-xs transition-colors hover:bg-white/25"
             >
-              <Download className="h-3.5 w-3.5" />
-              <span>{generatingPdf ? 'Generating PDF...' : 'Received Copy (PDF)'}</span>
+              <ArrowLeft className="h-3.5 w-3.5 stroke-[2.4]" />
+              <span>Back to Orders</span>
             </button>
+
+            <h2 className="text-[15px] font-extrabold tracking-tight text-white">
+              Order Details
+            </h2>
+
             <button
               type="button"
               onClick={handlePrintReceivedCopy}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-[#EBD8FF] bg-white px-3 py-2 text-xs font-extrabold text-[#6A11CB] shadow-xs transition-colors hover:bg-[#F8F2FF]"
+              title="Print Received Copy"
+              className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-white/15 px-2.5 py-1.5 text-[11px] font-bold text-white backdrop-blur-xs transition-colors hover:bg-white/25"
             >
               <Printer className="h-3.5 w-3.5" />
-              <span>Print Copy</span>
+              <span className="hidden sm:inline">Print</span>
             </button>
           </div>
-        </div>
 
-        {/* Order Overview Header Card */}
-        <div className="rounded-3xl border border-[#EBD8FF] bg-white p-4 shadow-[0_10px_28px_-16px_rgba(106,17,203,0.2)] sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-extrabold tracking-tight text-[#2B0B4E] sm:text-xl">
-                  Order #{selectedOrder.orderNumber}
-                </h2>
+          <div className="space-y-3.5 p-3 sm:p-4">
+            {/* 1. ORDER OVERVIEW SUMMARY CARD */}
+            <section className="rounded-[24px] border border-white/80 bg-white/95 p-4 shadow-[0_10px_28px_-16px_rgba(106,17,203,0.22)]">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#EBD8FF] bg-gradient-to-br from-[#F4EAFF] to-[#EBD8FF]/70 text-[#6A11CB]">
+                    <ShoppingBag className="h-5 w-5 stroke-[2.2]" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-[17px] font-extrabold tracking-tight text-[#2B0B4E] sm:text-[19px]">
+                      #{selectedOrder.orderNumber}
+                    </h3>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-[11.5px] font-semibold text-[#6E5B85]">
+                      <CalendarClock className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
+                      <span className="truncate">Placed: {formatDateTime(selectedOrder.createdAt)}</span>
+                    </p>
+                  </div>
+                </div>
+
                 <span
-                  className={`rounded-full border px-2.5 py-0.5 text-[11px] font-extrabold ${getOrderBadgeClasses(
+                  className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[11.5px] font-extrabold shadow-xs ${getOrderBadgeClasses(
                     canonicalStatus
                   )}`}
                 >
                   {getStatusDisplayLabel(canonicalStatus)}
                 </span>
-                <span
-                  className={`rounded-full border px-2.5 py-0.5 text-[11px] font-extrabold ${getPaymentBadgeClasses(
-                    canonicalPayment
-                  )}`}
-                >
-                  Payment: {canonicalPayment}
-                </span>
               </div>
-              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#6E5B85]">
-                <span className="inline-flex items-center gap-1">
-                  <CalendarClock className="h-3.5 w-3.5 text-[#6A11CB]" />
-                  Placed: {formatDateTime(selectedOrder.createdAt)}
-                </span>
-                <span>
-                  Updated: {formatDateTime(selectedOrder.updatedAt)}
-                </span>
-              </p>
-            </div>
 
-            <div className="rounded-2xl border border-[#EBD8FF] bg-[#F8F2FF] px-4 py-2 text-right">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#6E5B85]">
-                Grand Total
-              </p>
-              <p className="text-lg font-extrabold tabular-nums text-[#6A11CB]">
-                {formatInr(selectedOrder.grandTotalInr)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Animated GiftKart Branded Delivery Van Tracker */}
-        <DeliveryVanTracker order={selectedOrder} />
-
-        {/* Responsive 2-Column Workspace */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-          {/* LEFT COLUMN: Admin Controls (Status Update + COD Payment + Notifications) */}
-          <div className="space-y-4 lg:col-span-7">
-            {/* 1. Dynamic Order Status Update Control */}
-            <section className="rounded-3xl border border-[#EBD8FF] bg-white p-4 shadow-[0_10px_28px_-16px_rgba(106,17,203,0.18)] sm:p-5">
-              <div className="flex items-center justify-between gap-2 border-b border-[#F2E9FF] pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5EAFF] text-[#6A11CB]">
-                    <Truck className="h-4 w-4" />
+              <div className="mt-3.5 grid grid-cols-1 gap-2.5 border-t border-[#F2E9FF] pt-3 sm:grid-cols-2 sm:items-center">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-[#2B0B4E]">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F5EAFF] text-[#6A11CB]">
+                    <Wallet className="h-4 w-4" />
                   </span>
-                  <div>
-                    <h3 className="text-sm font-extrabold text-[#2B0B4E]">
-                      Update Order Status
-                    </h3>
-                    <p className="text-[11px] text-[#6E5B85]">
-                      Saving automatically updates tracking &amp; notifies the customer in-app
-                    </p>
-                  </div>
+                  <span className="truncate">
+                    {selectedOrder.paymentMethod || 'Cash on Delivery (COD)'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 sm:justify-end sm:border-l sm:border-[#EFE3FF] sm:pl-4">
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-[#5B4874]">
+                    <Coins className="h-4 w-4 text-[#6A11CB]" />
+                    <span>Order Amount</span>
+                  </span>
+                  <span className="text-[19px] font-extrabold tabular-nums text-[#6A11CB]">
+                    {formatInr(selectedOrder.grandTotalInr)}
+                  </span>
                 </div>
               </div>
+            </section>
 
-              <div className="mt-4 space-y-3.5">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-[11.5px] font-bold text-[#3E2A56]">
-                      Order Status
-                    </label>
-                    <select
-                      value={nextStatus}
-                      onChange={(e) => setNextStatus(e.target.value as CanonicalOrderStatus)}
-                      className="h-11 w-full rounded-xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 text-xs font-bold text-[#2B0B4E] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+            {/* 2. ORDER PROGRESS & ANIMATED RUNNING GIFTKART VAN */}
+            <DeliveryVanTracker order={selectedOrder} />
+
+            {/* 3. UPDATE ORDER STATUS CARD (VISUAL ICON TILE GRID) */}
+            <section className="rounded-[26px] border border-white/80 bg-white/95 p-4 shadow-[0_12px_30px_-16px_rgba(106,17,203,0.2)] sm:p-5">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#F4EAFF] text-[#6A11CB]">
+                  <RefreshCw className="h-4 w-4" />
+                </span>
+                <h3 className="text-[15px] font-extrabold text-[#2B0B4E]">
+                  Update Order Status
+                </h3>
+              </div>
+
+              {/* 7-Stage Visual Status Tiles */}
+              <div className="mt-3.5 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-7">
+                {CORE_ORDER_STAGES.map((st) => {
+                  const selected = nextStatus === st;
+                  return (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setNextStatus(st)}
+                      className={`relative flex min-h-[70px] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-2.5 text-center transition-all active:scale-[0.97] ${
+                        selected
+                          ? 'border-[#6A11CB] bg-gradient-to-b from-[#7B1FE0] to-[#6A11CB] text-white shadow-[0_10px_22px_-8px_rgba(106,17,203,0.58)]'
+                          : 'border-[#EBD8FF] bg-[#FAF7FF] text-[#6A11CB] hover:border-[#6A11CB]/45 hover:bg-[#F4EAFF]/60'
+                      }`}
                     >
-                      {ALL_ADMIN_ORDER_STATUSES.map((st) => (
-                        <option key={st} value={st}>
-                          {getStatusDisplayLabel(st)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      {selected && (
+                        <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#6A11CB] shadow-xs">
+                          <Check className="h-2.5 w-2.5 stroke-[3.2]" />
+                        </span>
+                      )}
+                      <StatusTileIcon status={st} />
+                      <span
+                        className={`text-[10.5px] leading-tight ${
+                          selected ? 'font-extrabold text-white' : 'font-bold text-[#2B0B4E]'
+                        }`}
+                      >
+                        {getTileShortLabel(st)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
+              {/* Exception Status Selector Row (Cancelled / Delivery Failed / Returned) */}
+              <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                <span className="mr-1 text-[10.5px] font-bold uppercase tracking-wider text-[#6E5B85]">
+                  Other Status:
+                </span>
+                {EXCEPTION_ORDER_STATUSES.map((st) => {
+                  const selected = nextStatus === st;
+                  return (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setNextStatus(st)}
+                      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-extrabold transition-all ${
+                        selected
+                          ? 'border-[#FF4D8D] bg-[#FF4D8D] text-white shadow-xs'
+                          : 'border-[#F7CFE1] bg-[#FFF4F9] text-[#B8205B] hover:border-[#FF4D8D]'
+                      }`}
+                    >
+                      <StatusTileIcon status={st} />
+                      <span>{st}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Dynamic Status-Specific Shipping Fields */}
+              {nextStatus === 'Packed' && (
+                <div className="mt-3.5 grid grid-cols-1 gap-2.5 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-3 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-[11.5px] font-bold text-[#3E2A56]">
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#6A11CB]">
+                      Packing Completed Date
+                    </label>
+                    <input
+                      type="date"
+                      value={shippingForm.packingCompletedAt || ''}
+                      onChange={(e) => updateShippingField('packingCompletedAt', e.target.value)}
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#6A11CB]">
+                      Packing Note
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingForm.packingNote || ''}
+                      onChange={(e) => updateShippingField('packingNote', e.target.value)}
+                      placeholder="e.g. Gift wrapped with protective box"
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {nextStatus === 'Shipped' && (
+                <div className="mt-3.5 grid grid-cols-1 gap-2.5 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-3 sm:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#6A11CB]">
+                      Courier Name
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingForm.courierName || ''}
+                      onChange={(e) => updateShippingField('courierName', e.target.value)}
+                      placeholder="e.g. GiftKart Express / Delhivery"
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#6A11CB]">
+                      Tracking ID
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingForm.trackingId || ''}
+                      onChange={(e) => updateShippingField('trackingId', e.target.value)}
+                      placeholder="e.g. GKEXP784563"
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 font-mono text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#6A11CB]">
+                      Shipping Date
+                    </label>
+                    <input
+                      type="date"
+                      value={shippingForm.shippedDate || ''}
+                      onChange={(e) => updateShippingField('shippedDate', e.target.value)}
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {nextStatus === 'In Transit' && (
+                <div className="mt-3.5 grid grid-cols-1 gap-2.5 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#6A11CB]">
+                      Current Shipping Update
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingForm.currentShippingUpdate || ''}
+                      onChange={(e) => updateShippingField('currentShippingUpdate', e.target.value)}
+                      placeholder="e.g. Arrived at regional hub"
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#6A11CB]">
+                      Expected Delivery Date
+                    </label>
+                    <input
+                      type="date"
+                      value={shippingForm.expectedDeliveryDate || ''}
+                      onChange={(e) => updateShippingField('expectedDeliveryDate', e.target.value)}
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {nextStatus === 'Out for Delivery' && (
+                <div className="mt-3.5 grid grid-cols-1 gap-2.5 rounded-2xl border border-[#FF4D8D]/25 bg-[#FFF2F7] p-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#FF4D8D]">
+                      Delivery Date
+                    </label>
+                    <input
+                      type="date"
+                      value={shippingForm.outForDeliveryDate || ''}
+                      onChange={(e) => updateShippingField('outForDeliveryDate', e.target.value)}
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#FF4D8D] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#FF4D8D]">
+                      Delivery Remarks
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingForm.deliveryRemarks || ''}
+                      onChange={(e) => updateShippingField('deliveryRemarks', e.target.value)}
+                      placeholder="e.g. Delivery partner will call before reaching"
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#FF4D8D] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {nextStatus === 'Delivered' && (
+                <div className="mt-3.5 grid grid-cols-1 gap-2.5 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#6A11CB]">
+                      Delivered Date &amp; Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={shippingForm.deliveredAt || ''}
+                      onChange={(e) => updateShippingField('deliveredAt', e.target.value)}
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#6A11CB]">
+                      Delivery Confirmation
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingForm.deliveryConfirmation || ''}
+                      onChange={(e) => updateShippingField('deliveryConfirmation', e.target.value)}
+                      placeholder="e.g. Handed directly to customer"
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {(nextStatus === 'Cancelled' ||
+                nextStatus === 'Delivery Failed' ||
+                nextStatus === 'Returned') && (
+                <div className="mt-3.5 grid grid-cols-1 gap-2.5 rounded-2xl border border-[#FF4D8D]/30 bg-[#FFF2F7] p-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#C81E62]">
+                      {nextStatus} Reason
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingForm.exceptionReason || ''}
+                      onChange={(e) => updateShippingField('exceptionReason', e.target.value)}
+                      placeholder={`Enter reason for ${nextStatus.toLowerCase()}`}
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#FF4D8D] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-extrabold text-[#C81E62]">
+                      Remarks
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingForm.deliveryRemarks || ''}
+                      onChange={(e) => updateShippingField('deliveryRemarks', e.target.value)}
+                      placeholder="Additional delivery or return note"
+                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#FF4D8D] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Update Date & Time + Customer Note Inputs (Matches Mockup Side-by-Side) */}
+              <div className="mt-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <div className="flex items-center gap-2.5 rounded-2xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 py-2">
+                  <Calendar className="h-4.5 w-4.5 shrink-0 text-[#6A11CB]" />
+                  <div className="min-w-0 flex-1">
+                    <label className="block text-[10px] font-bold text-[#6E5B85]">
                       Update Date &amp; Time
                     </label>
                     <input
                       type="datetime-local"
                       value={updateDateTime}
                       onChange={(e) => setUpdateDateTime(e.target.value)}
-                      className="h-11 w-full rounded-xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+                      className="mt-0.5 w-full bg-transparent text-xs font-extrabold text-[#2B0B4E] focus:outline-none"
                     />
                   </div>
                 </div>
 
-                {/* Dynamic Status-Specific Shipping Fields */}
-                {nextStatus === 'Packed' && (
-                  <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-3.5 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#6A11CB]">
-                        Packing Completed Date
-                      </label>
-                      <input
-                        type="date"
-                        value={shippingForm.packingCompletedAt || ''}
-                        onChange={(e) => updateShippingField('packingCompletedAt', e.target.value)}
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#6A11CB]">
-                        Packing Note
-                      </label>
-                      <input
-                        type="text"
-                        value={shippingForm.packingNote || ''}
-                        onChange={(e) => updateShippingField('packingNote', e.target.value)}
-                        placeholder="e.g. Bubble wrapped with gift ribbon"
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                      />
-                    </div>
+                <div className="flex items-center gap-2.5 rounded-2xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 py-2">
+                  <FileText className="h-4.5 w-4.5 shrink-0 text-[#6A11CB]" />
+                  <div className="min-w-0 flex-1">
+                    <label className="block text-[10px] font-bold text-[#6E5B85]">
+                      Customer Note (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={customerNote}
+                      onChange={(e) => setCustomerNote(e.target.value)}
+                      placeholder="Add note (e.g. Shipped via GiftKart Express...)"
+                      className="mt-0.5 w-full bg-transparent text-xs font-semibold text-[#2B0B4E] placeholder:text-[#9A88B4] focus:outline-none"
+                    />
                   </div>
-                )}
-
-                {nextStatus === 'Shipped' && (
-                  <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-3.5 sm:grid-cols-3">
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#6A11CB]">
-                        Courier Name
-                      </label>
-                      <input
-                        type="text"
-                        value={shippingForm.courierName || ''}
-                        onChange={(e) => updateShippingField('courierName', e.target.value)}
-                        placeholder="e.g. Delhivery / DTDC / GiftKart Local"
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#6A11CB]">
-                        Tracking ID
-                      </label>
-                      <input
-                        type="text"
-                        value={shippingForm.trackingId || ''}
-                        onChange={(e) => updateShippingField('trackingId', e.target.value)}
-                        placeholder="e.g. GKTRK984512"
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 font-mono text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#6A11CB]">
-                        Shipping Date
-                      </label>
-                      <input
-                        type="date"
-                        value={shippingForm.shippedDate || ''}
-                        onChange={(e) => updateShippingField('shippedDate', e.target.value)}
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {nextStatus === 'In Transit' && (
-                  <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-3.5 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#6A11CB]">
-                        Current Shipping Update
-                      </label>
-                      <input
-                        type="text"
-                        value={shippingForm.currentShippingUpdate || ''}
-                        onChange={(e) =>
-                          updateShippingField('currentShippingUpdate', e.target.value)
-                        }
-                        placeholder="e.g. Reached Kharagpur Regional Hub"
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#6A11CB]">
-                        Expected Delivery Date
-                      </label>
-                      <input
-                        type="date"
-                        value={shippingForm.expectedDeliveryDate || ''}
-                        onChange={(e) =>
-                          updateShippingField('expectedDeliveryDate', e.target.value)
-                        }
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {nextStatus === 'Out for Delivery' && (
-                  <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#FF4D8D]/25 bg-[#FFF0F6]/70 p-3.5 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#FF4D8D]">
-                        Delivery Date
-                      </label>
-                      <input
-                        type="date"
-                        value={shippingForm.outForDeliveryDate || ''}
-                        onChange={(e) =>
-                          updateShippingField('outForDeliveryDate', e.target.value)
-                        }
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#FF4D8D] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#FF4D8D]">
-                        Delivery Remarks
-                      </label>
-                      <input
-                        type="text"
-                        value={shippingForm.deliveryRemarks || ''}
-                        onChange={(e) => updateShippingField('deliveryRemarks', e.target.value)}
-                        placeholder="e.g. Delivery partner will call before arrival"
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#FF4D8D] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {nextStatus === 'Delivered' && (
-                  <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-3.5 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#6A11CB]">
-                        Delivered Date &amp; Time
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={shippingForm.deliveredAt || ''}
-                        onChange={(e) => updateShippingField('deliveredAt', e.target.value)}
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#6A11CB]">
-                        Delivery Confirmation
-                      </label>
-                      <input
-                        type="text"
-                        value={shippingForm.deliveryConfirmation || ''}
-                        onChange={(e) =>
-                          updateShippingField('deliveryConfirmation', e.target.value)
-                        }
-                        placeholder="e.g. Handed directly to customer"
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {(nextStatus === 'Cancelled' ||
-                  nextStatus === 'Delivery Failed' ||
-                  nextStatus === 'Returned') && (
-                  <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#FF4D8D]/30 bg-[#FFF0F6]/70 p-3.5 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#C81E62]">
-                        {nextStatus} Reason
-                      </label>
-                      <input
-                        type="text"
-                        value={shippingForm.exceptionReason || ''}
-                        onChange={(e) => updateShippingField('exceptionReason', e.target.value)}
-                        placeholder={`Reason for ${nextStatus.toLowerCase()}`}
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#FF4D8D] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold text-[#C81E62]">
-                        Remarks
-                      </label>
-                      <input
-                        type="text"
-                        value={shippingForm.deliveryRemarks || ''}
-                        onChange={(e) => updateShippingField('deliveryRemarks', e.target.value)}
-                        placeholder="Additional delivery or return remarks"
-                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#FF4D8D] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Customer Note */}
-                <div>
-                  <label className="mb-1 block text-[11.5px] font-bold text-[#3E2A56]">
-                    Customer Note (Optional)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={customerNote}
-                    onChange={(e) => setCustomerNote(e.target.value)}
-                    placeholder="Add a helpful note saved to the activity timeline..."
-                    className="w-full rounded-xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 py-2 text-xs font-medium text-[#2B0B4E] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                  />
                 </div>
+              </div>
 
-                {/* Automatic Customer Notification Preview */}
-                <div className="flex items-start gap-2.5 rounded-2xl border border-[#EBD8FF] bg-gradient-to-r from-[#F8F2FF] to-[#FFF0F6] p-3 text-xs">
-                  <Bell className="mt-0.5 h-4 w-4 shrink-0 text-[#6A11CB]" />
+              {/* Automatic Notify Customer Banner (Matches Mockup) */}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-[#F9D6E7] bg-gradient-to-r from-[#FFF0F6] via-[#FFF6FA] to-[#F9F2FF] px-3.5 py-2.5">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#FF4D8D] shadow-xs">
+                    <Bell className="h-4 w-4" />
+                  </span>
                   <div className="min-w-0">
-                    <p className="font-extrabold text-[#2B0B4E]">
-                      Automatic In-App Customer Notification
-                      {willSkipDuplicateNotification ? ' (Already Sent for This Status)' : ''}
-                    </p>
-                    <p className="mt-0.5 text-[11.5px] text-[#5B4874]">
+                    <p className="text-xs font-extrabold text-[#2B0B4E]">Notify Customer</p>
+                    <p className="truncate text-[11px] font-medium text-[#5B4874]">
                       &ldquo;{getAutoNotificationMessage(nextStatus)}&rdquo;
                     </p>
                   </div>
                 </div>
 
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-3 py-1 text-[11px] font-extrabold text-emerald-700 shadow-xs">
+                  <span>{willSkipDuplicateNotification ? 'Already Sent' : 'Auto Notify'}</span>
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                </span>
+              </div>
+
+              {/* Dual Primary Action Buttons Row: Save & Update Status | Received Copy (PDF) */}
+              <div className="mt-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 <button
                   type="button"
                   disabled={savingStatus}
                   onClick={() => void handleSaveOrderStatus()}
-                  className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#6A11CB] via-[#7E1DE0] to-[#FF4D8D] text-xs font-extrabold text-white shadow-[0_10px_24px_-10px_rgba(106,17,203,0.6)] transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-60"
+                  className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#6A11CB] to-[#540CA6] px-5 text-xs font-extrabold text-white shadow-[0_10px_22px_-8px_rgba(106,17,203,0.58)] transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-60"
                 >
-                  <Sparkles className="h-4 w-4" />
-                  <span>{savingStatus ? 'Saving Status...' : 'Save & Update Order Status'}</span>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>{savingStatus ? 'Saving Status...' : 'Save & Update Status'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={generatingPdf}
+                  onClick={() => void handleDownloadReceivedCopy()}
+                  className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full border-2 border-[#6A11CB]/70 bg-white px-5 text-xs font-extrabold text-[#6A11CB] shadow-xs transition-all hover:bg-[#F8F2FF] active:scale-[0.99] disabled:opacity-60"
+                >
+                  <FileDown className="h-4 w-4" />
+                  <span>{generatingPdf ? 'Generating PDF...' : 'Received Copy'}</span>
+                  <span className="rounded bg-[#FFF0F6] px-1.5 py-0.5 text-[9.5px] font-extrabold text-[#FF4D8D]">
+                    PDF
+                  </span>
                 </button>
               </div>
             </section>
 
-            {/* 2. COD Payment Management (Strictly Decoupled from Order Status) */}
-            <section className="rounded-3xl border border-[#EBD8FF] bg-white p-4 shadow-[0_10px_28px_-16px_rgba(106,17,203,0.18)] sm:p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F2E9FF] pb-3">
+            {/* 4. PAYMENT UPDATE CARD (Strictly Decoupled from Delivery Status) */}
+            <section className="rounded-[26px] border border-white/80 bg-white/95 p-4 shadow-[0_12px_30px_-16px_rgba(106,17,203,0.2)] sm:p-5">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0F6] text-[#FF4D8D]">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#F4EAFF] text-[#6A11CB]">
                     <CreditCard className="h-4 w-4" />
                   </span>
-                  <div>
-                    <h3 className="text-sm font-extrabold text-[#2B0B4E]">
-                      COD &amp; Payment Management
-                    </h3>
-                    <p className="text-[11px] text-[#6E5B85]">
-                      Managed separately from delivery status — Delivered never auto-marks Paid
-                    </p>
-                  </div>
-                </div>
-                <span
-                  className={`rounded-full border px-3 py-1 text-[11px] font-extrabold ${getPaymentBadgeClasses(
-                    canonicalPayment
-                  )}`}
-                >
-                  {canonicalPayment}
-                </span>
-              </div>
-
-              {/* Payment Summary Metrics */}
-              <div className="mt-3.5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                <div className="rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6E5B85]">
-                    Method
-                  </p>
-                  <p className="mt-0.5 truncate text-xs font-extrabold text-[#2B0B4E]">
-                    {selectedOrder.paymentMethod || 'Cash on Delivery (COD)'}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6E5B85]">
-                    Order Amount
-                  </p>
-                  <p className="mt-0.5 text-xs font-extrabold tabular-nums text-[#2B0B4E]">
-                    {formatInr(selectedOrder.grandTotalInr)}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6E5B85]">
-                    Collected
-                  </p>
-                  <p className="mt-0.5 text-xs font-extrabold tabular-nums text-[#6A11CB]">
-                    {formatInr(
-                      selectedOrder.paymentDetails?.collectedAmountInr ??
-                        (isAlreadyPaid ? selectedOrder.grandTotalInr : 0)
-                    )}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6E5B85]">
-                    Confirmed By
-                  </p>
-                  <p className="mt-0.5 truncate text-xs font-extrabold text-[#2B0B4E]">
-                    {selectedOrder.paymentDetails?.confirmedByAdminName || 'Pending'}
-                  </p>
-                </div>
-              </div>
-
-              {selectedOrder.paymentDetails?.collectionDate && (
-                <p className="mt-2.5 text-[11.5px] font-semibold text-[#6E5B85]">
-                  Collection Date:{' '}
-                  <span className="font-bold text-[#2B0B4E]">
-                    {formatDateTime(selectedOrder.paymentDetails.collectionDate)}
-                  </span>
-                </p>
-              )}
-
-              {/* Payment Control Form */}
-              <div className="mt-4 space-y-3 border-t border-[#F2E9FF] pt-3.5">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold text-[#3E2A56]">
-                      Payment Status
-                    </label>
-                    <select
-                      value={paymentStatusDraft}
-                      onChange={(e) =>
-                        setPaymentStatusDraft(e.target.value as CanonicalPaymentStatus)
-                      }
-                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 text-xs font-bold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                    >
-                      {CANONICAL_PAYMENT_STATUSES.map((st) => (
-                        <option key={st} value={st} disabled={isAlreadyPaid && st === 'Paid'}>
-                          {st}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold text-[#3E2A56]">
-                      Collected Amount (₹)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={collectedAmountDraft}
-                      onChange={(e) => setCollectedAmountDraft(e.target.value)}
-                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 text-xs font-bold tabular-nums text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold text-[#3E2A56]">
-                      Collection Date
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={collectionDateDraft}
-                      onChange={(e) => setCollectionDateDraft(e.target.value)}
-                      className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <input
-                  type="text"
-                  value={paymentNoteDraft}
-                  onChange={(e) => setPaymentNoteDraft(e.target.value)}
-                  placeholder="Optional payment note (e.g. Cash collected by delivery partner)"
-                  className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                />
-
-                <div className="flex flex-wrap items-center gap-2.5">
-                  {!isAlreadyPaid ? (
-                    <button
-                      type="button"
-                      disabled={savingPayment}
-                      onClick={() => setConfirmPaidOpen(true)}
-                      className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#540CA6] px-4 text-xs font-extrabold text-white shadow-sm transition-all hover:opacity-95 disabled:opacity-60"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span>Mark as Paid</span>
-                    </button>
-                  ) : (
-                    <div className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#EBD8FF] bg-[#F8F2FF] px-4 text-xs font-extrabold text-[#6A11CB]">
-                      <Lock className="h-3.5 w-3.5" />
-                      <span>Payment Confirmed as Paid</span>
-                    </div>
-                  )}
-
-                  {paymentStatusDraft !== 'Paid' && (
-                    <button
-                      type="button"
-                      disabled={savingPayment}
-                      onClick={() => void executePaymentUpdate(paymentStatusDraft)}
-                      className="inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[#FF4D8D]/40 bg-[#FFF0F6] px-4 text-xs font-extrabold text-[#FF4D8D] transition-colors hover:bg-[#FFE3EF] disabled:opacity-60"
-                    >
-                      <span>Save as {paymentStatusDraft}</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Payment History Log */}
-              {paymentHistory.length > 0 && (
-                <div className="mt-4 border-t border-[#F2E9FF] pt-3">
-                  <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-[#6E5B85]">
-                    Payment History
-                  </p>
-                  <div className="space-y-2">
-                    {paymentHistory.map((entry) => (
-                      <div
-                        key={entry.id}
-                        className="flex items-start justify-between gap-2 rounded-xl border border-[#EBD8FF]/80 bg-[#FCF9FF] px-3 py-2 text-xs"
-                      >
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span
-                              className={`rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${getPaymentBadgeClasses(
-                                entry.status
-                              )}`}
-                            >
-                              {entry.status}
-                            </span>
-                            <span className="font-extrabold tabular-nums text-[#2B0B4E]">
-                              {formatInr(entry.amountInr)}
-                            </span>
-                          </div>
-                          {entry.note && (
-                            <p className="mt-1 text-[11px] text-[#5B4874]">{entry.note}</p>
-                          )}
-                          {entry.adminName && (
-                            <p className="mt-0.5 text-[10.5px] text-[#6E5B85]">
-                              By {entry.adminName}
-                            </p>
-                          )}
-                        </div>
-                        <span className="shrink-0 text-[10.5px] font-semibold text-[#6E5B85]">
-                          {formatDateTime(entry.timestamp)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {/* 3. Automatic Customer Notification Delivery Log */}
-            <section className="rounded-3xl border border-[#EBD8FF] bg-white p-4 shadow-[0_10px_28px_-16px_rgba(106,17,203,0.16)] sm:p-5">
-              <div className="flex items-center justify-between gap-2 border-b border-[#F2E9FF] pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5EAFF] text-[#6A11CB]">
-                    <Bell className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-extrabold text-[#2B0B4E]">
-                      Customer App Notifications ({orderNotifications.length})
-                    </h3>
-                    <p className="text-[11px] text-[#6E5B85]">
-                      Automatic real-time notifications delivered for this order
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {orderNotifications.length === 0 ? (
-                <p className="mt-3 text-xs text-[#6E5B85]">
-                  No notifications recorded yet. Updating the order status will notify the customer automatically.
-                </p>
-              ) : (
-                <div className="mt-3 space-y-2">
-                  {orderNotifications.map((notif) => (
-                    <div
-                      key={notif.id}
-                      className="rounded-2xl border border-[#EBD8FF]/85 bg-[#FCF9FF] p-3 text-xs"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-1.5">
-                        <span className="font-extrabold text-[#2B0B4E]">{notif.title}</span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[#F3E5FF] px-2 py-0.5 text-[10px] font-extrabold text-[#6A11CB]">
-                          <ShieldCheck className="h-3 w-3" />
-                          Delivered to App
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[11.5px] text-[#4A3860]">{notif.message}</p>
-                      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[10.5px] text-[#6E5B85]">
-                        <span>
-                          Triggered by {notif.adminName || notif.triggeredBy}
-                        </span>
-                        <span>{formatDateTime(notif.sentAt)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
-
-          {/* RIGHT COLUMN: Customer & Quick Actions + Items + Activity Timeline */}
-          <div className="space-y-4 lg:col-span-5">
-            {/* Customer & Delivery Information + Quick Actions */}
-            <section className="rounded-3xl border border-[#EBD8FF] bg-white p-4 shadow-[0_10px_28px_-16px_rgba(106,17,203,0.18)] sm:p-5">
-              <div className="flex items-center gap-2 border-b border-[#F2E9FF] pb-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5EAFF] text-[#6A11CB]">
-                  <User className="h-4 w-4" />
-                </span>
-                <div>
-                  <h3 className="text-sm font-extrabold text-[#2B0B4E]">
-                    Customer &amp; Delivery Info
+                  <h3 className="text-[15px] font-extrabold text-[#2B0B4E]">
+                    Payment Update
                   </h3>
-                  <p className="text-[11px] text-[#6E5B85]">
-                    {selectedOrder.customer.deliveryZoneNameSnapshot}
-                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPaymentEditorOpen((v) => !v)}
+                  className="cursor-pointer rounded-full border border-[#EBD8FF] bg-[#FAF6FF] px-3 py-1 text-[11px] font-extrabold text-[#6A11CB] transition-colors hover:bg-[#EFE2FF]"
+                >
+                  {paymentEditorOpen ? 'Hide Details' : 'Edit Payment Info'}
+                </button>
+              </div>
+
+              {/* 3-Part Horizontal Payment Row (Matches Mockup) */}
+              <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:items-center">
+                <div className="flex items-center gap-2.5 rounded-2xl border border-[#EFE3FF] bg-[#FCF9FF] px-3 py-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FFF0F6] text-[#FF4D8D]">
+                    <Wallet className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-[#6E5B85]">Payment Method</p>
+                    <p className="truncate text-xs font-extrabold text-[#2B0B4E]">
+                      {selectedOrder.paymentMethod || 'Cash on Delivery (COD)'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 rounded-2xl border border-[#EFE3FF] bg-[#FCF9FF] px-3 py-2.5">
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                      isAlreadyPaid
+                        ? 'bg-emerald-50 text-emerald-600'
+                        : 'bg-[#F4EAFF] text-[#6A11CB]'
+                    }`}
+                  >
+                    {isAlreadyPaid ? (
+                      <CheckCircle2 className="h-4.5 w-4.5" />
+                    ) : (
+                      <Clock className="h-4 w-4" />
+                    )}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-[#6E5B85]">Collection Status</p>
+                    <p
+                      className={`truncate text-xs font-extrabold tabular-nums ${
+                        isAlreadyPaid ? 'text-emerald-700' : 'text-[#6A11CB]'
+                      }`}
+                    >
+                      {canonicalPayment} ({formatInr(isAlreadyPaid ? collectedDisplay : selectedOrder.grandTotalInr)})
+                    </p>
+                  </div>
+                </div>
+
+                {!isAlreadyPaid ? (
+                  <button
+                    type="button"
+                    disabled={savingPayment}
+                    onClick={() => setConfirmPaidOpen(true)}
+                    className="flex h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#16A34A] to-[#15803D] px-4 text-xs font-extrabold text-white shadow-[0_8px_18px_-8px_rgba(22,163,74,0.6)] transition-all hover:opacity-95 active:scale-[0.98] disabled:opacity-60"
+                  >
+                    <Check className="h-4 w-4 stroke-[2.8]" />
+                    <span>Mark as Paid</span>
+                  </button>
+                ) : (
+                  <div className="flex h-11 w-full items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 text-xs font-extrabold text-emerald-700">
+                    <Lock className="h-3.5 w-3.5" />
+                    <span>Paid Confirmed</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Payment Status Confirmation Strip */}
+              {isAlreadyPaid ? (
+                <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-3.5 py-2.5 text-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-emerald-600" />
+                    <div className="min-w-0">
+                      <p className="font-extrabold text-emerald-900">Payment Successful!</p>
+                      <p className="text-[11px] font-medium text-emerald-800">
+                        Confirmed by {selectedOrder.paymentDetails?.confirmedByAdminName || 'Admin'}
+                        {selectedOrder.paymentDetails?.collectionDate
+                          ? ` • ${formatDateTime(selectedOrder.paymentDetails.collectionDate)}`
+                          : ''}
+                        . Customer has been notified.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] px-3.5 py-2 text-[11.5px] text-[#5B4874]">
+                  <span>
+                    COD payment is managed separately from delivery status. Confirm only after collecting{' '}
+                    <strong className="text-[#2B0B4E]">
+                      {formatInr(selectedOrder.grandTotalInr)}
+                    </strong>
+                    .
+                  </span>
+                </div>
+              )}
+
+              {/* Expandable Full COD Payment Controls & History */}
+              {paymentEditorOpen && (
+                <div className="mt-3.5 space-y-3 border-t border-[#F2E9FF] pt-3.5">
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                    <div>
+                      <label className="mb-1 block text-[11px] font-bold text-[#3E2A56]">
+                        Payment Status
+                      </label>
+                      <select
+                        value={paymentStatusDraft}
+                        onChange={(e) =>
+                          setPaymentStatusDraft(e.target.value as CanonicalPaymentStatus)
+                        }
+                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 text-xs font-bold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                      >
+                        {CANONICAL_PAYMENT_STATUSES.map((st) => (
+                          <option key={st} value={st} disabled={isAlreadyPaid && st === 'Paid'}>
+                            {st}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-bold text-[#3E2A56]">
+                        Collected Amount (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={collectedAmountDraft}
+                        onChange={(e) => setCollectedAmountDraft(e.target.value)}
+                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 text-xs font-bold tabular-nums text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-bold text-[#3E2A56]">
+                        Collection Date
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={collectionDateDraft}
+                        onChange={(e) => setCollectionDateDraft(e.target.value)}
+                        className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 text-xs font-semibold text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="text"
+                      value={paymentNoteDraft}
+                      onChange={(e) => setPaymentNoteDraft(e.target.value)}
+                      placeholder="Payment note (e.g. Cash collected on doorstep)"
+                      className="h-10 flex-1 rounded-xl border border-[#EBD8FF] bg-[#FCF9FF] px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={savingPayment || (isAlreadyPaid && paymentStatusDraft === 'Paid')}
+                      onClick={() =>
+                        paymentStatusDraft === 'Paid'
+                          ? setConfirmPaidOpen(true)
+                          : void executePaymentUpdate(paymentStatusDraft)
+                      }
+                      className="h-10 shrink-0 cursor-pointer rounded-xl bg-[#6A11CB] px-4 text-xs font-extrabold text-white transition-opacity hover:opacity-95 disabled:opacity-50"
+                    >
+                      Save as {paymentStatusDraft}
+                    </button>
+                  </div>
+
+                  {paymentHistory.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#6E5B85]">
+                        Payment History
+                      </p>
+                      {paymentHistory.map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="flex items-start justify-between gap-2 rounded-xl border border-[#EBD8FF]/80 bg-[#FCF9FF] px-3 py-2 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <span className="font-extrabold text-[#2B0B4E]">
+                              {entry.status} · {formatInr(entry.amountInr)}
+                            </span>
+                            {entry.note && (
+                              <p className="text-[11px] text-[#5B4874]">{entry.note}</p>
+                            )}
+                          </div>
+                          <span className="shrink-0 text-[10.5px] font-semibold text-[#6E5B85]">
+                            {formatDateTime(entry.timestamp)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* 5. CUSTOMER & DELIVERY CARD (Matches Mockup Split Layout) */}
+            <section className="rounded-[26px] border border-white/80 bg-white/95 p-4 shadow-[0_12px_30px_-16px_rgba(106,17,203,0.2)] sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#F4EAFF] text-[#6A11CB]">
+                    <User className="h-4 w-4" />
+                  </span>
+                  <h3 className="text-[15px] font-extrabold text-[#2B0B4E]">
+                    Customer &amp; Delivery
+                  </h3>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleOpenCustomerProfile}
+                    className="cursor-pointer rounded-full border border-[#EBD8FF] bg-[#FAF6FF] px-3 py-1 text-[11px] font-extrabold text-[#6A11CB] transition-colors hover:bg-[#EFE2FF]"
+                  >
+                    Customer Details
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviousOrdersOpen(true)}
+                    className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-[#F8D0E4] bg-[#FFF0F6] px-3 py-1 text-[11px] font-extrabold text-[#FF4D8D] transition-colors hover:bg-[#FFE3EF]"
+                  >
+                    <History className="h-3 w-3" />
+                    <span>Orders ({customerPreviousOrders.length})</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="mt-3 space-y-2 text-xs text-[#3E2A56]">
-                <p className="text-sm font-extrabold text-[#2B0B4E]">
-                  {selectedOrder.customer.fullName}
-                </p>
-                <p className="flex items-center gap-2">
-                  <Phone className="h-3.5 w-3.5 text-[#6A11CB]" />
-                  <span className="font-semibold">{selectedOrder.customer.phone}</span>
-                </p>
-                {selectedOrder.customer.email && (
-                  <p className="flex items-center gap-2">
-                    <Mail className="h-3.5 w-3.5 text-[#6A11CB]" />
-                    <span className="truncate">{selectedOrder.customer.email}</span>
+              <div className="mt-3.5 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-start">
+                <div className="space-y-2 text-xs">
+                  <p className="flex items-center gap-2 text-[13.5px] font-extrabold text-[#2B0B4E]">
+                    <User className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
+                    <span>{selectedOrder.customer.fullName}</span>
                   </p>
-                )}
-                <div className="flex items-start gap-2 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] p-2.5">
-                  <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#FF4D8D]" />
-                  <p className="leading-relaxed">
+                  <div className="flex items-center gap-2.5">
+                    <p className="flex items-center gap-2 font-bold text-[#3E2A56]">
+                      <Phone className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
+                      <span>{selectedOrder.customer.phone}</span>
+                    </p>
+                    {cleanPhone && (
+                      <a
+                        href={`tel:${cleanPhone}`}
+                        aria-label="Call Customer"
+                        className="inline-flex h-7 items-center gap-1 rounded-full bg-[#EFE2FF] px-2.5 text-[11px] font-extrabold text-[#6A11CB] transition-colors hover:bg-[#6A11CB] hover:text-white"
+                      >
+                        <Phone className="h-3 w-3" />
+                        <span>Call</span>
+                      </a>
+                    )}
+                  </div>
+                  {selectedOrder.customer.email && (
+                    <p className="flex items-center gap-2 font-medium text-[#5B4874]">
+                      <Mail className="h-3.5 w-3.5 shrink-0 text-[#6A11CB]" />
+                      <span className="truncate">{selectedOrder.customer.email}</span>
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-start gap-2.5 text-xs text-[#3E2A56] sm:border-l sm:border-[#EFE3FF] sm:pl-4">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#6A11CB]" />
+                  <p className="leading-relaxed font-semibold">
                     {selectedOrder.customer.addressLine1}
                     {selectedOrder.customer.addressLine2
                       ? `, ${selectedOrder.customer.addressLine2}`
                       : ''}
-                    <br />
-                    {selectedOrder.customer.city}, {selectedOrder.customer.state} —{' '}
+                    , {selectedOrder.customer.city}, {selectedOrder.customer.state} —{' '}
                     <span className="font-extrabold text-[#2B0B4E]">
                       {selectedOrder.customer.pincode}
+                    </span>
+                    <span className="mt-1 block text-[11px] font-bold text-[#6A11CB]">
+                      Zone: {selectedOrder.customer.deliveryZoneNameSnapshot}
                     </span>
                   </p>
                 </div>
               </div>
-
-              {/* Working Quick Actions */}
-              <div className="mt-3.5 grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-                <a
-                  href={cleanPhone ? `tel:${cleanPhone}` : undefined}
-                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#540CA6] px-3 text-[11.5px] font-extrabold text-white shadow-xs transition-opacity hover:opacity-95"
-                >
-                  <Phone className="h-3.5 w-3.5" />
-                  <span>Call Customer</span>
-                </a>
-                <button
-                  type="button"
-                  onClick={handleOpenCustomerProfile}
-                  className="inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[#EBD8FF] bg-[#F8F2FF] px-3 text-[11.5px] font-extrabold text-[#6A11CB] transition-colors hover:bg-[#EFE2FF]"
-                >
-                  <User className="h-3.5 w-3.5" />
-                  <span>Customer Details</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviousOrdersOpen(true)}
-                  className="inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[#FF4D8D]/35 bg-[#FFF0F6] px-3 text-[11.5px] font-extrabold text-[#FF4D8D] transition-colors hover:bg-[#FFE3EF]"
-                >
-                  <History className="h-3.5 w-3.5" />
-                  <span>Past Orders ({customerPreviousOrders.length})</span>
-                </button>
-              </div>
             </section>
 
-            {/* Purchased Products & Price Breakdown */}
-            <section className="rounded-3xl border border-[#EBD8FF] bg-white p-4 shadow-[0_10px_28px_-16px_rgba(106,17,203,0.18)] sm:p-5">
-              <div className="flex items-center justify-between border-b border-[#F2E9FF] pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0F6] text-[#FF4D8D]">
-                    <Package className="h-4 w-4" />
-                  </span>
-                  <h3 className="text-sm font-extrabold text-[#2B0B4E]">
-                    Order Items ({selectedOrder.items.length})
-                  </h3>
-                </div>
+            {/* 6. PURCHASED PRODUCTS CARD (Matches Mockup) */}
+            <section className="rounded-[26px] border border-white/80 bg-white/95 p-4 shadow-[0_12px_30px_-16px_rgba(106,17,203,0.2)] sm:p-5">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#F4EAFF] text-[#6A11CB]">
+                  <Package className="h-4 w-4" />
+                </span>
+                <h3 className="text-[15px] font-extrabold text-[#2B0B4E]">
+                  Purchased Products ({selectedOrder.items.length})
+                </h3>
               </div>
 
-              <div className="mt-3 divide-y divide-[#F2E9FF]">
+              <div className="mt-3 space-y-2.5">
                 {selectedOrder.items.map((item, idx) => (
-                  <div key={`${item.productId}-${idx}`} className="flex gap-3 py-3 first:pt-0">
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#EBD8FF] bg-[#FAF6FF]">
-                      {item.imageSnapshot ? (
-                        <img
-                          src={item.imageSnapshot}
-                          alt={item.productNameSnapshot}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[#6A11CB]">
-                          <Gift className="h-5 w-5" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-xs font-extrabold text-[#2B0B4E]">
+                  <div
+                    key={`${item.productId}-${idx}`}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-[#EFE3FF] bg-[#FCF9FF] p-2.5"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#EBD8FF] bg-white">
+                        {item.imageSnapshot ? (
+                          <img
+                            src={item.imageSnapshot}
+                            alt={item.productNameSnapshot}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[#6A11CB]">
+                            <Gift className="h-5 w-5" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-[13.5px] font-extrabold text-[#2B0B4E]">
                           {item.productNameSnapshot}
                         </p>
-                        <p className="shrink-0 text-xs font-extrabold tabular-nums text-[#6A11CB]">
-                          {formatInr(item.lineTotalInr)}
+                        <p className="mt-0.5 text-xs font-semibold text-[#6E5B85]">
+                          Qty: {item.quantity}
+                          {item.productSkuSnapshot ? ` · SKU: ${item.productSkuSnapshot}` : ''}
                         </p>
+                        {Object.keys(item.selectedVariants || {}).length > 0 && (
+                          <p className="mt-0.5 text-[11px] font-semibold text-[#6A11CB]">
+                            {Object.entries(item.selectedVariants)
+                              .map(([k, v]) => `${k}: ${v}`)
+                              .join(' • ')}
+                          </p>
+                        )}
+                        {item.personalizationDetails && (
+                          <p className="mt-0.5 text-[11px] font-medium text-[#FF4D8D]">
+                            Note: {item.personalizationDetails}
+                          </p>
+                        )}
                       </div>
-                      <p className="mt-0.5 text-[11px] text-[#6E5B85]">
-                        Qty {item.quantity} × {formatInr(item.unitPriceInrSnapshot)}
-                        {item.productSkuSnapshot ? ` • SKU: ${item.productSkuSnapshot}` : ''}
-                      </p>
-                      {Object.keys(item.selectedVariants || {}).length > 0 && (
-                        <p className="mt-0.5 text-[11px] font-semibold text-[#540CA6]">
-                          {Object.entries(item.selectedVariants)
-                            .map(([k, v]) => `${k}: ${v}`)
-                            .join(' • ')}
-                        </p>
-                      )}
-                      {item.personalizationDetails && (
-                        <p className="mt-1 rounded-lg bg-[#F8F2FF] px-2 py-1 text-[11px] text-[#6A11CB]">
-                          Personalization: {item.personalizationDetails}
-                        </p>
-                      )}
                     </div>
+
+                    <p className="shrink-0 text-[15px] font-extrabold tabular-nums text-[#6A11CB]">
+                      {formatInr(item.lineTotalInr)}
+                    </p>
                   </div>
                 ))}
               </div>
 
               {selectedOrder.giftWrap?.enabled && (
-                <div className="mt-2 rounded-2xl border border-[#EBD8FF] bg-[#F8F2FF] p-3 text-xs">
+                <div className="mt-2.5 rounded-2xl border border-[#EBD8FF] bg-[#F8F2FF] px-3.5 py-2.5 text-xs">
                   <p className="font-extrabold text-[#6A11CB]">
-                    Gift Wrap: {selectedOrder.giftWrap.styleNameSnapshot || 'Signature Wrap'}
+                    Gift Wrap: {selectedOrder.giftWrap.styleNameSnapshot || 'Signature Wrap'} (
+                    {formatInr(selectedOrder.giftWrapChargeInr)})
                   </p>
                   {selectedOrder.giftWrap.recipientName && (
                     <p className="mt-0.5 text-[#3E2A56]">
@@ -1124,6 +1197,7 @@ export function AdminOrdersPage() {
                 </div>
               )}
 
+              {/* Compact Pricing Breakdown */}
               <div className="mt-3 space-y-1.5 border-t border-[#F2E9FF] pt-3 text-xs">
                 <div className="flex justify-between text-[#6E5B85]">
                   <span>Subtotal</span>
@@ -1131,12 +1205,14 @@ export function AdminOrdersPage() {
                     {formatInr(selectedOrder.subtotalInr)}
                   </span>
                 </div>
-                <div className="flex justify-between text-[#6E5B85]">
-                  <span>Gift Wrap</span>
-                  <span className="font-bold tabular-nums text-[#2B0B4E]">
-                    {formatInr(selectedOrder.giftWrapChargeInr)}
-                  </span>
-                </div>
+                {selectedOrder.giftWrapChargeInr > 0 && (
+                  <div className="flex justify-between text-[#6E5B85]">
+                    <span>Gift Wrap</span>
+                    <span className="font-bold tabular-nums text-[#2B0B4E]">
+                      {formatInr(selectedOrder.giftWrapChargeInr)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between text-[#6E5B85]">
                   <span>Delivery Charge</span>
                   <span className="font-bold tabular-nums text-[#2B0B4E]">
@@ -1162,68 +1238,104 @@ export function AdminOrdersPage() {
               </div>
             </section>
 
-            {/* Order Activity Timeline */}
-            <section className="rounded-3xl border border-[#EBD8FF] bg-white p-4 shadow-[0_10px_28px_-16px_rgba(106,17,203,0.18)] sm:p-5">
-              <div className="flex items-center gap-2 border-b border-[#F2E9FF] pb-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F5EAFF] text-[#6A11CB]">
-                  <Clock className="h-4 w-4" />
-                </span>
-                <div>
+            {/* 7. CUSTOMER NOTIFICATIONS & ORDER ACTIVITY TIMELINE (2-Column on Desktop) */}
+            <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+              {/* Customer App Notification Delivery History */}
+              <section className="rounded-[26px] border border-white/80 bg-white/95 p-4 shadow-[0_12px_30px_-16px_rgba(106,17,203,0.18)]">
+                <div className="flex items-center gap-2 border-b border-[#F2E9FF] pb-2.5">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#FFF0F6] text-[#FF4D8D]">
+                    <Bell className="h-4 w-4" />
+                  </span>
                   <h3 className="text-sm font-extrabold text-[#2B0B4E]">
-                    Order Activity Timeline ({activityTimeline.length})
+                    App Notifications ({orderNotifications.length})
                   </h3>
-                  <p className="text-[11px] text-[#6E5B85]">
-                    Complete immutable log of status, payment &amp; notification events
-                  </p>
                 </div>
-              </div>
 
-              <ol className="relative mt-4 space-y-3.5 border-l-2 border-[#EBD8FF] pl-4">
-                {activityTimeline.map((entry, idx) => {
-                  const isNotification = entry.type === 'NOTIFICATION_SENT';
-                  const isPayment = entry.type === 'PAYMENT_UPDATE';
-                  return (
-                    <li key={entry.id || `${entry.timestamp}-${idx}`} className="relative">
-                      <span
-                        className={`absolute -left-[22px] top-1 h-3 w-3 rounded-full border-2 border-white shadow-xs ${
-                          isPayment
-                            ? 'bg-[#FF4D8D]'
-                            : isNotification
-                            ? 'bg-[#EBD8FF] ring-2 ring-[#6A11CB]'
-                            : 'bg-[#6A11CB]'
-                        }`}
-                      />
-                      <div className="rounded-2xl border border-[#EBD8FF]/75 bg-[#FCF9FF] p-3 text-xs">
+                {orderNotifications.length === 0 ? (
+                  <p className="mt-3 text-xs text-[#6E5B85]">
+                    Automatic in-app customer notifications will appear here once sent.
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-2">
+                    {orderNotifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className="rounded-2xl border border-[#EFE3FF] bg-[#FCF9FF] p-3 text-xs"
+                      >
                         <div className="flex flex-wrap items-center justify-between gap-1.5">
-                          <span className="font-extrabold text-[#2B0B4E]">
-                            {isPayment
-                              ? 'Payment Updated'
-                              : isNotification
-                              ? 'Customer Notification Sent'
-                              : getStatusDisplayLabel(entry.status)}
-                          </span>
-                          <span className="text-[10.5px] font-semibold text-[#6E5B85]">
-                            {formatDateTime(entry.timestamp)}
+                          <span className="font-extrabold text-[#2B0B4E]">{notif.title}</span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#F3E5FF] px-2 py-0.5 text-[10px] font-extrabold text-[#6A11CB]">
+                            <ShieldCheck className="h-3 w-3" />
+                            Delivered
                           </span>
                         </div>
-                        {entry.metadataSummary && (
-                          <p className="mt-1 text-[11px] font-bold text-[#6A11CB]">
-                            {entry.metadataSummary}
-                          </p>
-                        )}
-                        {entry.note && (
-                          <p className="mt-1 text-[11.5px] text-[#4A3860]">{entry.note}</p>
-                        )}
-                        <p className="mt-1.5 text-[10.5px] font-semibold text-[#6E5B85]">
-                          By {entry.adminName || entry.updatedBy}
-                          {entry.adminEmail ? ` (${entry.adminEmail})` : ''}
+                        <p className="mt-1 text-[11.5px] text-[#4A3860]">{notif.message}</p>
+                        <p className="mt-1 text-[10px] font-semibold text-[#6E5B85]">
+                          {formatDateTime(notif.sentAt)} · {notif.adminName || notif.triggeredBy}
                         </p>
                       </div>
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* Immutable Order Activity Timeline */}
+              <section className="rounded-[26px] border border-white/80 bg-white/95 p-4 shadow-[0_12px_30px_-16px_rgba(106,17,203,0.18)]">
+                <div className="flex items-center gap-2 border-b border-[#F2E9FF] pb-2.5">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#F4EAFF] text-[#6A11CB]">
+                    <Clock className="h-4 w-4" />
+                  </span>
+                  <h3 className="text-sm font-extrabold text-[#2B0B4E]">
+                    Activity Timeline ({activityTimeline.length})
+                  </h3>
+                </div>
+
+                <ol className="relative mt-3.5 space-y-3 border-l-2 border-[#EBD8FF] pl-4">
+                  {activityTimeline.map((entry, idx) => {
+                    const isNotification = entry.type === 'NOTIFICATION_SENT';
+                    const isPayment = entry.type === 'PAYMENT_UPDATE';
+                    return (
+                      <li key={entry.id || `${entry.timestamp}-${idx}`} className="relative">
+                        <span
+                          className={`absolute -left-[22px] top-1 h-3 w-3 rounded-full border-2 border-white shadow-xs ${
+                            isPayment
+                              ? 'bg-[#FF4D8D]'
+                              : isNotification
+                              ? 'bg-[#EBD8FF] ring-2 ring-[#6A11CB]'
+                              : 'bg-[#6A11CB]'
+                          }`}
+                        />
+                        <div className="rounded-2xl border border-[#EFE3FF] bg-[#FCF9FF] p-2.5 text-xs">
+                          <div className="flex flex-wrap items-center justify-between gap-1">
+                            <span className="font-extrabold text-[#2B0B4E]">
+                              {isPayment
+                                ? 'Payment Updated'
+                                : isNotification
+                                ? 'Notification Sent'
+                                : getStatusDisplayLabel(entry.status)}
+                            </span>
+                            <span className="text-[10px] font-semibold text-[#6E5B85]">
+                              {formatDateTime(entry.timestamp)}
+                            </span>
+                          </div>
+                          {entry.metadataSummary && (
+                            <p className="mt-0.5 text-[11px] font-bold text-[#6A11CB]">
+                              {entry.metadataSummary}
+                            </p>
+                          )}
+                          {entry.note && (
+                            <p className="mt-0.5 text-[11px] text-[#4A3860]">{entry.note}</p>
+                          )}
+                          <p className="mt-1 text-[10px] font-semibold text-[#6E5B85]">
+                            By {entry.adminName || entry.updatedBy}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </section>
+            </div>
           </div>
         </div>
 
@@ -1233,7 +1345,7 @@ export function AdminOrdersPage() {
           title="Confirm COD Payment as Paid?"
           message={`Mark Order #${selectedOrder.orderNumber} as Paid with collected amount ${formatInr(
             Math.max(0, Number(collectedAmountDraft) || selectedOrder.grandTotalInr)
-          )}? This will lock duplicate Paid confirmations and send an automatic Payment Successful notification to the customer.`}
+          )}? This will lock duplicate Paid confirmations and automatically notify the customer.`}
           confirmLabel={savingPayment ? 'Confirming...' : 'Confirm Paid'}
           onConfirm={() => void executePaymentUpdate('Paid')}
           onCancel={() => setConfirmPaidOpen(false)}
