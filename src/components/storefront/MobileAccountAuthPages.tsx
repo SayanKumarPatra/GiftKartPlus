@@ -32,11 +32,11 @@ import { BrandLogo } from '../ui/BrandLogo';
 import { LanguageSelector } from './LanguageSelector';
 
 const SIGNUP_ILLUSTRATION =
-  '/assets/aistudio/3D_Purple_Clipboard_Registration_Icon_30307bae.png';
+  '/assets/aistudio/3D_Purple_Clipboard_Registration_Icon_30307bae.webp';
 const LOGIN_ILLUSTRATION =
-  '/assets/aistudio/Vibrant_Purple_Shopping_Bag_Scene_2fb63564.png';
+  '/assets/aistudio/Vibrant_Purple_Shopping_Bag_Scene_2fb63564.webp';
 const FORGOT_ILLUSTRATION =
-  '/assets/aistudio/Glossy_Purple_Forgot_Password_Envelope_7c26fe9d.png';
+  '/assets/aistudio/Glossy_Purple_Forgot_Password_Envelope_7c26fe9d.webp';
 
 type AuthScreenMode = 'login' | 'signup' | 'forgot';
 type AccountSubView =
@@ -109,7 +109,7 @@ export function MobileAccountAuthPages() {
   const { customerAccount, isAuthReady, signInCustomerDemo, signOutCustomer } =
     useAuth();
   const { pushToast } = useToast();
-  const { language, languages, t } = useLanguage();
+  const { language, languages, t, translatePlace } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -125,7 +125,6 @@ export function MobileAccountAuthPages() {
 
   const queryMode = searchParams.get('mode') as AuthScreenMode | null;
   const queryTab = searchParams.get('tab');
-  const previewAccount = searchParams.get('view') === 'account';
 
   const initialMode: AuthScreenMode =
     queryMode === 'signup' ||
@@ -169,19 +168,13 @@ export function MobileAccountAuthPages() {
   // Forgot Password form state
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotError, setForgotError] = useState('');
-  const [forgotSentTo, setForgotSentTo] = useState<string | null>(null);
+  const [authStatusNotice, setAuthStatusNotice] = useState<string | null>(null);
 
-  // Edit Profile form state (static preview + updates local demo account)
+  // Edit Profile form state (bound strictly to real authenticated account)
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
-  const [editName, setEditName] = useState(
-    customerAccount?.fullName ?? 'Sayan Kumar'
-  );
-  const [editEmail, setEditEmail] = useState(
-    customerAccount?.email ?? 'sayan.kumar@gmail.com'
-  );
-  const [editPhone, setEditPhone] = useState(
-    customerAccount?.phone ?? ''
-  );
+  const [editName, setEditName] = useState(customerAccount?.fullName ?? '');
+  const [editEmail, setEditEmail] = useState(customerAccount?.email ?? '');
+  const [editPhone, setEditPhone] = useState(customerAccount?.phone ?? '');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Static preview toggles for Account Settings & Notifications
@@ -211,11 +204,11 @@ export function MobileAccountAuthPages() {
     }
   }, [customerAccount]);
 
-  const isLoggedIn = Boolean(customerAccount) || previewAccount;
+  const isLoggedIn = Boolean(customerAccount);
   const activeProfile = customerAccount ?? {
-    fullName: editName || 'Sayan Kumar',
-    email: editEmail || 'sayan.kumar@gmail.com',
-    phone: editPhone || 'Not added',
+    fullName: '',
+    email: '',
+    phone: '',
     defaultCity: 'Jalchak',
   };
 
@@ -231,134 +224,116 @@ export function MobileAccountAuthPages() {
     }
   }
 
-  async function completeAuthSession(input: {
-    fullName: string;
-    email: string;
-    phone: string;
-    toastTitle: string;
-    toastDescription: string;
-  }) {
-    await signInCustomerDemo({
-      fullName: input.fullName,
-      email: input.email,
-      phone: input.phone,
-      defaultCity: 'Jalchak',
-    });
-
+  function showBackendAuthReadyNotice(context: 'login' | 'signup' | 'google' | 'forgot') {
+    const isBn = language === 'bn';
+    const messageByContext: Record<typeof context, string> = {
+      login: isBn
+        ? 'রিয়েল কাস্টমার লগইন ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে। বর্তমানে কোনো ডেমো বা নকল লগইন সক্রিয় নেই।'
+        : 'Customer sign-in is structured for backend authentication and will activate once the backend is connected. Demo login has been removed.',
+      signup: isBn
+        ? 'নতুন অ্যাকাউন্ট রেজিস্ট্রেশন ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে।'
+        : 'Account registration is ready for backend authentication and will activate once the backend is connected.',
+      google: isBn
+        ? 'ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর আসল গুগল সাইন-ইন (OAuth) চালু হবে।'
+        : 'Real Google Sign-In (OAuth) will be enabled once backend authentication is connected.',
+      forgot: isBn
+        ? 'পাসওয়ার্ড রিসেট ইমেইল সেবা ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে।'
+        : 'Password reset emails will be enabled once backend authentication is connected.',
+    };
+    const msg = messageByContext[context];
+    setAuthStatusNotice(msg);
     pushToast({
-      title: input.toastTitle,
-      description: input.toastDescription,
-      variant: 'success',
+      title: isBn ? 'ব্যাকএন্ড অথেনটিকেশন অপেক্ষমাণ' : 'Backend Authentication Pending',
+      description: msg,
+      variant: 'info',
     });
-
-    const redirectTarget = navState?.from;
-    if (redirectTarget && redirectTarget !== '/account') {
-      navigate(redirectTarget, { replace: true });
-      return;
-    }
-    setAccountSubView('main');
   }
 
   async function handleSignUpSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const isBn = language === 'bn';
     const errors: { name?: string; email?: string; password?: string } = {};
 
     if (!signupName.trim()) {
-      errors.name = 'Please enter your full name.';
+      errors.name = isBn ? 'অনুগ্রহ করে আপনার সম্পূর্ণ নাম লিখুন।' : 'Please enter your full name.';
     }
     if (!signupEmail.trim()) {
-      errors.email = 'Email address is required.';
+      errors.email = isBn ? 'ইমেইল ঠিকানা প্রয়োজন।' : 'Email address is required.';
     } else if (!EMAIL_PATTERN.test(signupEmail.trim())) {
-      errors.email = 'Please enter a valid email address.';
+      errors.email = isBn ? 'অনুগ্রহ করে একটি সঠিক ইমেইল ঠিকানা লিখুন।' : 'Please enter a valid email address.';
     }
     if (!signupPassword.trim()) {
-      errors.password = 'Please create a password.';
+      errors.password = isBn ? 'অনুগ্রহ করে একটি পাসওয়ার্ড তৈরি করুন।' : 'Please create a password.';
     } else if (signupPassword.trim().length < 6) {
-      errors.password = 'Password must be at least 6 characters.';
+      errors.password = isBn ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।' : 'Password must be at least 6 characters.';
     }
 
     setSignupErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    await completeAuthSession({
-      fullName: signupName.trim(),
-      email: signupEmail.trim(),
-      phone: signupPhone.trim() || 'Not added',
-      toastTitle: 'Account Created Successfully',
-      toastDescription: 'Welcome to GiftKart! Your account is ready.',
-    });
+    showBackendAuthReadyNotice('signup');
   }
 
   async function handleLoginSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const isBn = language === 'bn';
     const errors: { email?: string; password?: string; form?: string } = {};
 
     if (!loginEmail.trim()) {
-      errors.email = 'Please enter your email address.';
+      errors.email = isBn ? 'অনুগ্রহ করে আপনার ইমেইল ঠিকানা লিখুন।' : 'Please enter your email address.';
     } else if (!EMAIL_PATTERN.test(loginEmail.trim())) {
-      errors.email = 'Please enter a valid email address.';
+      errors.email = isBn ? 'অনুগ্রহ করে একটি সঠিক ইমেইল ঠিকানা লিখুন।' : 'Please enter a valid email address.';
     }
 
     if (!loginPassword.trim()) {
-      errors.password = 'Please enter your password.';
-    } else if (loginPassword.trim().length < 4) {
-      errors.password = 'Incorrect password. Please check and try again.';
+      errors.password = isBn ? 'অনুগ্রহ করে আপনার পাসওয়ার্ড লিখুন।' : 'Please enter your password.';
+    } else if (loginPassword.trim().length < 6) {
+      errors.password = isBn ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।' : 'Password must be at least 6 characters.';
     }
 
     setLoginErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    const derivedName = loginEmail
-      .trim()
-      .split('@')[0]
-      .replace(/[._-]+/g, ' ')
-      .replace(/\b\w/g, (ch) => ch.toUpperCase());
-
-    await completeAuthSession({
-      fullName: derivedName || 'GiftKart Member',
-      email: loginEmail.trim(),
-      phone: '',
-      toastTitle: 'Welcome Back!',
-      toastDescription: 'You have logged in to your GiftKart account.',
-    });
+    showBackendAuthReadyNotice('login');
   }
 
-  async function handleContinueWithGoogle() {
-    await completeAuthSession({
-      fullName: 'Sayan Kumar',
-      email: 'sayan.kumar@gmail.com',
-      phone: '',
-      toastTitle: 'Signed In with Google',
-      toastDescription: 'Welcome to GiftKart! Showing your account.',
-    });
+  function handleContinueWithGoogle() {
+    showBackendAuthReadyNotice('google');
   }
 
   function handleForgotSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const isBn = language === 'bn';
     const trimmed = forgotEmail.trim();
     if (!trimmed) {
-      setForgotError('Please enter your registered email address.');
+      setForgotError(
+        isBn
+          ? 'অনুগ্রহ করে আপনার রেজিস্টার্ড ইমেইল ঠিকানা লিখুন।'
+          : 'Please enter your registered email address.'
+      );
       return;
     }
     if (!EMAIL_PATTERN.test(trimmed)) {
-      setForgotError('Please enter a valid email address format.');
+      setForgotError(
+        isBn
+          ? 'অনুগ্রহ করে একটি সঠিক ইমেইল ঠিকানা লিখুন।'
+          : 'Please enter a valid email address format.'
+      );
       return;
     }
     setForgotError('');
-    setForgotSentTo(trimmed);
-    pushToast({
-      title: 'Password Reset Link Sent',
-      description: `Check ${trimmed} (including spam folder).`,
-      variant: 'success',
-    });
+    showBackendAuthReadyNotice('forgot');
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
+    const isBn = language === 'bn';
     if (!editName.trim() || !EMAIL_PATTERN.test(editEmail.trim())) {
       pushToast({
-        title: 'Invalid Profile Details',
-        description: 'Please enter a valid full name and email address.',
+        title: isBn ? 'অবৈধ প্রোফাইল তথ্য' : 'Invalid Profile Details',
+        description: isBn
+          ? 'অনুগ্রহ করে সঠিক নাম এবং ইমেইল ঠিকানা লিখুন।'
+          : 'Please enter a valid full name and email address.',
         variant: 'error',
       });
       return;
@@ -372,8 +347,8 @@ export function MobileAccountAuthPages() {
     });
 
     pushToast({
-      title: 'Profile Updated',
-      description: 'Your account details have been saved.',
+      title: t('profileUpdatedTitle'),
+      description: t('profileUpdatedDesc'),
       variant: 'success',
     });
     setAccountSubView('main');
@@ -397,20 +372,42 @@ export function MobileAccountAuthPages() {
     setAccountSubView('main');
     setAuthMode('login');
     pushToast({
-      title: 'Logged Out',
-      description: 'You have been signed out of your GiftKart account.',
+      title: t('loggedOutTitle'),
+      description: t('loggedOutDesc'),
       variant: 'info',
     });
-    if (previewAccount) {
-      navigate('/account', { replace: true });
-    }
   }
 
-  // Prevent auth flicker on page refresh while existing local session hydrates
-  if (!isAuthReady && !previewAccount && !queryMode) {
+  // Prevent auth flicker on page refresh while auth state hydrates
+  if (!isAuthReady && !queryMode) {
     return (
       <div className="min-h-[calc(100dvh-132px)] w-full bg-gradient-to-b from-[#FDF5FF] via-[#FAF0FF] to-[#F6EEFF] px-4 py-10">
         <div className="mx-auto h-40 max-w-[350px] animate-pulse rounded-[24px] bg-white/80" />
+      </div>
+    );
+  }
+
+  /* ==========================================================================
+   * DEDICATED MOBILE LANGUAGE SELECTION VIEW (/account?tab=language)
+   * Accessible from the dedicated Language option whether logged in or not
+   * ======================================================================== */
+  if (!isLoggedIn && queryTab === 'language') {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto overflow-x-clip bg-gradient-to-b from-[#FDF6FF] via-[#FAF1FF] to-[#F6EEFF] lg:hidden">
+        <CompactAuthHeader
+          onBack={() => {
+            if (window.history.length > 1) {
+              navigate(-1);
+            } else {
+              navigate('/');
+            }
+          }}
+        />
+        <main className="mx-auto w-full max-w-[420px] px-4 py-4">
+          <div className="rounded-[24px] border border-[#EFE2FF] bg-white p-5 shadow-[0_8px_24px_rgba(106,17,203,0.08)]">
+            <LanguageSelector />
+          </div>
+        </main>
       </div>
     );
   }
@@ -424,11 +421,6 @@ export function MobileAccountAuthPages() {
       <div className="fixed inset-0 z-50 overflow-y-auto overflow-x-clip bg-gradient-to-b from-[#FDF6FF] via-[#FAF1FF] to-[#F6EEFF] lg:hidden">
         <CompactAuthHeader onBack={handleAuthBack} />
 
-        {/* Instant Language Switcher inside Account (Accessible Before Login) */}
-        <div className="mx-auto w-full max-w-[420px] px-4 pt-1 pb-1">
-          <LanguageSelector compact />
-        </div>
-
         {/* PAGE 1: CREATE NEW ACCOUNT (SIGN UP) */}
         {authMode === 'signup' && (
           <main className="mx-auto flex w-full max-w-[420px] flex-col items-center px-4 pb-6 pt-1">
@@ -436,6 +428,7 @@ export function MobileAccountAuthPages() {
               <img
                 src={SIGNUP_ILLUSTRATION}
                 alt={t('createAccount')}
+                decoding="async"
                 className="h-auto w-full max-w-[138px] object-contain mix-blend-multiply min-[390px]:max-w-[156px]"
               />
             </div>
@@ -446,6 +439,12 @@ export function MobileAccountAuthPages() {
             <p className="mt-1 max-w-[300px] text-center text-[12px] leading-[1.4] text-[#553F70]">
               {t('guestAccountNote')}
             </p>
+            {authStatusNotice && (
+              <div className="mt-2.5 flex w-full items-start gap-2 rounded-xl border border-[#DFC8FF] bg-[#F6EDFF] px-3 py-2 text-left text-[11.5px] font-medium leading-[1.4] text-[#4B148C]">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6A11CB]" />
+                <span>{authStatusNotice}</span>
+              </div>
+            )}
 
             <form
               onSubmit={(e) => void handleSignUpSubmit(e)}
@@ -465,7 +464,7 @@ export function MobileAccountAuthPages() {
                       htmlFor="gk-signup-name"
                       className="block text-[11px] font-bold text-[#2B0B4E]"
                     >
-                      Full Name <span className="text-[#FF4D8D]">*</span>
+                      {t('fullName')} <span className="text-[#FF4D8D]">*</span>
                     </label>
                     <input
                       id="gk-signup-name"
@@ -477,7 +476,7 @@ export function MobileAccountAuthPages() {
                         if (signupErrors.name)
                           setSignupErrors((p) => ({ ...p, name: undefined }));
                       }}
-                      placeholder="Enter your full name"
+                      placeholder={t('enterFullName')}
                       className="mt-0.5 w-full bg-transparent text-[13.5px] font-medium text-[#2B0B4E] placeholder:text-[#8876A0] focus:outline-none"
                     />
                   </div>
@@ -502,7 +501,7 @@ export function MobileAccountAuthPages() {
                       htmlFor="gk-signup-email"
                       className="block text-[11px] font-bold text-[#2B0B4E]"
                     >
-                      Email Address <span className="text-[#FF4D8D]">*</span>
+                      {t('emailAddress')} <span className="text-[#FF4D8D]">*</span>
                     </label>
                     <input
                       id="gk-signup-email"
@@ -514,7 +513,7 @@ export function MobileAccountAuthPages() {
                         if (signupErrors.email)
                           setSignupErrors((p) => ({ ...p, email: undefined }));
                       }}
-                      placeholder="Enter your email address"
+                      placeholder={t('enterEmailAddress')}
                       className="mt-0.5 w-full bg-transparent text-[13.5px] font-medium text-[#2B0B4E] placeholder:text-[#8876A0] focus:outline-none"
                     />
                   </div>
@@ -535,9 +534,9 @@ export function MobileAccountAuthPages() {
                       htmlFor="gk-signup-phone"
                       className="block text-[11px] font-bold text-[#2B0B4E]"
                     >
-                      Mobile Number{' '}
+                      {t('phoneNumber')}{' '}
                       <span className="font-semibold text-[#7E6B95]">
-                        (Optional)
+                        {t('optionalTag')}
                       </span>
                     </label>
                     <input
@@ -546,7 +545,7 @@ export function MobileAccountAuthPages() {
                       autoComplete="tel"
                       value={signupPhone}
                       onChange={(e) => setSignupPhone(e.target.value)}
-                      placeholder="Enter your mobile number"
+                      placeholder={t('enterMobileNumber')}
                       className="mt-0.5 w-full bg-transparent text-[13px] font-medium text-[#2B0B4E] placeholder:text-[#8876A0] focus:outline-none"
                     />
                   </div>
@@ -568,7 +567,7 @@ export function MobileAccountAuthPages() {
                       htmlFor="gk-signup-password"
                       className="block text-[11px] font-bold text-[#2B0B4E]"
                     >
-                      Password <span className="text-[#FF4D8D]">*</span>
+                      {t('passwordLabel')} <span className="text-[#FF4D8D]">*</span>
                     </label>
                     <input
                       id="gk-signup-password"
@@ -583,7 +582,7 @@ export function MobileAccountAuthPages() {
                             password: undefined,
                           }));
                       }}
-                      placeholder="Create a strong password"
+                      placeholder={t('createStrongPassword')}
                       className="mt-0.5 w-full bg-transparent text-[13.5px] font-medium text-[#2B0B4E] placeholder:text-[#8876A0] focus:outline-none"
                     />
                   </div>
@@ -617,7 +616,7 @@ export function MobileAccountAuthPages() {
                 <span className="w-5 shrink-0" aria-hidden="true" />
                 <span className="flex items-center gap-2">
                   <UserPlus className="h-[18px] w-[18px] shrink-0 stroke-[2.1]" />
-                  <span>Create Account</span>
+                  <span>{t('createAccount')}</span>
                 </span>
                 <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.3]" />
               </button>
@@ -627,24 +626,24 @@ export function MobileAccountAuthPages() {
             <div className="my-3 flex w-full items-center gap-3">
               <span className="h-px flex-1 bg-[#E5D4FA]" />
               <span className="text-[11px] font-bold tracking-wider text-[#7A6693]">
-                OR
+                {t('orDivider')}
               </span>
               <span className="h-px flex-1 bg-[#E5D4FA]" />
             </div>
 
-            {/* Continue with Google */}
+            {/* Continue with Google (Backend OAuth Ready) */}
             <button
               type="button"
-              onClick={() => void handleContinueWithGoogle()}
+              onClick={handleContinueWithGoogle}
               className="flex min-h-[44px] w-full items-center justify-center gap-2.5 rounded-full border border-[#EAE0F8] bg-white px-5 text-[14px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
             >
               <GoogleOfficialLogo className="h-[18px] w-[18px] shrink-0" />
-              <span>Continue with Google</span>
+              <span>{t('continueWithGoogle')}</span>
             </button>
 
             {/* Existing Account Switch */}
             <p className="mt-3.5 text-center text-[12.5px] font-medium text-[#523D6D]">
-              Already have an account?{' '}
+              {t('alreadyHaveAccount')}{' '}
               <button
                 type="button"
                 onClick={() => {
@@ -653,7 +652,7 @@ export function MobileAccountAuthPages() {
                 }}
                 className="font-extrabold text-[#6A11CB] active:text-[#FF4D8D]"
               >
-                Login Now
+                {t('loginNow')}
               </button>
             </p>
           </main>
@@ -666,6 +665,7 @@ export function MobileAccountAuthPages() {
               <img
                 src={LOGIN_ILLUSTRATION}
                 alt="Login to GiftKart Illustration"
+                decoding="async"
                 className="h-auto w-full max-w-[162px] object-contain mix-blend-multiply min-[390px]:max-w-[180px]"
               />
             </div>
@@ -679,7 +679,13 @@ export function MobileAccountAuthPages() {
 
             {navState?.reason === 'wishlist' && (
               <div className="mt-2.5 w-full rounded-xl border border-[#EBD8FF] bg-white/90 px-3 py-2 text-center text-[11.5px] font-semibold text-[#6A11CB]">
-                Please log in to save gifts in your Wishlist.
+                {t('wishlistLoginNotice')}
+              </div>
+            )}
+            {authStatusNotice && (
+              <div className="mt-2.5 flex w-full items-start gap-2 rounded-xl border border-[#DFC8FF] bg-[#F6EDFF] px-3 py-2 text-left text-[11.5px] font-medium leading-[1.4] text-[#4B148C]">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6A11CB]" />
+                <span>{authStatusNotice}</span>
               </div>
             )}
 
@@ -701,7 +707,7 @@ export function MobileAccountAuthPages() {
                       htmlFor="gk-login-email"
                       className="block text-[11px] font-bold text-[#2B0B4E]"
                     >
-                      Email Address
+                      {t('emailAddress')}
                     </label>
                     <input
                       id="gk-login-email"
@@ -713,7 +719,7 @@ export function MobileAccountAuthPages() {
                         if (loginErrors.email)
                           setLoginErrors((p) => ({ ...p, email: undefined }));
                       }}
-                      placeholder="Enter your email address"
+                      placeholder={t('enterEmailAddress')}
                       className="mt-0.5 w-full bg-transparent text-[13.5px] font-medium text-[#2B0B4E] placeholder:text-[#8876A0] focus:outline-none"
                     />
                   </div>
@@ -740,7 +746,7 @@ export function MobileAccountAuthPages() {
                       htmlFor="gk-login-password"
                       className="block text-[11px] font-bold text-[#2B0B4E]"
                     >
-                      Password
+                      {t('passwordLabel')}
                     </label>
                     <input
                       id="gk-login-password"
@@ -755,7 +761,7 @@ export function MobileAccountAuthPages() {
                             password: undefined,
                           }));
                       }}
-                      placeholder="Enter your password"
+                      placeholder={t('enterPassword')}
                       className="mt-0.5 w-full bg-transparent text-[13.5px] font-medium text-[#2B0B4E] placeholder:text-[#8876A0] focus:outline-none"
                     />
                   </div>
@@ -788,12 +794,12 @@ export function MobileAccountAuthPages() {
                   onClick={() => {
                     setForgotEmail(loginEmail);
                     setForgotError('');
-                    setForgotSentTo(null);
+                    setAuthStatusNotice(null);
                     setAuthMode('forgot');
                   }}
                   className="text-[12.5px] font-bold text-[#6A11CB] active:text-[#FF4D8D]"
                 >
-                  Forgot Password?
+                  {t('forgotPasswordQuestion')}
                 </button>
               </div>
 
@@ -805,7 +811,7 @@ export function MobileAccountAuthPages() {
                 <span className="w-5 shrink-0" aria-hidden="true" />
                 <span className="flex items-center gap-2">
                   <LogIn className="h-[18px] w-[18px] shrink-0 stroke-[2.1]" />
-                  <span>Login / Sign In</span>
+                  <span>{t('loginOrSignIn')}</span>
                 </span>
                 <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.3]" />
               </button>
@@ -815,24 +821,24 @@ export function MobileAccountAuthPages() {
             <div className="my-3 flex w-full items-center gap-3">
               <span className="h-px flex-1 bg-[#E5D4FA]" />
               <span className="text-[11px] font-bold tracking-wider text-[#7A6693]">
-                OR
+                {t('orDivider')}
               </span>
               <span className="h-px flex-1 bg-[#E5D4FA]" />
             </div>
 
-            {/* Continue with Google */}
+            {/* Continue with Google (Backend OAuth Ready) */}
             <button
               type="button"
-              onClick={() => void handleContinueWithGoogle()}
+              onClick={handleContinueWithGoogle}
               className="flex min-h-[44px] w-full items-center justify-center gap-2.5 rounded-full border border-[#EAE0F8] bg-white px-5 text-[14px] font-bold text-[#2B0B4E] shadow-[0_4px_14px_rgba(106,17,203,0.08)] transition-transform active:scale-[0.985]"
             >
               <GoogleOfficialLogo className="h-[18px] w-[18px] shrink-0" />
-              <span>Continue with Google</span>
+              <span>{t('continueWithGoogle')}</span>
             </button>
 
             {/* Registration Link */}
             <p className="mt-3.5 text-center text-[12.5px] font-medium text-[#523D6D]">
-              Don&apos;t have an account?{' '}
+              {t('dontHaveAccount')}{' '}
               <button
                 type="button"
                 onClick={() => {
@@ -841,7 +847,7 @@ export function MobileAccountAuthPages() {
                 }}
                 className="font-extrabold text-[#6A11CB] active:text-[#FF4D8D]"
               >
-                Create Account
+                {t('createAccount')}
               </button>
             </p>
           </main>
@@ -853,17 +859,16 @@ export function MobileAccountAuthPages() {
             <div className="flex w-full items-center justify-center">
               <img
                 src={FORGOT_ILLUSTRATION}
-                alt="Forgot Password Illustration"
+                alt={t('forgotPasswordQuestion')}
                 className="h-auto w-full max-w-[205px] object-contain mix-blend-multiply min-[390px]:max-w-[228px]"
               />
             </div>
 
             <h1 className="mt-2.5 text-center text-[24px] font-extrabold tracking-[-0.02em] text-[#2B0B4E] min-[390px]:text-[26px]">
-              Forgot Password?
+              {t('forgotPasswordQuestion')}
             </h1>
             <p className="mt-2 max-w-[310px] text-center text-[13px] leading-[1.48] text-[#553F70]">
-              No worries! Enter your registered email address and we&apos;ll
-              send you a password reset link.
+              {t('forgotPasswordDesc')}
             </p>
 
             <form
@@ -883,7 +888,7 @@ export function MobileAccountAuthPages() {
                       htmlFor="gk-forgot-email"
                       className="block text-[11px] font-bold text-[#2B0B4E]"
                     >
-                      Email Address <span className="text-[#FF4D8D]">*</span>
+                      {t('emailAddress')} <span className="text-[#FF4D8D]">*</span>
                     </label>
                     <input
                       id="gk-forgot-email"
@@ -894,7 +899,7 @@ export function MobileAccountAuthPages() {
                         setForgotEmail(e.target.value);
                         if (forgotError) setForgotError('');
                       }}
-                      placeholder="Enter your registered email address"
+                      placeholder={t('enterEmailAddress')}
                       className="mt-0.5 w-full bg-transparent text-[13.5px] font-medium text-[#2B0B4E] placeholder:text-[#8876A0] focus:outline-none"
                     />
                   </div>
@@ -913,26 +918,19 @@ export function MobileAccountAuthPages() {
                 <span className="w-5 shrink-0" aria-hidden="true" />
                 <span className="flex items-center gap-2.5">
                   <Send className="h-[18px] w-[18px] shrink-0 stroke-[2.1]" />
-                  <span>Send Reset Link</span>
+                  <span>{t('sendResetLink')}</span>
                 </span>
                 <ChevronRight className="h-5 w-5 shrink-0 stroke-[2.3]" />
               </button>
             </form>
 
-            {/* Success Confirmation Banner */}
-            {forgotSentTo && (
-              <div className="mt-4 flex w-full items-start gap-2.5 rounded-2xl border border-[#C6EED3] bg-[#EEFAF2] px-3.5 py-3 text-left">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#15803D]" />
-                <div className="min-w-0 flex-1 text-[12px] leading-[1.4] text-[#14532D]">
-                  <p className="font-bold">Reset link sent!</p>
-                  <p className="mt-0.5">
-                    We sent password reset instructions to{' '}
-                    <span className="font-semibold break-all">
-                      {forgotSentTo}
-                    </span>
-                    .
-                  </p>
-                </div>
+            {/* Backend Auth Pending Notice */}
+            {authStatusNotice && (
+              <div className="mt-4 flex w-full items-start gap-2.5 rounded-2xl border border-[#DFC8FF] bg-[#F6EDFF] px-3.5 py-3 text-left">
+                <Info className="mt-0.5 h-5 w-5 shrink-0 text-[#6A11CB]" />
+                <p className="min-w-0 flex-1 text-[12px] font-medium leading-[1.45] text-[#3B1E5C]">
+                  {authStatusNotice}
+                </p>
               </div>
             )}
 
@@ -942,8 +940,7 @@ export function MobileAccountAuthPages() {
                 <Info className="h-[18px] w-[18px] stroke-[2.2]" />
               </div>
               <p className="text-[12px] font-medium leading-[1.45] text-[#3B1E5C]">
-                Check your email inbox (and spam folder) for the password reset
-                link.
+                {t('checkInboxInfo')}
               </p>
             </div>
 
@@ -954,7 +951,7 @@ export function MobileAccountAuthPages() {
               className="mt-6 inline-flex items-center gap-1.5 text-[13px] font-extrabold text-[#6A11CB] active:text-[#FF4D8D]"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>Back to Login</span>
+              <span>{t('backToLogin')}</span>
             </button>
           </main>
         )}
@@ -970,22 +967,22 @@ export function MobileAccountAuthPages() {
     <div className="min-h-[calc(100dvh-132px)] w-full overflow-x-clip bg-gradient-to-b from-[#FCE9F6] via-[#FAF0FF] to-[#F6EEFF] px-3 pb-4 pt-2">
       {/* SUB-VIEW: EDIT PROFILE */}
       {accountSubView === 'edit-profile' && (
-        <section aria-label="Edit Profile" className="mx-auto max-w-[420px]">
+        <section aria-label={t('editProfile')} className="mx-auto max-w-[420px]">
           <button
             type="button"
             onClick={() => setAccountSubView('main')}
             className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[12px] font-bold text-[#6A11CB] shadow-[0_2px_8px_rgba(106,17,203,0.08)]"
           >
             <ArrowLeft className="h-3.5 w-3.5 stroke-[2.4]" />
-            <span>Back to My Account</span>
+            <span>{t('backToMyAccount')}</span>
           </button>
 
           <div className="rounded-[24px] border border-[#EFE2FF] bg-white p-5 shadow-[0_8px_24px_rgba(106,17,203,0.08)]">
             <h1 className="text-[19px] font-extrabold text-[#2B0B4E]">
-              Edit Profile
+              {t('editProfile')}
             </h1>
             <p className="mt-0.5 text-[12px] text-[#6A5684]">
-              Update your personal details and profile picture.
+              {t('editProfileSubtitle')}
             </p>
 
             {/* Profile Photo Editor */}
@@ -1005,7 +1002,7 @@ export function MobileAccountAuthPages() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  aria-label="Change profile photo"
+                  aria-label={t('changeProfilePhoto')}
                   className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#6A11CB] text-white shadow-sm active:scale-95"
                 >
                   <Camera className="h-3.5 w-3.5" />
@@ -1023,7 +1020,7 @@ export function MobileAccountAuthPages() {
                 onClick={() => fileInputRef.current?.click()}
                 className="mt-2 text-[12px] font-bold text-[#6A11CB]"
               >
-                Change Profile Photo
+                {t('changeProfilePhoto')}
               </button>
             </div>
 
@@ -1036,7 +1033,7 @@ export function MobileAccountAuthPages() {
                   htmlFor="gk-edit-name"
                   className="block text-[11px] font-bold text-[#2B0B4E]"
                 >
-                  Full Name
+                  {t('fullName')}
                 </label>
                 <input
                   id="gk-edit-name"
@@ -1053,7 +1050,7 @@ export function MobileAccountAuthPages() {
                   htmlFor="gk-edit-email"
                   className="block text-[11px] font-bold text-[#2B0B4E]"
                 >
-                  Email Address
+                  {t('emailAddress')}
                 </label>
                 <input
                   id="gk-edit-email"
@@ -1064,7 +1061,7 @@ export function MobileAccountAuthPages() {
                   className="mt-0.5 w-full bg-transparent text-[13.5px] font-semibold text-[#2B0B4E] focus:outline-none"
                 />
                 <p className="mt-1 text-[10.5px] text-[#7A6693]">
-                  Email verification will be available in a future update.
+                  {t('emailVerifyFutureNote')}
                 </p>
               </div>
 
@@ -1073,14 +1070,14 @@ export function MobileAccountAuthPages() {
                   htmlFor="gk-edit-phone"
                   className="block text-[11px] font-bold text-[#2B0B4E]"
                 >
-                  Mobile Number
+                  {t('phoneNumber')}
                 </label>
                 <input
                   id="gk-edit-phone"
                   type="tel"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
-                  placeholder="Enter your mobile number"
+                  placeholder={t('enterMobileNumber')}
                   className="mt-0.5 w-full bg-transparent text-[13.5px] font-semibold text-[#2B0B4E] placeholder:text-[#8E7AA6] focus:outline-none"
                 />
               </div>
@@ -1089,7 +1086,7 @@ export function MobileAccountAuthPages() {
                 type="submit"
                 className="mt-2 flex min-h-[48px] w-full items-center justify-center rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-[14.5px] font-bold text-white shadow-[0_8px_20px_rgba(106,17,203,0.26)] active:scale-[0.985]"
               >
-                Save Changes
+                {t('saveChanges')}
               </button>
             </form>
           </div>
@@ -1098,46 +1095,46 @@ export function MobileAccountAuthPages() {
 
       {/* SUB-VIEW: ACCOUNT SETTINGS */}
       {accountSubView === 'settings' && (
-        <section aria-label="Account Settings" className="mx-auto max-w-[420px]">
+        <section aria-label={t('accountSettings')} className="mx-auto max-w-[420px]">
           <button
             type="button"
             onClick={() => setAccountSubView('main')}
             className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[12px] font-bold text-[#6A11CB] shadow-[0_2px_8px_rgba(106,17,203,0.08)]"
           >
             <ArrowLeft className="h-3.5 w-3.5 stroke-[2.4]" />
-            <span>Back to My Account</span>
+            <span>{t('backToMyAccount')}</span>
           </button>
 
           <div className="space-y-3 rounded-[24px] border border-[#EFE2FF] bg-white p-5 shadow-[0_8px_24px_rgba(106,17,203,0.08)]">
             <h1 className="text-[19px] font-extrabold text-[#2B0B4E]">
-              Account Settings
+              {t('accountSettings')}
             </h1>
             <p className="text-[12px] text-[#6A5684]">
-              Manage your account preferences and gift delivery defaults.
+              {t('accountSettingsSubtitle')}
             </p>
 
             <div className="space-y-2.5 pt-2">
               <div className="flex items-center justify-between rounded-2xl border border-[#F0E4FF] bg-[#FCFAFF] px-3.5 py-3">
                 <div>
                   <p className="text-[13px] font-bold text-[#2B0B4E]">
-                    Default Delivery City
+                    {t('defaultDeliveryCity')}
                   </p>
                   <p className="text-[11.5px] text-[#6A5684]">
-                    Jalchak, West Bengal
+                    {translatePlace('Jalchak, West Bengal')}
                   </p>
                 </div>
                 <span className="rounded-full bg-[#F3E8FF] px-2.5 py-1 text-[11px] font-bold text-[#6A11CB]">
-                  Active
+                  {t('activeBadge')}
                 </span>
               </div>
 
               <div className="flex items-center justify-between rounded-2xl border border-[#F0E4FF] bg-[#FCFAFF] px-3.5 py-3">
                 <div>
                   <p className="text-[13px] font-bold text-[#2B0B4E]">
-                    WhatsApp Order Alerts
+                    {t('whatsappOrderAlerts')}
                   </p>
                   <p className="text-[11.5px] text-[#6A5684]">
-                    Receive dispatch &amp; gift wrap updates
+                    {t('whatsappOrderAlertsDesc')}
                   </p>
                 </div>
                 <button
@@ -1163,32 +1160,32 @@ export function MobileAccountAuthPages() {
 
       {/* SUB-VIEW: NOTIFICATIONS */}
       {accountSubView === 'notifications' && (
-        <section aria-label="Notifications" className="mx-auto max-w-[420px]">
+        <section aria-label={t('notificationsTitle')} className="mx-auto max-w-[420px]">
           <button
             type="button"
             onClick={() => setAccountSubView('main')}
             className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[12px] font-bold text-[#6A11CB] shadow-[0_2px_8px_rgba(106,17,203,0.08)]"
           >
             <ArrowLeft className="h-3.5 w-3.5 stroke-[2.4]" />
-            <span>Back to My Account</span>
+            <span>{t('backToMyAccount')}</span>
           </button>
 
           <div className="space-y-3 rounded-[24px] border border-[#EFE2FF] bg-white p-5 shadow-[0_8px_24px_rgba(106,17,203,0.08)]">
             <h1 className="text-[19px] font-extrabold text-[#2B0B4E]">
-              Notifications
+              {t('notificationsTitle')}
             </h1>
             <p className="text-[12px] text-[#6A5684]">
-              Control order tracking alerts and festive gift offers.
+              {t('notificationsSubtitle')}
             </p>
 
             <div className="space-y-2.5 pt-2">
               <div className="flex items-center justify-between rounded-2xl border border-[#F0E4FF] bg-[#FCFAFF] px-3.5 py-3">
                 <div>
                   <p className="text-[13px] font-bold text-[#2B0B4E]">
-                    Order &amp; Delivery Updates
+                    {t('orderDeliveryUpdates')}
                   </p>
                   <p className="text-[11.5px] text-[#6A5684]">
-                    Processing, shipped, and delivered alerts
+                    {t('orderDeliveryUpdatesDesc')}
                   </p>
                 </div>
                 <button
@@ -1211,10 +1208,10 @@ export function MobileAccountAuthPages() {
               <div className="flex items-center justify-between rounded-2xl border border-[#F0E4FF] bg-[#FCFAFF] px-3.5 py-3">
                 <div>
                   <p className="text-[13px] font-bold text-[#2B0B4E]">
-                    Special Gift Offers
+                    {t('specialGiftOffers')}
                   </p>
                   <p className="text-[11.5px] text-[#6A5684]">
-                    Festive discounts &amp; personalized deals
+                    {t('specialGiftOffersDesc')}
                   </p>
                 </div>
                 <button
@@ -1490,7 +1487,7 @@ export function MobileAccountAuthPages() {
               {t('signOut')}
             </h2>
             <p className="mt-1.5 text-[13px] leading-relaxed text-[#5E4A77]">
-              {t('signOut')}?
+              {t('logoutConfirmQuestion')}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               <button

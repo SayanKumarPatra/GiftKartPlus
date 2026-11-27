@@ -29,9 +29,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Tiro+Bangla:ital@0;1&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('giftkart:v5:language');
+          var lang = raw ? JSON.parse(raw) : 'en';
+          if (lang === 'bn' || lang === 'hi' || lang === 'en') {
+            document.documentElement.lang = lang;
+            if (lang === 'bn') {
+              document.documentElement.classList.add('lang-bn');
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
@@ -42,14 +56,14 @@
         navigator.serviceWorker.addEventListener('controllerchange', function () {
           if (!hadController) return;
           try {
-            if (sessionStorage.getItem('gk_sw_reloaded_v5') === '1') return;
-            sessionStorage.setItem('gk_sw_reloaded_v5', '1');
+            if (sessionStorage.getItem('gk_sw_reloaded_v7') === '1') return;
+            sessionStorage.setItem('gk_sw_reloaded_v7', '1');
           } catch (e) {}
           window.location.reload();
         });
         window.addEventListener('load', function () {
           navigator.serviceWorker
-            .register('/sw.js?v=5', { updateViaCache: 'none' })
+            .register('/sw.js?v=7', { updateViaCache: 'none' })
             .then(function (reg) {
               reg.update().catch(function () {});
             })

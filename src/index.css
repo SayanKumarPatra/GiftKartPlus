@@ -31,6 +31,8 @@
     color: #2B0B4E;
     background-color: #FFFFFF;
     scroll-behavior: smooth;
+    overflow-x: clip;
+    max-width: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -40,6 +42,13 @@
     min-height: 100vh;
     background-color: #FFFFFF;
     color: #2B0B4E;
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
+  #root {
+    overflow-x: clip;
+    max-width: 100%;
   }
 
   h1, h2, h3 {
@@ -48,16 +57,6 @@
 }
 
 /* Signature GiftKart Brand Surfaces & Gradients */
-.gk-hero-gradient {
-  background: linear-gradient(
-    118deg,
-    #F3E5FF 0%,
-    #F9ECFF 38%,
-    #FFEBF4 72%,
-    #FFE0EE 100%
-  );
-}
-
 .gk-promo-gradient {
   background: linear-gradient(
     108deg,
@@ -73,52 +72,6 @@
     #F9F2FF 0%,
     #FFF0F7 100%
   );
-}
-
-.gk-btn-purple {
-  background: linear-gradient(135deg, #6A11CB 0%, #540CA6 100%);
-  color: #FFFFFF;
-  box-shadow: 0 8px 20px -6px rgba(106, 17, 203, 0.42);
-}
-
-.gk-btn-purple:hover {
-  background: linear-gradient(135deg, #7A1EE0 0%, #6A11CB 100%);
-  box-shadow: 0 10px 24px -6px rgba(106, 17, 203, 0.52);
-}
-
-.gk-btn-pink {
-  background: linear-gradient(135deg, #FF4D8D 0%, #E62E73 100%);
-  color: #FFFFFF;
-  box-shadow: 0 10px 24px -6px rgba(255, 77, 141, 0.48);
-}
-
-.gk-btn-pink:hover {
-  background: linear-gradient(135deg, #FF619B 0%, #FF4D8D 100%);
-  box-shadow: 0 12px 28px -6px rgba(255, 77, 141, 0.58);
-}
-
-.gk-card {
-  background: #FFFFFF;
-  border: 1px solid rgba(235, 216, 255, 0.85);
-  box-shadow: 0 10px 30px -12px rgba(106, 17, 203, 0.12), 0 2px 8px -2px rgba(255, 77, 141, 0.06);
-}
-
-.gk-card-hover {
-  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 180ms ease;
-}
-
-.gk-card-hover:hover {
-  transform: translateY(-3px);
-  border-color: rgba(106, 17, 203, 0.32);
-  box-shadow: 0 18px 36px -14px rgba(106, 17, 203, 0.2), 0 4px 12px -4px rgba(255, 77, 141, 0.12);
-}
-
-.gk-occasion-tile {
-  background: linear-gradient(180deg, #FCF8FF 0%, #F7ECFF 100%);
-  border: 1px solid rgba(235, 216, 255, 0.95);
-  box-shadow: 0 8px 22px -10px rgba(106, 17, 203, 0.16);
 }
 
 /* Subtle Glassmorphism reserved for overlays, sticky headers, and slider controls */
@@ -149,8 +102,93 @@
   font-family: var(--font-display);
 }
 
-.font-editorial {
-  font-family: var(--font-editorial);
+.font-tiro-bangla {
+  font-family: "Tiro Bangla", "Inter", Georgia, serif;
+  letter-spacing: 0 !important;
+}
+
+/* ============================================================================
+   Tiro Bangla Premium Bengali Typography (ONLY active when Bengali is selected)
+   Leaves English (Inter) and Hindi layouts 100% unchanged.
+   ============================================================================ */
+html.lang-bn,
+html[lang="bn"] {
+  --font-display: "Tiro Bangla", "Inter", Georgia, serif;
+  --font-editorial: "Tiro Bangla", "Inter", Georgia, serif;
+  --font-sans: "Tiro Bangla", "Inter", Georgia, serif;
+  font-family: "Tiro Bangla", "Inter", Georgia, serif;
+  font-feature-settings: normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.lang-bn body,
+html[lang="bn"] body {
+  font-family: "Tiro Bangla", "Inter", Georgia, serif;
+  line-height: 1.55;
+}
+
+/* Preserve intact Bengali matras & conjunct ligatures (যুক্তাক্ষর) by neutralizing negative tracking */
+html.lang-bn *:not(.font-mono):not(code):not(pre),
+html[lang="bn"] *:not(.font-mono):not(code):not(pre) {
+  letter-spacing: 0 !important;
+}
+
+html.lang-bn h1,
+html.lang-bn h2,
+html.lang-bn h3,
+html.lang-bn h4,
+html[lang="bn"] h1,
+html[lang="bn"] h2,
+html[lang="bn"] h3,
+html[lang="bn"] h4 {
+  font-family: "Tiro Bangla", "Inter", Georgia, serif;
+  line-height: 1.32;
+  font-weight: 700;
+}
+
+html.lang-bn p,
+html.lang-bn li,
+html.lang-bn dt,
+html.lang-bn dd,
+html.lang-bn label,
+html.lang-bn input,
+html.lang-bn textarea,
+html.lang-bn select,
+html.lang-bn button,
+html.lang-bn a,
+html[lang="bn"] p,
+html[lang="bn"] li,
+html[lang="bn"] dt,
+html[lang="bn"] dd,
+html[lang="bn"] label,
+html[lang="bn"] input,
+html[lang="bn"] textarea,
+html[lang="bn"] select,
+html[lang="bn"] button,
+html[lang="bn"] a {
+  font-family: "Tiro Bangla", "Inter", Georgia, serif;
+}
+
+html.lang-bn p,
+html[lang="bn"] p {
+  line-height: 1.58;
+}
+
+/* Keep numbers and prices crisp and aligned */
+html.lang-bn .tabular-nums,
+html[lang="bn"] .tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mobile-first Bengali optical refinements (< 900px) */
+@media (max-width: 899.98px) {
+  html.lang-bn .gk-mobile-nav-label,
+  html[lang="bn"] .gk-mobile-nav-label {
+    font-size: 11px;
+    line-height: 1.15;
+  }
 }
 
 .tabular-nums {
@@ -407,21 +445,6 @@
   }
 }
 
-@keyframes gk-pulse-beacon {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(255, 77, 141, 0.52);
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 8px rgba(255, 77, 141, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(255, 77, 141, 0);
-  }
-}
-
 .gk-road-dashes {
   background-image: repeating-linear-gradient(
     90deg,
@@ -453,10 +476,6 @@
 
 .gk-wind-line-2 {
   animation: gk-wind-streak 0.8s ease-out 0.25s infinite;
-}
-
-.gk-live-beacon {
-  animation: gk-pulse-beacon 1.9s ease-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

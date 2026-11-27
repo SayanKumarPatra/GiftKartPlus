@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bell, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   playGiftKartNotificationChime,
   unlockNotificationAudio,
@@ -28,6 +29,7 @@ interface ActiveHeadsUpAlert {
  */
 export function LiveNotificationHost() {
   const { customerAccount } = useAuth();
+  const { t } = useLanguage();
   const [banner, setBanner] = useState<ActiveHeadsUpAlert | null>(null);
   const seenIdsRef = useRef<Set<string>>(new Set());
   const hideTimerRef = useRef<number | null>(null);
@@ -164,7 +166,7 @@ export function LiveNotificationHost() {
             <div className="flex items-center gap-1.5 text-[10.5px] font-bold text-[#6A11CB]">
               <span>GiftKart</span>
               <span aria-hidden="true">·</span>
-              <span className="text-[#75648E]">Just now</span>
+              <span className="text-[#75648E]">{t('justNow')}</span>
             </div>
             <p className="mt-0.5 truncate text-[13.5px] font-extrabold text-[#1E1035]">
               {banner.title}
@@ -177,7 +179,7 @@ export function LiveNotificationHost() {
         <button
           type="button"
           onClick={() => setBanner(null)}
-          aria-label="Dismiss alert"
+          aria-label={t('dismissAlert')}
           className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[#75648E] transition-colors hover:bg-[#F5ECFF] hover:text-[#1E1035]"
         >
           <X className="h-4 w-4" />

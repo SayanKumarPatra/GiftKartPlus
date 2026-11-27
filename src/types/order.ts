@@ -134,6 +134,19 @@ export interface OrderCustomerDetails {
   pincode: string;
 }
 
+export interface OrderReceiptRecord {
+  receiptNumber: string;
+  orderId: string;
+  orderNumber: string;
+  issuedAt: string;
+  deliveredAt?: string;
+  deliveryStatus: 'Delivered';
+  paymentMethod: string;
+  paymentStatus: CanonicalPaymentStatus;
+  grandTotalInr: number;
+  paidAmountInr: number;
+}
+
 export interface DemoOrder {
   id: string;
   orderNumber: string;
@@ -158,6 +171,7 @@ export interface DemoOrder {
   paymentHistory?: OrderPaymentHistoryEntry[];
   notifications?: OrderNotificationRecord[];
   statusHistory: OrderStatusHistoryEntry[];
+  receipt?: OrderReceiptRecord;
   createdAt: string;
   updatedAt: string;
 }

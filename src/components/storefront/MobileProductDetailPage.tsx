@@ -72,18 +72,30 @@ export function MobileProductDetailPage({
   const { customerAccount } = useAuth();
   const { items, addToCart, toggleWishlist, isWishlisted } = useCart();
   const { pushToast } = useToast();
-  const { t, translateCategory, localizeEntity } = useLanguage();
+  const { t, translateCategory, localizeEntity, translateVariant } = useLanguage();
   const { data: productReviews } = useProductReviews(product.id);
 
   const liveReviewSummary = useMemo(() => {
-    const approved = productReviews.filter((r) => r.isApproved !== false && !r.isSampleData);
+    const approved = productReviews.filter(
+      (r) =>
+        r.productId === product.id &&
+        r.isApproved !== false &&
+        !r.isSampleData &&
+        Boolean(r.authorName?.trim()) &&
+        Boolean(
+          r.comment?.trim() || (Array.isArray(r.photos) && r.photos.length > 0)
+        )
+    );
     if (approved.length === 0) return null;
-    const sum = approved.reduce((acc, r) => acc + Math.min(5, Math.max(1, Number(r.rating) || 5)), 0);
+    const sum = approved.reduce(
+      (acc, r) => acc + Math.min(5, Math.max(1, Number(r.rating) || 5)),
+      0
+    );
     return {
       avg: (sum / approved.length).toFixed(1),
       count: approved.length,
     };
-  }, [productReviews]);
+  }, [productReviews, product.id]);
 
   const displayName = localizeEntity(product.name, 'name', product.translations);
   const displayDesc = localizeEntity(
@@ -258,7 +270,7 @@ export function MobileProductDetailPage({
   const productWishlisted = isWishlisted(product.id);
 
   return (
-    <div className="min-h-screen w-full bg-white pb-[146px] text-[#2B0B4E]">
+    <div className="min-h-screen w-full overflow-x-clip bg-white pb-[154px] text-[#2B0B4E]">
       {/* 1. MAIN PRODUCT IMAGE GALLERY (Sharp Square-Corner Box + Floating Wishlist & Share) */}
       <section aria-label="Product photos">
         <div
@@ -401,15 +413,15 @@ export function MobileProductDetailPage({
       {/* 4. PRODUCT-SPECIFIC OPTIONS (Conditional — Only When Genuine Variants Exist) */}
       {visibleVariantGroups.length > 0 && (
         <section
-          aria-label="Product options"
+          aria-label={t('selectOption')}
           className="mt-3.5 space-y-3 border-t border-[#F2E6FF] px-3.5 pt-3.5"
         >
           {visibleVariantGroups.map((group) => (
             <div key={group.name}>
-              <p className="text-[12px] font-bold text-[#3B0764]">
-                {group.name}:{' '}
+              <p className="text-[12.5px] font-bold text-[#3B0764]">
+                {translateVariant(group.name)}:{' '}
                 <span className="font-extrabold text-[#6A11CB]">
-                  {selectedVariants[group.name] ?? group.options[0]}
+                  {translateVariant(selectedVariants[group.name] ?? group.options[0])}
                 </span>
               </p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -422,13 +434,13 @@ export function MobileProductDetailPage({
                       onClick={() =>
                         setSelectedVariants((prev) => ({ ...prev, [group.name]: opt }))
                       }
-                      className={`min-h-[34px] rounded-full px-3.5 text-[12px] font-bold whitespace-nowrap transition-all ${
+                      className={`min-h-[38px] rounded-full px-3.5 text-[12.5px] font-bold whitespace-nowrap transition-all active:scale-[0.97] ${
                         isActive
                           ? 'bg-[#6A11CB] text-white shadow-[0_4px_12px_rgba(106,17,203,0.25)]'
                           : 'border border-[#EBD8FF] bg-[#FAF6FF] text-[#3B0764] hover:border-[#6A11CB]/50'
                       }`}
                     >
-                      {opt}
+                      {translateVariant(opt)}
                     </button>
                   );
                 })}
@@ -440,22 +452,23 @@ export function MobileProductDetailPage({
 
       {/* 5. COMPACT WHATSAPP PERSONALIZATION STRIP (Conditional — ONLY For Personalized Products) */}
       {showPersonalizationCard && (
-        <section aria-label="WhatsApp personalization" className="mt-3 px-3.5">
-          <div className="flex items-center gap-2 rounded-[10px] border border-[#EBD8FF] bg-[#F8F3FF] px-2.5 py-1.5">
+        <section aria-label={t('photoAndCustomText')} className="mt-3 px-3.5">
+          <div className="flex flex-wrap items-center gap-2.5 rounded-[12px] border border-[#EBD8FF] bg-[#F8F3FF] px-3 py-2.5 min-[360px]:flex-nowrap">
             {/* Compact WhatsApp Icon */}
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white">
               <WhatsAppIcon className="h-4 w-4" />
             </div>
 
             {/* Concise Compact Text */}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[11.5px] font-extrabold leading-[1.2] text-[#4C1D95]">
-                Photo &amp; Custom Text
+              <p className="truncate text-[12px] font-extrabold leading-[1.25] text-[#4C1D95]">
+                {t('photoAndCustomText')}
               </p>
-              <p className="mt-0.5 text-[10.5px] leading-[1.25] text-[#4B3568]">
-                {product.supportsPhotoUpload
-                  ? 'Send photo & text on WhatsApp after ordering.'
-                  : 'Send custom text on WhatsApp after ordering.'}
+              <p className="mt-0.5 break-words text-[11px] leading-[1.35] text-[#4B3568]">
+                {t('sendPhotoWhatsappNote').replace(
+                  '{phone}',
+                  supportPhone?.trim() || '+91 9239505791'
+                )}
               </p>
             </div>
 
@@ -464,46 +477,47 @@ export function MobileProductDetailPage({
               href={whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#25D366] bg-white px-2.5 py-1 text-[11px] font-extrabold text-[#16A34A] whitespace-nowrap transition-colors active:scale-95 hover:bg-[#F0FDF4]"
+              className="inline-flex min-h-[34px] shrink-0 items-center gap-1 rounded-full border border-[#25D366] bg-white px-3 py-1 text-[11.5px] font-extrabold text-[#16A34A] whitespace-nowrap transition-colors active:scale-95 hover:bg-[#F0FDF4]"
             >
-              <WhatsAppIcon className="h-3 w-3 text-[#25D366]" />
-              <span>WhatsApp</span>
+              <WhatsAppIcon className="h-3.5 w-3.5 text-[#25D366]" />
+              <span>{t('whatsappShort')}</span>
             </a>
           </div>
         </section>
       )}
 
-      {/* 5.5 LIVE VERIFIED CUSTOMER RATINGS & REVIEWS */}
-      <ProductReviewsSection product={product} compact />
+      {/* 5.5 LIVE VERIFIED CUSTOMER RATINGS & REVIEWS (Dynamic — Only shown when real reviews exist for this product) */}
+      <ProductReviewsSection key={product.id} product={product} compact hideWhenEmpty />
 
       {/* 6. YOU MAY ALSO LIKE — 3 COMPACT CARDS IN ONE SINGLE ROW */}
       {recommendedProducts.length > 0 && (
         <section aria-label="You may also like" className="mt-5 px-3.5">
           <div className="flex items-center gap-2">
             <Gift className="h-[18px] w-[18px] shrink-0 text-[#FF2A7A] stroke-[2.2]" aria-hidden="true" />
-            <h2 className="text-[16.5px] font-extrabold tracking-[-0.01em] text-[#2B0B4E] whitespace-nowrap">
+            <h2 className="min-w-0 truncate text-[16px] font-extrabold tracking-[-0.01em] text-[#2B0B4E]">
               {t('relatedGifts')}
             </h2>
             <div aria-hidden="true" className="h-px flex-1 bg-[#EBD8FF]" />
           </div>
 
-          <div className="mt-2.5 grid grid-cols-3 gap-2">
+          <div className="mt-2.5 grid grid-cols-3 gap-1.5 min-[375px]:gap-2">
             {recommendedProducts.map((rel) => {
               const relWishlisted = isWishlisted(rel.id);
+              const relDisplayName = localizeEntity(rel.name, 'name', rel.translations);
               return (
                 <article
                   key={rel.id}
-                  className="flex flex-col overflow-hidden rounded-[14px] border border-[#EBD8FF] bg-white p-1.5 shadow-[0_3px_12px_rgba(106,17,203,0.06)]"
+                  className="flex min-w-0 flex-col overflow-hidden rounded-[14px] border border-[#EBD8FF] bg-white p-1.5 shadow-[0_3px_12px_rgba(106,17,203,0.06)]"
                 >
                   <div className="relative overflow-hidden rounded-[10px] bg-[#FDF7FC]">
                     <Link
                       to={`/product/${rel.slug}`}
-                      aria-label={rel.name}
+                      aria-label={relDisplayName}
                       className="block"
                     >
                       <ProductImage
                         src={rel.images[0]}
-                        alt={rel.name}
+                        alt={relDisplayName}
                         aspectClass="aspect-[4/3]"
                       />
                     </Link>
@@ -513,9 +527,7 @@ export function MobileProductDetailPage({
                         type="button"
                         onClick={() => handleWishlistAction(rel.id)}
                         aria-label={
-                          relWishlisted
-                            ? `Remove ${rel.name} from wishlist`
-                            : `Save ${rel.name} to wishlist`
+                          relWishlisted ? t('removeFromWishlist') : t('saveToWishlist')
                         }
                         className={`flex h-6 w-6 items-center justify-center rounded-full bg-white/95 shadow-xs transition-transform active:scale-90 ${
                           relWishlisted ? 'text-[#FF4D8D]' : 'text-[#4C1D95]'
@@ -534,7 +546,7 @@ export function MobileProductDetailPage({
                           e.stopPropagation();
                           openProductShare(rel);
                         }}
-                        aria-label={`${t('share')} ${rel.name}`}
+                        aria-label={`${t('share')} ${relDisplayName}`}
                         className="flex h-6 w-6 items-center justify-center rounded-full bg-white/95 text-[#6A11CB] shadow-xs transition-transform active:scale-90"
                       >
                         <Share2 className="h-3 w-3 stroke-[2.2]" />
@@ -544,23 +556,23 @@ export function MobileProductDetailPage({
 
                   <Link
                     to={`/product/${rel.slug}`}
-                    className="mt-1.5 line-clamp-2 min-h-[26px] text-[10.5px] font-extrabold leading-[1.22] text-[#2B0B4E] min-[390px]:text-[11px]"
+                    className="mt-1.5 line-clamp-2 min-h-[28px] text-[10.5px] font-extrabold leading-[1.28] text-[#2B0B4E] min-[390px]:text-[11px]"
                   >
-                    {rel.name}
+                    {relDisplayName}
                   </Link>
 
                   <div className="mt-auto flex items-center justify-between gap-1 pt-1.5">
-                    <span className="text-[12.5px] font-extrabold leading-none text-[#FF2A7A] tabular-nums min-[390px]:text-[13px]">
+                    <span className="min-w-0 truncate text-[11px] font-extrabold leading-none text-[#FF2A7A] tabular-nums min-[375px]:text-[12.5px]">
                       {formatInr(rel.priceInr)}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleQuickAddRecommended(rel)}
                       disabled={rel.stockCount <= 0}
-                      aria-label={`Add ${rel.name} to cart`}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-gradient-to-br from-[#6A11CB] to-[#7E22CE] text-white shadow-[0_3px_8px_rgba(106,17,203,0.28)] transition-transform active:scale-90 disabled:opacity-45"
+                      aria-label={`${t('addToCart')} ${relDisplayName}`}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] bg-gradient-to-br from-[#6A11CB] to-[#7E22CE] text-white shadow-[0_3px_8px_rgba(106,17,203,0.28)] transition-transform active:scale-90 disabled:opacity-45 min-[375px]:h-7 min-[375px]:w-7 min-[375px]:rounded-[8px]"
                     >
-                      <ShoppingCart className="h-3.5 w-3.5 stroke-[2.2]" />
+                      <ShoppingCart className="h-3 w-3 stroke-[2.2] min-[375px]:h-3.5 min-[375px]:w-3.5" />
                     </button>
                   </div>
                 </article>
@@ -573,7 +585,7 @@ export function MobileProductDetailPage({
       {/* 7. COMPACT FLOATING BOTTOM PURCHASE BAR (Clear Gap Above MobileBottomNav + Sleek Buttons & Icons) */}
       <div
         role="region"
-        aria-label="Purchase actions"
+        aria-label={t('buyNow')}
         className="pointer-events-none fixed inset-x-3 bottom-[calc(86px+env(safe-area-inset-bottom,0px))] z-30 mx-auto max-w-[436px] lg:hidden"
       >
         <div className="pointer-events-auto grid grid-cols-2 gap-2 rounded-full border border-[#EBD8FF] bg-white/95 p-1.5 shadow-[0_8px_22px_-6px_rgba(106,17,203,0.22)] backdrop-blur-md">
@@ -582,7 +594,7 @@ export function MobileProductDetailPage({
             type="button"
             onClick={handleAddToCart}
             disabled={!isInCart && isOutOfStock}
-            className={`inline-flex h-[35px] items-center justify-center gap-1.5 rounded-full border px-2.5 text-[11.5px] font-bold whitespace-nowrap transition-all active:scale-[0.98] disabled:opacity-45 min-[380px]:text-[12px] ${
+            className={`inline-flex h-[40px] items-center justify-center gap-1.5 rounded-full border px-2.5 text-[12px] font-bold whitespace-nowrap transition-all active:scale-[0.98] disabled:opacity-45 min-[380px]:text-[12.5px] ${
               isInCart
                 ? 'border-[#6A11CB] bg-[#F5ECFF] text-[#6A11CB]'
                 : 'border-[#6A11CB] bg-white text-[#2B0B4E]'
@@ -606,7 +618,7 @@ export function MobileProductDetailPage({
             type="button"
             onClick={handleBuyNow}
             disabled={isOutOfStock}
-            className="inline-flex h-[35px] items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-2.5 text-[11.5px] font-bold text-white shadow-[0_4px_12px_-3px_rgba(255,77,141,0.48)] whitespace-nowrap transition-transform active:scale-[0.98] disabled:opacity-45 min-[380px]:text-[12px]"
+            className="inline-flex h-[40px] items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-2.5 text-[12px] font-bold text-white shadow-[0_4px_12px_-3px_rgba(255,77,141,0.48)] whitespace-nowrap transition-transform active:scale-[0.98] disabled:opacity-45 min-[380px]:text-[12.5px]"
           >
             <Zap className="h-3.5 w-3.5 shrink-0 fill-white text-white" />
             <span className="truncate">{t('buyNow')}</span>

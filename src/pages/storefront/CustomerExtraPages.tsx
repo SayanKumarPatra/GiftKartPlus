@@ -5,8 +5,12 @@ import {
   Briefcase,
   Check,
   Clock,
+  Download,
+  Eye,
+  FileText,
   Gift,
   Home,
+  Loader2,
   Mail,
   MapPin,
   MoreHorizontal,
@@ -26,6 +30,7 @@ import {
 } from '../../hooks/useStoreData';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useToast } from '../../context/ToastContext';
 import { STUDIO_MEDIA } from '../../config/appConfig';
 import type { DemoOrder, SavedAddress } from '../../types';
 import { formatDateTime, formatInr } from '../../utils/format';
@@ -50,6 +55,7 @@ import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ProductImage } from '../../components/ui/ProductImage';
 import { DeliveryVanTracker } from '../../components/order/DeliveryVanTracker';
+import { OrderReceiptModal } from '../../components/order/OrderReceiptModal';
 import { MobileSavedAddressesPage } from '../../components/storefront/MobileSavedAddressesPage';
 import {
   ProductReviewModal,
@@ -62,6 +68,11 @@ import {
   getStatusDisplayLabel,
   normalizePaymentStatus,
 } from '../../utils/orderLifecycle';
+import {
+  downloadOrderReceiptPdf,
+  isOrderReceiptAvailable,
+  resolveOrderReceipt,
+} from '../../utils/orderReceiptPdf';
 
 /* ============================================================================
  * #14 ORDER DETAILS PAGE (/order/:orderNumber)
@@ -69,14 +80,28 @@ import {
 export function OrderDetailsPage() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
   const { customerAccount } = useAuth();
-  const { t } = useLanguage();
+  const {
+    language,
+    t,
+    localizeEntity,
+    translateOrderStatus,
+    translatePaymentStatus,
+    translatePaymentMethod,
+    translateVariant,
+    translatePlace,
+    formatDate,
+  } = useLanguage();
   const { data: allReviews, refresh: refreshReviews } = useProductReviews();
+  const { data: storeSettings } = useStoreSettings();
+  const { pushToast } = useToast();
   const [order, setOrder] = useState<DemoOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [reviewTarget, setReviewTarget] = useState<ReviewModalTarget | null>(null);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -155,32 +180,67 @@ export function OrderDetailsPage() {
   const statusBadgeClass = getOrderBadgeClasses(order.fulfillmentStatus);
   const paymentStatus = normalizePaymentStatus(order);
   const cancellable = canCustomerCancelOrder(order.fulfillmentStatus);
+  const receiptAvailable = isOrderReceiptAvailable(order);
+  const receiptInfo = receiptAvailable ? resolveOrderReceipt(order) : null;
+
+  async function handleDownloadReceiptPdf() {
+    if (!order || !receiptAvailable || downloadingReceipt) return;
+    setDownloadingReceipt(true);
+    try {
+      await downloadOrderReceiptPdf(order, storeSettings);
+      pushToast({
+        title: t('officialOrderReceipt'),
+        description: t('receiptDownloadedToast'),
+        variant: 'success',
+      });
+    } catch {
+      pushToast({
+        title: t('officialOrderReceipt'),
+        description: 'Could not generate PDF receipt. Please try again.',
+        variant: 'error',
+      });
+    } finally {
+      setDownloadingReceipt(false);
+    }
+  }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-5 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-[#6E5B85]">
+      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-xs text-[#6E5B85]">
         <Link to="/" className="hover:text-[#6A11CB]">{t('home')}</Link>
         <span>/</span>
         <Link to="/my-orders" className="hover:text-[#6A11CB]">{t('myOrders')}</Link>
         <span>/</span>
-        <span className="font-bold text-[#1E1035]">{order.orderNumber}</span>
+        <span className="font-bold text-[#1E1035] break-all">{order.orderNumber}</span>
       </nav>
 
       {/* Clean Order Summary Header */}
-      <div className="rounded-2xl border border-[#EFE3FF] bg-white p-6 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.12)]">
+      <div className="rounded-2xl border border-[#EFE3FF] bg-white p-4 sm:p-6 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.12)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase tracking-wider text-[#7A6894]">
-              Order Receipt
+              {language === 'bn' ? 'অর্ডার বিবরণ' : 'Order Summary'}
             </p>
-            <h1 className="mt-1 font-mono text-2xl font-extrabold text-[#1E1035] sm:text-3xl">
+            <h1 className="mt-1 font-mono text-xl font-extrabold text-[#1E1035] sm:text-3xl break-all">
               {order.orderNumber}
             </h1>
-            <p className="mt-1 text-xs text-[#594A6B]">
-              Placed on {formatDateTime(order.createdAt)} · Method:{' '}
+            <p className="mt-1 text-xs text-[#594A6B] leading-relaxed">
+              {t('placedOnLabel')}{' '}
+              {language === 'bn'
+                ? formatDate(order.createdAt, {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : formatDateTime(order.createdAt)}{' '}
+              · {t('paymentMethod')}:{' '}
               <strong className="text-[#6A11CB]">
-                {order.paymentMethod || 'Cash on Delivery (COD)'}
+                {translatePaymentMethod(
+                  order.paymentMethod || 'Cash on Delivery (COD)'
+                )}
               </strong>
             </p>
           </div>
@@ -191,12 +251,13 @@ export function OrderDetailsPage() {
                   paymentStatus
                 )}`}
               >
-                Payment: {paymentStatus}
+                {language === 'bn' ? 'পেমেন্ট' : 'Payment'}:{' '}
+                {translatePaymentStatus(paymentStatus)}
               </span>
               <span
                 className={`inline-flex rounded-full border px-3.5 py-1 text-xs font-bold ${statusBadgeClass}`}
               >
-                {exactStatusLabel}
+                {translateOrderStatus(exactStatusLabel)}
               </span>
             </div>
             <p className="mt-2 font-mono text-2xl font-extrabold tabular-nums text-[#1E1035]">
@@ -206,11 +267,60 @@ export function OrderDetailsPage() {
         </div>
       </div>
 
+      {/* Official Order Receipt Banner — STRICTLY visible ONLY when Delivered */}
+      {receiptAvailable && receiptInfo && (
+        <div className="rounded-2xl border border-[#DEC7FF] bg-gradient-to-r from-[#FAF5FF] via-white to-[#FFF4FA] p-4 sm:p-5 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.16)]">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5">
+            <div className="flex items-start gap-3 min-w-0">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6A11CB] to-[#8E2DE2] text-white shadow-sm">
+                <FileText className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-extrabold text-[#1E1035]">
+                  {t('officialOrderReceipt')}
+                </p>
+                <p className="mt-0.5 text-xs font-bold text-[#6A11CB] break-all">
+                  {t('receiptNumberLabel')}: {receiptInfo.receiptNumber}
+                </p>
+                <p className="mt-0.5 text-xs text-[#594A6B] leading-relaxed">
+                  {t('receiptReadyDesc')}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setReceiptModalOpen(true)}
+                className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#DEC7FF] bg-white px-4 py-2 text-xs font-bold text-[#6A11CB] hover:bg-[#F7EEFF] transition-colors"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                <span>{t('viewReceipt')}</span>
+              </button>
+              <button
+                type="button"
+                disabled={downloadingReceipt}
+                onClick={() => void handleDownloadReceiptPdf()}
+                className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#6A11CB] to-[#8E2DE2] px-4 py-2 text-xs font-bold text-white shadow-sm hover:opacity-95 disabled:opacity-60 transition-all"
+              >
+                {downloadingReceipt ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+                <span>
+                  {downloadingReceipt ? t('downloadingReceipt') : `${t('downloadReceipt')} (PDF)`}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Live Animated GiftKart Delivery Van Tracker */}
       <DeliveryVanTracker order={order} />
 
       {/* Ordered Items */}
-      <div className="space-y-4 rounded-2xl border border-[#EFE3FF] bg-white p-6 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.1)]">
+      <div className="space-y-4 rounded-2xl border border-[#EFE3FF] bg-white p-4 sm:p-6 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.1)]">
         <h2 className="text-base font-extrabold text-[#1E1035]">
           {t('orderItems')} ({order.items.reduce((s, i) => s + i.quantity, 0)})
         </h2>
@@ -231,10 +341,10 @@ export function OrderDetailsPage() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="text-sm font-bold text-[#1E1035]">
-                      {item.productNameSnapshot}
+                      {localizeEntity(item.productNameSnapshot, 'name')}
                     </p>
                     <p className="font-mono text-[11px] text-[#7B6496]">
-                      SKU: {item.productSkuSnapshot} · {formatInr(item.unitPriceInrSnapshot)} ×{' '}
+                      {t('sku')}: {item.productSkuSnapshot} · {formatInr(item.unitPriceInrSnapshot)} ×{' '}
                       {item.quantity}
                     </p>
                   </div>
@@ -245,18 +355,18 @@ export function OrderDetailsPage() {
                 {Object.keys(item.selectedVariants).length > 0 && (
                   <p className="mt-1 text-xs text-[#594A6B]">
                     {Object.entries(item.selectedVariants)
-                      .map(([k, v]) => `${k}: ${v}`)
+                      .map(([k, v]) => `${translateVariant(k)}: ${translateVariant(v)}`)
                       .join(' · ')}
                   </p>
                 )}
                 {item.personalizationDetails && (
                   <p className="mt-1 text-xs font-semibold text-[#6A11CB]">
-                    Personalization: {item.personalizationDetails}
+                    {t('personalizationDetails')}: {item.personalizationDetails}
                   </p>
                 )}
                 {item.customPhotoFileName && (
                   <p className="mt-0.5 text-xs font-medium text-[#FF4D8D]">
-                    Photo Attached: {item.customPhotoFileName}
+                    {t('photoUploaded')}: {item.customPhotoFileName}
                   </p>
                 )}
                 {displayStatus === 'Delivered' && (() => {
@@ -267,8 +377,10 @@ export function OrderDetailsPage() {
                     <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#EFE3FF] bg-[#FAF6FF] px-3 py-2">
                       <span className="text-xs font-semibold text-[#594A6B]">
                         {existingRev
-                          ? `You rated ${existingRev.rating}/5 ★ — Live on product page`
-                          : 'Order delivered! Rate this product, add photos & share feedback.'}
+                          ? language === 'bn'
+                            ? `আপনার রেটিং ${existingRev.rating}/5 ★ — ${t('ratedLiveOnStore')}`
+                            : `You rated ${existingRev.rating}/5 ★ — Live on product page`
+                          : t('reviewDeliveredPrompt')}
                       </span>
                       <button
                         type="button"
@@ -297,7 +409,7 @@ export function OrderDetailsPage() {
                             existingRev ? 'fill-amber-400 text-amber-400' : 'fill-white text-white'
                           }`}
                         />
-                        <span>{existingRev ? 'Edit Review' : 'Rate & Review'}</span>
+                        <span>{existingRev ? t('editReview') : t('rateAndReview')}</span>
                       </button>
                     </div>
                   );
@@ -321,7 +433,7 @@ export function OrderDetailsPage() {
             <p className="text-[#594A6B]">{order.customer.addressLine2}</p>
           )}
           <p className="font-semibold text-[#6A11CB]">
-            {order.customer.city}, {order.customer.state} — {order.customer.pincode}
+            {translatePlace(order.customer.city)}, {translatePlace(order.customer.state)} — {order.customer.pincode}
           </p>
           <p className="text-[#594A6B]">
             {order.customer.phone}
@@ -355,7 +467,11 @@ export function OrderDetailsPage() {
               )}
             </>
           ) : (
-            <p className="text-[#594A6B]">Standard protective packaging.</p>
+            <p className="text-[#594A6B]">
+              {language === 'bn'
+                ? 'স্ট্যান্ডার্ড সুরক্ষিত প্যাকেজিং।'
+                : 'Standard protective packaging.'}
+            </p>
           )}
         </div>
 
@@ -388,7 +504,7 @@ export function OrderDetailsPage() {
           <div className="flex justify-between text-[#594A6B]">
             <span>{t('paymentMethod')}</span>
             <span className="font-bold text-[#1E1035]">
-              {order.paymentMethod || t('codLabel')}
+              {translatePaymentMethod(order.paymentMethod || 'Cash on Delivery (COD)')}
             </span>
           </div>
           <div className="flex justify-between border-t border-[#EFE3FF] pt-2 text-sm font-extrabold text-[#1E1035]">
@@ -404,7 +520,7 @@ export function OrderDetailsPage() {
       <div className="space-y-4 rounded-2xl border border-[#EFE3FF] bg-white p-6">
         <h2 className="flex items-center gap-2 text-base font-extrabold text-[#1E1035]">
           <Clock className="h-4 w-4 text-[#6A11CB]" />
-          <span>Order Activity Log</span>
+          <span>{language === 'bn' ? 'অর্ডার কার্যকলাপ লগ' : 'Order Activity Log'}</span>
         </h2>
         <ol className="space-y-3 border-l-2 border-[#EBD8FF] pl-5">
           {order.statusHistory.map((entry, idx) => (
@@ -412,10 +528,18 @@ export function OrderDetailsPage() {
               <span className="absolute -left-[25px] top-1 h-3 w-3 rounded-full bg-[#6A11CB]" />
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-bold text-[#1E1035]">
-                  {getCustomerOrderStatusLabel(entry.status)}
+                  {translateOrderStatus(getCustomerOrderStatusLabel(entry.status))}
                 </span>
                 <span className="font-mono text-[11px] text-[#7B6496]">
-                  {formatDateTime(entry.timestamp)}
+                  {language === 'bn'
+                    ? formatDate(entry.timestamp, {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : formatDateTime(entry.timestamp)}
                 </span>
               </div>
               {entry.note && <p className="mt-0.5 text-[#594A6B]">{entry.note}</p>}
@@ -473,7 +597,7 @@ export function OrderDetailsPage() {
 
           {(displayStatus === 'Processing' || displayStatus === 'Shipped') && (
             <span className="text-xs font-medium text-[#685782]">
-              Cancellation is unavailable once processing has started.
+              {t('processingCancelBlocked')}
             </span>
           )}
         </div>
@@ -484,6 +608,19 @@ export function OrderDetailsPage() {
         onClose={() => setReviewTarget(null)}
         onSubmitted={() => {
           refreshReviews();
+        }}
+      />
+
+      <OrderReceiptModal
+        order={receiptModalOpen && receiptAvailable ? order : null}
+        storeSettings={storeSettings}
+        onClose={() => setReceiptModalOpen(false)}
+        onDownloadComplete={() => {
+          pushToast({
+            title: t('officialOrderReceipt'),
+            description: t('receiptDownloadedToast'),
+            variant: 'success',
+          });
         }}
       />
     </div>
@@ -507,7 +644,15 @@ export function SavedAddressesPage() {
   const { data: addresses } = useSavedAddresses();
   const { data: settings } = useStoreSettings();
   const { customerAccount } = useAuth();
-  const { t } = useLanguage();
+  const { language, t, translatePlace } = useLanguage();
+  const localizeAddressTypeLabel = (raw?: string) => {
+    const normalized = normalizeAddressType(raw);
+    return normalized === 'Home'
+      ? t('homeLabel')
+      : normalized === 'Work'
+        ? t('workLabel')
+        : t('otherLabel');
+  };
 
   const activeZones = (settings?.deliveryZones ?? []).filter((z) => z.isActive);
 
@@ -599,9 +744,21 @@ export function SavedAddressesPage() {
     if (!addrRes.valid) return setError(addrRes.error!);
     const pinRes = validateIndianPincode(pincode);
     if (!pinRes.valid) return setError(pinRes.error!);
-    if (!stateName.trim()) return setError('Please select your state.');
-    if (!city.trim()) return setError('Please enter city or district.');
-    if (!area.trim()) return setError('Please enter area or locality.');
+    if (!stateName.trim()) {
+      return setError(
+        language === 'bn' ? 'অনুগ্রহ করে আপনার রাজ্য নির্বাচন করুন।' : 'Please select your state.'
+      );
+    }
+    if (!city.trim()) {
+      return setError(
+        language === 'bn' ? 'অনুগ্রহ করে শহর বা জেলা লিখুন।' : 'Please enter city or district.'
+      );
+    }
+    if (!area.trim()) {
+      return setError(
+        language === 'bn' ? 'অনুগ্রহ করে এলাকা বা অঞ্চল লিখুন।' : 'Please enter area or locality.'
+      );
+    }
 
     const defaultZone = activeZones[0];
     const payload: SavedAddress = {
@@ -623,7 +780,7 @@ export function SavedAddressesPage() {
 
     await services.community.saveAddress(payload);
     setSavedBanner(
-      editingId ? 'Address updated successfully.' : 'Address saved for faster checkout.'
+      editingId ? t('addressUpdatedSuccess') : t('addressSavedSuccess')
     );
     resetForm();
   }
@@ -714,7 +871,7 @@ export function SavedAddressesPage() {
                             {addr.fullName}
                           </span>
                           <span className="rounded bg-[#F4EBFF] px-2 py-0.5 text-[10px] font-bold text-[#6A11CB]">
-                            {addr.label}
+                            {localizeAddressTypeLabel(addr.label)}
                           </span>
                           {addr.isDefault && (
                             <span className="rounded bg-[#6A11CB] px-2 py-0.5 text-[10px] font-bold text-white">
@@ -723,7 +880,7 @@ export function SavedAddressesPage() {
                           )}
                         </div>
                         <p className="mt-1.5 text-xs leading-relaxed text-[#4B3963]">
-                          {formatFullAddress(addr)}
+                          {translatePlace(formatFullAddress(addr))}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-4 text-[11.5px] font-medium text-[#685782]">
                           <span className="inline-flex items-center gap-1">
@@ -792,21 +949,21 @@ export function SavedAddressesPage() {
             <div className="grid gap-3.5 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-bold text-[#2B0B4E]">
-                  Full Name *
+                  {t('fullName')} *
                 </label>
                 <input
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Enter full name"
+                  placeholder={t('enterFullName')}
                   className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#2B0B4E]">
-                  Mobile Number *
+                  {t('phoneNumber')} *
                 </label>
                 <div className="mt-1 flex h-10 items-center overflow-hidden rounded-xl border border-[#DFD2F2] bg-white focus-within:border-[#6A11CB]">
                   <span className="flex h-full items-center border-r border-[#EFE3FF] bg-[#FAF6FF] px-2.5 text-xs font-bold text-[#6A11CB]">
@@ -820,7 +977,7 @@ export function SavedAddressesPage() {
                     onChange={(e) =>
                       setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
                     }
-                    placeholder="10-digit mobile"
+                    placeholder={t('enterMobileNumber')}
                     className="h-full w-full px-2.5 text-sm focus:outline-none"
                   />
                 </div>
@@ -828,47 +985,47 @@ export function SavedAddressesPage() {
 
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-[#2B0B4E]">
-                  Email Address
+                  {t('emailAddress')}
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
+                  placeholder={t('enterEmailAddress')}
                   className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
                 />
               </div>
 
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-[#2B0B4E]">
-                  House / Flat / Building / Street *
+                  {t('addressLine')} *
                 </label>
                 <input
                   type="text"
                   required
                   value={addressLine1}
                   onChange={(e) => setAddressLine1(e.target.value)}
-                  placeholder="e.g., Mukherjee Road, House No. 12"
+                  placeholder={t('addressLine')}
                   className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
                 />
               </div>
 
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-[#2B0B4E]">
-                  Landmark (Optional)
+                  {t('landmarkOptional')}
                 </label>
                 <input
                   type="text"
                   value={landmark}
                   onChange={(e) => setLandmark(e.target.value)}
-                  placeholder="e.g., Near Jalchak School"
+                  placeholder={t('landmarkOptional')}
                   className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#2B0B4E]">
-                  PIN Code *
+                  {t('pincode')} *
                 </label>
                 <input
                   type="text"
@@ -876,14 +1033,14 @@ export function SavedAddressesPage() {
                   maxLength={6}
                   value={pincode}
                   onChange={(e) => handlePinChange(e.target.value)}
-                  placeholder="e.g., 721155"
+                  placeholder="721155"
                   className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3 font-mono text-sm focus:border-[#6A11CB] focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#2B0B4E]">
-                  State *
+                  {t('state')} *
                 </label>
                 <select
                   value={stateName}
@@ -900,28 +1057,28 @@ export function SavedAddressesPage() {
 
               <div>
                 <label className="block text-xs font-bold text-[#2B0B4E]">
-                  City / District *
+                  {t('city')} *
                 </label>
                 <input
                   type="text"
                   required
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  placeholder="e.g., Paschim Medinipur"
+                  placeholder={t('city')}
                   className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#2B0B4E]">
-                  Area / Locality *
+                  {t('areaLocality')} *
                 </label>
                 <input
                   type="text"
                   required
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
-                  placeholder="e.g., Jalchak"
+                  placeholder={t('areaLocality')}
                   className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-white px-3 text-sm focus:border-[#6A11CB] focus:outline-none"
                 />
               </div>
@@ -929,7 +1086,7 @@ export function SavedAddressesPage() {
 
             {/* Address Type */}
             <div>
-              <p className="text-xs font-bold text-[#2B0B4E]">{t('deliveryAddress')} *</p>
+              <p className="text-xs font-bold text-[#2B0B4E]">{t('addressTypeTitle')} *</p>
               <div className="mt-1.5 grid grid-cols-3 gap-2">
                 {DESKTOP_ADDRESS_TYPES.map(({ value, Icon }) => {
                   const active = addressType === value;
@@ -1010,34 +1167,62 @@ export function SavedAddressesPage() {
  * ========================================================================== */
 export function CustomizationGuidePage() {
   const { data: settings } = useStoreSettings();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const isBn = language === 'bn';
 
-  const steps = [
-    {
-      step: '01',
-      title: 'Select Your Base Product & Finish',
-      body: 'Choose from photo frames, coffee mugs, T-shirt prints, home decor, LED lighting, keychains, and PVC cards directly from the product catalog.',
-      img: STUDIO_MEDIA.coffeeMug,
-    },
-    {
-      step: '02',
-      title: 'Enter Exact Name, Date or Message',
-      body: 'Provide exact spelling, dates, or short messages in the personalization field on the product page. Double-check spelling before checkout.',
-      img: STUDIO_MEDIA.tshirtPrint,
-    },
-    {
-      step: '03',
-      title: 'Upload a Clear, High-Resolution Photo',
-      body: 'Use a well-lit, front-facing photograph for best print sharpness on mugs, frames, and apparel. Avoid heavily cropped or low-light screenshots.',
-      img: STUDIO_MEDIA.photoFrame,
-    },
-    {
-      step: '04',
-      title: 'Optional Gift Wrapping & Order Review',
-      body: 'Add curated gift wrapping and a note card if desired, verify your delivery address, and confirm your order.',
-      img: STUDIO_MEDIA.giftBox,
-    },
-  ];
+  const steps = isBn
+    ? [
+        {
+          step: '০১',
+          title: 'আপনার পছন্দের পণ্য ও ফিনিশ বেছে নিন',
+          body: 'আমাদের ক্যাটালগ থেকে সরাসরি ফটো ফ্রেম, কফি মগ, টি-শার্ট প্রিন্ট, হোম ডেকোর, এলইডি লাইটিং, কী-চেইন এবং পিভিসি কার্ড বেছে নিন।',
+          img: STUDIO_MEDIA.coffeeMug,
+        },
+        {
+          step: '০২',
+          title: 'সঠিক নাম, তারিখ বা বার্তা লিখুন',
+          body: 'প্রোডাক্ট পেজের পার্সোনালাইজেশন ঘরে সঠিক বানানে নাম, তারিখ বা সংক্ষিপ্ত বার্তা লিখুন। চেকআউটের আগে বানান পুনরায় যাচাই করুন।',
+          img: STUDIO_MEDIA.tshirtPrint,
+        },
+        {
+          step: '০৩',
+          title: 'স্পষ্ট ও উচ্চ-মানের ছবি আপলোড করুন',
+          body: 'মগ, ফ্রেম ও পোশাকে চমৎকার প্রিন্টের জন্য পরিষ্কার আলোয় তোলা ছবি ব্যবহার করুন। ঝাপসা বা অতিরিক্ত ক্রপ করা স্ক্রিনশট এড়িয়ে চলুন।',
+          img: STUDIO_MEDIA.photoFrame,
+        },
+        {
+          step: '০৪',
+          title: 'ঐচ্ছিক গিফট র‍্যাপিং ও অর্ডার নিশ্চিতকরণ',
+          body: 'প্রয়োজনে প্রিমিয়াম গিফট র‍্যাপিং ও নোট কার্ড যোগ করুন, ডেলিভারি ঠিকানা যাচাই করুন এবং অর্ডার নিশ্চিত করুন।',
+          img: STUDIO_MEDIA.giftBox,
+        },
+      ]
+    : [
+        {
+          step: '01',
+          title: 'Select Your Base Product & Finish',
+          body: 'Choose from photo frames, coffee mugs, T-shirt prints, home decor, LED lighting, keychains, and PVC cards directly from the product catalog.',
+          img: STUDIO_MEDIA.coffeeMug,
+        },
+        {
+          step: '02',
+          title: 'Enter Exact Name, Date or Message',
+          body: 'Provide exact spelling, dates, or short messages in the personalization field on the product page. Double-check spelling before checkout.',
+          img: STUDIO_MEDIA.tshirtPrint,
+        },
+        {
+          step: '03',
+          title: 'Upload a Clear, High-Resolution Photo',
+          body: 'Use a well-lit, front-facing photograph for best print sharpness on mugs, frames, and apparel. Avoid heavily cropped or low-light screenshots.',
+          img: STUDIO_MEDIA.photoFrame,
+        },
+        {
+          step: '04',
+          title: 'Optional Gift Wrapping & Order Review',
+          body: 'Add curated gift wrapping and a note card if desired, verify your delivery address, and confirm your order.',
+          img: STUDIO_MEDIA.giftBox,
+        },
+      ];
 
   return (
     <div className="mx-auto max-w-4xl pb-2">
@@ -1056,12 +1241,16 @@ export function CustomizationGuidePage() {
       {/* Clean Editorial Header */}
       <header className="mt-2.5 border-b border-neutral-200 pb-4">
         <h1 className="text-[22px] font-bold tracking-tight text-neutral-900 sm:text-[26px]">
-          {settings?.pageContent?.customizationHeadline ??
-            'How GiftKart Customization Works'}
+          {isBn
+            ? 'GiftKart কাস্টমাইজেশন যেভাবে কাজ করে'
+            : settings?.pageContent?.customizationHeadline ??
+              'How GiftKart Customization Works'}
         </h1>
         <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-neutral-600 sm:text-[14px]">
-          {settings?.pageContent?.customizationNote ??
-            'Step-by-step instructions for preparing photos, personalized text, and gift wrapping for crisp print results.'}
+          {isBn
+            ? 'চমৎকার প্রিন্ট মানের জন্য ছবি, পার্সোনালাইজড লেখা এবং গিফট র‍্যাপিং প্রস্তুত করার ধাপে ধাপে নির্দেশিকা।'
+            : settings?.pageContent?.customizationNote ??
+              'Step-by-step instructions for preparing photos, personalized text, and gift wrapping for crisp print results.'}
         </p>
       </header>
 
@@ -1086,7 +1275,7 @@ export function CustomizationGuidePage() {
             </div>
             <div className="min-w-0">
               <p className="text-[11.5px] font-medium text-neutral-400 tabular-nums">
-                Step {step}
+                {isBn ? `ধাপ ${step}` : `Step ${step}`}
               </p>
               <h2 className="mt-0.5 text-[14px] font-semibold text-neutral-900">
                 {title}
@@ -1102,13 +1291,14 @@ export function CustomizationGuidePage() {
       {/* Neutral Important Policy Notice */}
       <section className="mt-4 rounded border border-neutral-200 bg-neutral-50/70 px-4 py-3 text-[12.5px] text-neutral-600">
         <p className="font-semibold text-neutral-900">
-          Important Note on Customized Orders
+          {isBn
+            ? 'কাস্টমাইজড অর্ডার সম্পর্কিত গুরুত্বপূর্ণ তথ্য'
+            : 'Important Note on Customized Orders'}
         </p>
         <p className="mt-0.5 leading-relaxed">
-          Customized products carrying personal photos, names, or printed
-          messages are non-returnable and non-refundable (except verified
-          transit damage or wrong item reported within 48 hours). Orders cannot
-          be cancelled once Processing begins.
+          {isBn
+            ? 'ব্যক্তিগত ছবি, নাম বা প্রিন্টেড বার্তাযুক্ত কাস্টমাইজড পণ্য ফেরত বা রিফান্ডযোগ্য নয় (তবে ডেলিভারির ৪৮ ঘণ্টার মধ্যে যাচাইকৃত ক্ষতি বা ভুল পণ্য প্রদানের ক্ষেত্রে ব্যতিক্রম প্রযোজ্য)। অর্ডার প্রসেসিং শুরু হওয়ার পর বাতিল করা যাবে না।'
+            : 'Customized products carrying personal photos, names, or printed messages are non-returnable and non-refundable (except verified transit damage or wrong item reported within 48 hours). Orders cannot be cancelled once Processing begins.'}
         </p>
       </section>
 
@@ -1119,20 +1309,20 @@ export function CustomizationGuidePage() {
             to="/return-policy"
             className="text-neutral-700 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-[#6A11CB] hover:decoration-[#6A11CB]"
           >
-            Return &amp; Refund Policy
+            {t('returnsRefunds')}
           </Link>
           <Link
             to="/cancellation-policy"
             className="text-neutral-700 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-[#6A11CB] hover:decoration-[#6A11CB]"
           >
-            Cancellation Policy
+            {isBn ? 'বাতিলকরণ নীতিমালা' : 'Cancellation Policy'}
           </Link>
         </div>
         <Link
           to="/customize"
           className="inline-flex shrink-0 items-center whitespace-nowrap rounded border border-neutral-900 bg-neutral-900 px-3.5 py-1.5 text-[12.5px] font-medium text-white transition-colors hover:bg-neutral-800"
         >
-          Browse Customizable Gifts
+          {isBn ? 'কাস্টমাইজযোগ্য উপহার দেখুন' : 'Browse Customizable Gifts'}
         </Link>
       </footer>
     </div>

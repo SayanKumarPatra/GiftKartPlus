@@ -1,7 +1,7 @@
 import { Check, Globe } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
-import type { LanguageCode } from '../../i18n/translations';
+import { TRANSLATIONS, type LanguageCode } from '../../i18n/translations';
 
 interface LanguageSelectorProps {
   compact?: boolean;
@@ -19,8 +19,9 @@ export function LanguageSelector({
     if (code === language) return;
     setLanguage(code);
     const chosen = languages.find((item) => item.code === code);
+    const updatedLabel = TRANSLATIONS[code].languageUpdated;
     pushToast({
-      title: chosen ? `${t('languageUpdated')}: ${chosen.nativeName}` : t('languageUpdated'),
+      title: chosen ? `${updatedLabel}: ${chosen.nativeName}` : updatedLabel,
       variant: 'success',
       compact: true,
     });
@@ -38,7 +39,11 @@ export function LanguageSelector({
               {t('appLanguage')}
             </span>
           </div>
-          <span className="text-[11px] font-semibold text-[#6A11CB]">
+          <span
+            className={`text-[11.5px] font-semibold text-[#6A11CB] ${
+              language === 'bn' ? 'font-tiro-bangla' : ''
+            }`}
+          >
             {languages.find((l) => l.code === language)?.nativeName}
           </span>
         </div>
@@ -57,7 +62,9 @@ export function LanguageSelector({
                 role="radio"
                 aria-checked={active}
                 onClick={() => handleSelect(option.code)}
-                className={`flex h-9 cursor-pointer items-center justify-center gap-1 rounded-xl border text-[12px] font-bold transition-all ${
+                className={`flex min-h-[40px] cursor-pointer items-center justify-center gap-1 rounded-xl border px-1.5 text-[12.5px] font-bold transition-all active:scale-[0.97] ${
+                  option.code === 'bn' ? 'font-tiro-bangla' : ''
+                } ${
                   active
                     ? 'border-[#6A11CB] bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] text-white shadow-[0_6px_14px_-8px_rgba(106,17,203,0.55)]'
                     : 'border-[#EBD8FF] bg-[#FAF6FF] text-[#2B0B4E] hover:border-[#6A11CB]/50 hover:bg-[#F3E8FF]'
@@ -103,7 +110,7 @@ export function LanguageSelector({
               role="radio"
               aria-checked={active}
               onClick={() => handleSelect(option.code)}
-              className={`group flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-3.5 text-left transition-all ${
+              className={`group flex min-h-[58px] cursor-pointer items-center justify-between gap-3 rounded-2xl border p-3.5 text-left transition-all active:scale-[0.985] ${
                 active
                   ? 'border-[#6A11CB] bg-gradient-to-br from-[#FAF5FF] to-[#FFF0F6] shadow-[0_10px_22px_-14px_rgba(106,17,203,0.45)] ring-1 ring-[#6A11CB]/25'
                   : 'border-[#EBD8FF] bg-white hover:border-[#6A11CB]/45 hover:bg-[#FCFAFF]'
@@ -111,9 +118,9 @@ export function LanguageSelector({
             >
               <div className="min-w-0">
                 <p
-                  className={`text-[15px] font-extrabold leading-tight ${
-                    active ? 'text-[#6A11CB]' : 'text-[#2B0B4E]'
-                  }`}
+                  className={`text-[16px] font-extrabold leading-tight ${
+                    option.code === 'bn' ? 'font-tiro-bangla' : ''
+                  } ${active ? 'text-[#6A11CB]' : 'text-[#2B0B4E]'}`}
                 >
                   {option.nativeName}
                 </p>

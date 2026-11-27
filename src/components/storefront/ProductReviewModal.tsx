@@ -3,6 +3,7 @@ import { Camera, CheckCircle2, Loader2, Star, Trash2, X } from 'lucide-react';
 import type { ProductReview } from '../../types';
 import { services } from '../../services/registry';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { ProductImage } from '../ui/ProductImage';
 
 export interface ReviewModalTarget {
@@ -24,13 +25,13 @@ interface ProductReviewModalProps {
   onSubmitted?: (reviews: ProductReview[]) => void;
 }
 
-const RATING_LABELS: Record<number, string> = {
-  1: 'Poor',
-  2: 'Fair',
-  3: 'Good',
-  4: 'Very Good',
-  5: 'Excellent',
-};
+const RATING_LABEL_KEYS = {
+  1: 'ratingPoor',
+  2: 'ratingFair',
+  3: 'ratingGood',
+  4: 'ratingVeryGood',
+  5: 'ratingExcellent',
+} as const;
 
 const MAX_PHOTOS = 3;
 
@@ -88,6 +89,7 @@ export function ProductReviewModal({
   onSubmitted,
 }: ProductReviewModalProps) {
   const { pushToast } = useToast();
+  const { language, t, localizeEntity } = useLanguage();
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -195,8 +197,10 @@ export function ProductReviewModal({
 
       const updatedReviews = await services.community.upsertReview(reviewPayload);
       pushToast({
-        title: target.existingReview ? 'Review Updated' : 'Thank You for Your Review!',
-        description: 'Your verified rating and feedback are now live on the product page.',
+        title: target.existingReview ? t('editYourReview') : t('customerReviews'),
+        description: target.existingReview
+          ? t('reviewUpdatedToast')
+          : t('reviewPublishedToast'),
         variant: 'success',
       });
       onSubmitted?.(updatedReviews);
@@ -233,18 +237,18 @@ export function ProductReviewModal({
               id="review-modal-heading"
               className="text-[15px] font-extrabold text-[#2B0B4E]"
             >
-              {target.existingReview ? 'Update Your Review' : 'Rate & Review Product'}
+              {target.existingReview ? t('updateYourReview') : t('rateAndReviewProduct')}
             </h2>
             <p className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-              <span>Verified Purchase · {target.orderNumber}</span>
+              <span>{t('verifiedPurchase')} · {target.orderNumber}</span>
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             disabled={submitting}
-            aria-label="Close review modal"
+            aria-label={t('close')}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-[#6E5B85] hover:bg-[#F5ECFF] hover:text-[#2B0B4E]"
           >
             <X className="h-4 w-4" />
@@ -257,16 +261,16 @@ export function ProductReviewModal({
             <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-[#EBD8FF] bg-white">
               <ProductImage
                 src={target.productImage}
-                alt={target.productName}
+                alt={localizeEntity(target.productName, 'name')}
                 aspectClass="aspect-square"
               />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-bold text-[#2B0B4E]">
-                {target.productName}
+                {localizeEntity(target.productName, 'name')}
               </p>
               <p className="text-[11px] text-[#6E5B85]">
-                Reviewing as <strong className="text-[#2B0B4E]">{target.authorName}</strong>
+                {t('reviewingAs')} <strong className="text-[#2B0B4E]">{target.authorName}</strong>
               </p>
             </div>
           </div>
@@ -274,7 +278,7 @@ export function ProductReviewModal({
           {/* Interactive Star Rating */}
           <div className="rounded-2xl border border-[#F0E3FF] bg-[#FAF6FF]/60 px-4 py-3 text-center">
             <p className="text-[12px] font-bold text-[#4C1D95]">
-              How was your gift quality &amp; experience?
+              {t('howWasGiftExperience')}
             </p>
             <div className="mt-2 flex items-center justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => {
@@ -286,7 +290,7 @@ export function ProductReviewModal({
                     onMouseEnter={() => setHoverRating(star)}
                     onMouseLeave={() => setHoverRating(0)}
                     onClick={() => setRating(star)}
-                    aria-label={`Rate ${star} out of 5 stars`}
+                    aria-label={`${star}/5`}
                     className="cursor-pointer p-1 transition-transform active:scale-90 hover:scale-110"
                   >
                     <Star
@@ -301,7 +305,7 @@ export function ProductReviewModal({
               })}
             </div>
             <p className="mt-1 text-[12px] font-extrabold text-[#6A11CB]">
-              {activeStar} / 5 · {RATING_LABELS[activeStar]}
+              {activeStar} / 5 · {t(RATING_LABEL_KEYS[activeStar as 1 | 2 | 3 | 4 | 5] ?? 'ratingExcellent')}
             </p>
           </div>
 
@@ -312,7 +316,7 @@ export function ProductReviewModal({
                 htmlFor="verified-review-comment"
                 className="text-[12px] font-bold text-[#2B0B4E]"
               >
-                Your Feedback *
+                {t('yourFeedbackLabel')} *
               </label>
               <span className="text-[11px] tabular-nums text-[#7A6894]">
                 {comment.length}/600
@@ -324,7 +328,7 @@ export function ProductReviewModal({
               maxLength={600}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Share print quality, packaging, delivery experience, or how your loved one liked this gift..."
+              placeholder={t('feedbackPlaceholder')}
               className="mt-1.5 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] px-3 py-2.5 text-[13px] text-[#2B0B4E] placeholder:text-[#8E7AA6] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
             />
           </div>
@@ -333,14 +337,14 @@ export function ProductReviewModal({
           <div>
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-bold text-[#2B0B4E]">
-                Add Product Photos (Optional)
+                {t('addProductPhotosOptional')}
               </span>
               <span className="text-[11px] font-semibold text-[#7A6894]">
                 {photos.length}/{MAX_PHOTOS}
               </span>
             </div>
             <p className="mt-0.5 text-[11px] text-[#6E5B85]">
-              Real photos help other shoppers trust the product quality.
+              {t('realPhotosHelp')}
             </p>
 
             <div className="mt-2 flex flex-wrap items-center gap-2.5">
@@ -351,7 +355,7 @@ export function ProductReviewModal({
                 >
                   <img
                     src={photoSrc}
-                    alt={`Uploaded review photo ${idx + 1}`}
+                    alt={`${idx + 1}`}
                     className="h-full w-full object-cover"
                   />
                   <button
@@ -359,7 +363,7 @@ export function ProductReviewModal({
                     onClick={() =>
                       setPhotos((prev) => prev.filter((_, photoIdx) => photoIdx !== idx))
                     }
-                    aria-label={`Remove photo ${idx + 1}`}
+                    aria-label={t('removePhoto')}
                     className="absolute right-1 top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-[#2B0B4E]/80 text-white hover:bg-[#C81E68]"
                   >
                     <Trash2 className="h-3 w-3" />
@@ -374,7 +378,7 @@ export function ProductReviewModal({
                   ) : (
                     <>
                       <Camera className="h-4 w-4" />
-                      <span className="text-[10px] font-bold">Add Photo</span>
+                      <span className="text-[10px] font-bold">{t('addPhotoBtn')}</span>
                     </>
                   )}
                   <input
@@ -392,7 +396,9 @@ export function ProductReviewModal({
 
           {error && (
             <p className="rounded-xl border border-[#FFD1E5] bg-[#FFF0F6] px-3 py-2 text-[12px] font-semibold text-[#C81E68]">
-              {error}
+              {language === 'bn' && error.startsWith('Please write')
+                ? 'অনুগ্রহ করে আপনার অভিজ্ঞতা সম্পর্কে একটি ছোট মন্তব্য লিখুন।'
+                : error}
             </p>
           )}
 
@@ -404,7 +410,7 @@ export function ProductReviewModal({
               disabled={submitting}
               className="flex h-10 flex-1 cursor-pointer items-center justify-center rounded-full border border-[#DFD2F2] bg-white text-[12.5px] font-bold text-[#3B2654] hover:bg-[#FAF6FF]"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"
@@ -414,10 +420,10 @@ export function ProductReviewModal({
               {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               <span>
                 {submitting
-                  ? 'Publishing...'
+                  ? t('publishingBtn')
                   : target.existingReview
-                    ? 'Save Review'
-                    : 'Publish Review'}
+                    ? t('saveReviewBtn')
+                    : t('publishReviewBtn')}
               </span>
             </button>
           </div>

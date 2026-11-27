@@ -76,7 +76,7 @@ export function CartPage() {
     selectGiftWrapStyle,
     updateGiftWrapDetails,
   } = useCart();
-  const { t } = useLanguage();
+  const { language, t, localizeEntity, translateVariant } = useLanguage();
   const { data: giftWrapConfig } = useGiftWrapConfig();
   const { data: products } = useProducts();
   const { data: coupons } = useCoupons();
@@ -123,7 +123,7 @@ export function CartPage() {
   async function applyCouponCode(codeToApply: string) {
     const trimmed = codeToApply.trim().toUpperCase();
     if (!trimmed) {
-      setCouponFeedback({ type: 'error', message: 'Please enter a coupon code.' });
+      setCouponFeedback({ type: 'error', message: t('enterValidCoupon') });
       return;
     }
     const res = await services.promotions.validateCoupon(trimmed, subtotalInr);
@@ -223,35 +223,37 @@ export function CartPage() {
                               to={`/product/${item.productSlug}`}
                               className="text-sm font-bold text-[#1E1035] hover:text-[#6A11CB]"
                             >
-                              {item.productName}
+                              {localizeEntity(item.productName, 'name')}
                             </Link>
                             <button
                               type="button"
                               onClick={() => removeItem(item.cartItemId)}
-                              aria-label={`${t('remove')} ${item.productName}`}
+                              aria-label={`${t('remove')} ${localizeEntity(item.productName, 'name')}`}
                               className="cursor-pointer rounded-lg p-1 text-[#8B7AA0] hover:bg-[#FFF0F6] hover:text-[#C81E68]"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                           <p className="font-mono text-[11px] text-[#7A6894]">
-                            SKU: {item.productSku}
+                            {t('sku')}: {item.productSku}
                           </p>
                           {Object.keys(item.selectedVariants).length > 0 && (
                             <p className="mt-1 text-xs text-[#594A6B]">
                               {Object.entries(item.selectedVariants)
-                                .map(([k, v]) => `${k}: ${v}`)
+                                .map(([k, v]) => `${translateVariant(k)}: ${translateVariant(v)}`)
                                 .join(' · ')}
                             </p>
                           )}
                           {item.personalizationDetails && (
                             <p className="mt-1 text-xs font-semibold text-[#6A11CB]">
-                              Custom Note: {item.personalizationDetails}
+                              {language === 'bn' ? 'কাস্টম নোট' : 'Custom Note'}:{' '}
+                              {item.personalizationDetails}
                             </p>
                           )}
                           {item.customPhotoFileName && (
                             <p className="mt-0.5 text-xs font-semibold text-[#FF4D8D]">
-                              Photo Attached: {item.customPhotoFileName}
+                              {language === 'bn' ? 'সংযুক্ত ছবি' : 'Photo Attached'}:{' '}
+                              {item.customPhotoFileName}
                             </p>
                           )}
 
@@ -367,7 +369,7 @@ export function CartPage() {
                         <div className="grid gap-3.5 sm:grid-cols-2">
                           <div>
                             <label className="block text-xs font-bold text-[#2B0B4E]">
-                              Recipient Name
+                              {language === 'bn' ? 'প্রাপকের নাম' : 'Recipient Name'}
                             </label>
                             <input
                               type="text"
@@ -375,14 +377,18 @@ export function CartPage() {
                               onChange={(e) =>
                                 updateGiftWrapDetails({ recipientName: e.target.value })
                               }
-                              placeholder="Who is receiving this gift?"
+                              placeholder={
+                                language === 'bn'
+                                  ? 'এই উপহারটি কে পাচ্ছেন?'
+                                  : 'Who is receiving this gift?'
+                              }
                               className="mt-1 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 py-2 text-sm text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
                             />
                           </div>
                           <div>
                             <div className="flex items-center justify-between">
                               <label className="block text-xs font-bold text-[#2B0B4E]">
-                                Gift Message Card
+                                {language === 'bn' ? 'গিফট মেসেজ কার্ড' : 'Gift Message Card'}
                               </label>
                               <span className="font-mono text-[10px] text-[#7A6894]">
                                 {giftWrap.giftMessage.length}/
@@ -396,7 +402,7 @@ export function CartPage() {
                               onChange={(e) =>
                                 updateGiftWrapDetails({ giftMessage: e.target.value })
                               }
-                              placeholder="Write a personal note to print on the card..."
+                              placeholder={t('giftNotePlaceholder')}
                               className="mt-1 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 py-2 text-sm text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
                             />
                           </div>
@@ -581,7 +587,21 @@ const DESKTOP_ADDRESS_TYPE_OPTIONS: Array<{
 export function CheckoutPage() {
   const { items, giftWrap, subtotalInr, giftWrapChargeInr, clearCart } = useCart();
   const { customerAccount } = useAuth();
-  const { t } = useLanguage();
+  const {
+    language,
+    t,
+    localizeEntity,
+    translateVariant,
+    translatePlace,
+  } = useLanguage();
+  const localizeAddressTypeLabel = (raw?: string) => {
+    const normalized = normalizeAddressType(raw);
+    return normalized === 'Home'
+      ? t('homeLabel')
+      : normalized === 'Work'
+        ? t('workLabel')
+        : t('otherLabel');
+  };
   const { data: settings } = useStoreSettings();
   const { data: savedAddresses } = useSavedAddresses();
   const { data: products } = useProducts();
@@ -737,9 +757,18 @@ export function CheckoutPage() {
     const pinCheck = validateIndianPincode(pincode);
     if (!pinCheck.valid) errors.pincode = pinCheck.error!;
 
-    if (!stateName.trim()) errors.state = 'Please select your state.';
-    if (!city.trim()) errors.city = 'Please enter city or district.';
-    if (!area.trim()) errors.area = 'Please enter area or locality.';
+    if (!stateName.trim()) {
+      errors.state =
+        language === 'bn' ? 'অনুগ্রহ করে আপনার রাজ্য নির্বাচন করুন।' : 'Please select your state.';
+    }
+    if (!city.trim()) {
+      errors.city =
+        language === 'bn' ? 'অনুগ্রহ করে শহর বা জেলা লিখুন।' : 'Please enter city or district.';
+    }
+    if (!area.trim()) {
+      errors.area =
+        language === 'bn' ? 'অনুগ্রহ করে এলাকা বা অঞ্চল লিখুন।' : 'Please enter area or locality.';
+    }
 
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
@@ -773,7 +802,7 @@ export function CheckoutPage() {
   async function handleApplyCoupon(codeToTry: string) {
     const clean = codeToTry.trim().toUpperCase();
     if (!clean) {
-      setCouponFeedback({ type: 'error', message: 'Enter a coupon code first.' });
+      setCouponFeedback({ type: 'error', message: t('enterValidCoupon') });
       return;
     }
     const res = await services.promotions.validateCoupon(clean, subtotalInr);
@@ -806,7 +835,7 @@ export function CheckoutPage() {
         customer: {
           fullName: fullName.trim(),
           phone: phone.trim(),
-          email: email.trim() || customerAccount?.email || 'customer@giftkart.in',
+          email: email.trim() || customerAccount?.email || '',
           addressLine1: addressLine1.trim(),
           addressLine2: landmark.trim() || area.trim() || undefined,
           deliveryZoneId: zoneId,
@@ -1002,11 +1031,11 @@ export function CheckoutPage() {
                                     {addr.fullName}
                                   </span>
                                   <span className="rounded bg-[#F4EBFF] px-1.5 py-0.5 text-[10px] font-bold text-[#6A11CB]">
-                                    {addr.label}
+                                    {localizeAddressTypeLabel(addr.label)}
                                   </span>
                                 </div>
                                 <p className="mt-1 line-clamp-2 text-[11px] text-[#594A6B]">
-                                  {formatFullAddress(addr)}
+                                  {translatePlace(formatFullAddress(addr))}
                                 </p>
                                 <p className="mt-1 font-mono text-[11px] text-[#7A6894]">
                                   +91 {normalizePhoneDigits(addr.phone)}
@@ -1179,7 +1208,7 @@ export function CheckoutPage() {
 
                     {/* Address Type */}
                     <div>
-                      <p className="text-xs font-bold text-[#2B0B4E]">{t('deliveryAddress')} *</p>
+                      <p className="text-xs font-bold text-[#2B0B4E]">{t('addressTypeTitle')} *</p>
                       <div className="mt-2 grid grid-cols-3 gap-2.5">
                         {DESKTOP_ADDRESS_TYPE_OPTIONS.map(({ value, Icon }) => {
                           const active = addressType === value;
@@ -1243,14 +1272,14 @@ export function CheckoutPage() {
                                 {t('deliveryAddress')}
                               </p>
                               <span className="rounded bg-[#F4EBFF] px-2 py-0.5 text-[10px] font-bold text-[#6A11CB]">
-                                {addressType}
+                                {localizeAddressTypeLabel(addressType)}
                               </span>
                             </div>
                             <p className="mt-1 text-sm font-extrabold text-[#1E1035]">
                               {fullName}
                             </p>
                             <p className="mt-0.5 text-xs leading-relaxed text-[#594A6B]">
-                              {formattedAddressPreview}
+                              {translatePlace(formattedAddressPreview)}
                             </p>
                             <p className="mt-1 text-xs font-semibold text-[#685782]">
                               +91 {phone}
@@ -1288,26 +1317,27 @@ export function CheckoutPage() {
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-bold text-[#1E1035]">
-                                {item.productName}
+                                {localizeEntity(item.productName, 'name')}
                               </p>
                               <p className="mt-0.5 text-xs text-[#685782]">
-                                Qty: {item.quantity} · {formatInr(item.unitPriceInr)} each
+                                {t('qtyShort')}: {item.quantity} · {formatInr(item.unitPriceInr)}{' '}
+                                {language === 'bn' ? 'প্রতিটি' : 'each'}
                               </p>
                               {Object.keys(item.selectedVariants).length > 0 && (
                                 <p className="mt-0.5 text-xs text-[#594A6B]">
                                   {Object.entries(item.selectedVariants)
-                                    .map(([k, v]) => `${k}: ${v}`)
+                                    .map(([k, v]) => `${translateVariant(k)}: ${translateVariant(v)}`)
                                     .join(' · ')}
                                 </p>
                               )}
                               {item.personalizationDetails && (
                                 <p className="mt-0.5 text-xs font-semibold text-[#6A11CB]">
-                                  Note: {item.personalizationDetails}
+                                  {language === 'bn' ? 'নোট' : 'Note'}: {item.personalizationDetails}
                                 </p>
                               )}
                               {item.customPhotoFileName && (
                                 <p className="text-xs font-semibold text-[#FF4D8D]">
-                                  Photo: {item.customPhotoFileName}
+                                  {language === 'bn' ? 'ছবি' : 'Photo'}: {item.customPhotoFileName}
                                 </p>
                               )}
                             </div>
@@ -1321,12 +1351,12 @@ export function CheckoutPage() {
                       {giftWrap.enabled && (
                         <div className="mt-4 rounded-xl border border-[#EFE3FF] bg-[#FFF5FA] p-3.5 text-xs">
                           <p className="font-bold text-[#6A11CB]">
-                            Boutique Gift Wrapping · {giftWrap.styleNameSnapshot} (
+                            {t('giftWrapAvailable')} · {giftWrap.styleNameSnapshot} (
                             {formatInr(giftWrapChargeInr)})
                           </p>
                           {giftWrap.recipientName && (
                             <p className="mt-0.5 text-[#2B0B4E]">
-                              Recipient: {giftWrap.recipientName}
+                              {language === 'bn' ? 'প্রাপক' : 'Recipient'}: {giftWrap.recipientName}
                             </p>
                           )}
                           {giftWrap.giftMessage && (
@@ -1466,11 +1496,13 @@ export function CheckoutPage() {
                                 {t('onlinePaymentLabel')} (UPI)
                               </span>
                               <span className="rounded bg-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-700">
-                                Coming Soon
+                                {language === 'bn' ? 'শীঘ্রই আসছে' : 'Coming Soon'}
                               </span>
                             </div>
                             <p className="mt-1 text-xs text-[#6E5B85]">
-                              UPI online payment is temporarily unavailable. Please place your order using Cash on Delivery.
+                              {language === 'bn'
+                                ? 'UPI অনলাইন পেমেন্ট সাময়িকভাবে বন্ধ আছে। অনুগ্রহ করে ক্যাশ অন ডেলিভারি (COD)-এর মাধ্যমে অর্ডার করুন।'
+                                : 'UPI online payment is temporarily unavailable. Please place your order using Cash on Delivery.'}
                             </p>
                           </div>
                         </div>
@@ -1481,9 +1513,11 @@ export function CheckoutPage() {
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-[#EFE3FF] bg-[#FCFAFF] px-4 py-3 text-xs">
                       <div className="min-w-0">
                         <p className="font-bold text-[#1E1035]">
-                          {t('deliveryAddress')}: {fullName} ({addressType})
+                          {t('deliveryAddress')}: {fullName} ({localizeAddressTypeLabel(addressType)})
                         </p>
-                        <p className="truncate text-[#685782]">{formattedAddressPreview}</p>
+                        <p className="truncate text-[#685782]">
+                          {translatePlace(formattedAddressPreview)}
+                        </p>
                       </div>
                       <button
                         type="button"
@@ -1529,9 +1563,11 @@ export function CheckoutPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-bold text-[#1E1035]">
-                          {item.productName}
+                          {localizeEntity(item.productName, 'name')}
                         </p>
-                        <p className="text-[11px] text-[#685782]">Qty: {item.quantity}</p>
+                        <p className="text-[11px] text-[#685782]">
+                          {t('qtyShort')}: {item.quantity}
+                        </p>
                       </div>
                       <span className="font-mono font-bold tabular-nums text-[#6A11CB]">
                         {formatInr(item.unitPriceInr * item.quantity)}
@@ -1617,7 +1653,14 @@ const ORDER_BURST_PARTICLES: {
 
 export function OrderConfirmationPage() {
   const { orderNumber } = useParams();
-  const { t } = useLanguage();
+  const {
+    language,
+    t,
+    localizeEntity,
+    translatePaymentMethod,
+    translatePlace,
+    formatDate,
+  } = useLanguage();
   const [order, setOrder] = useState<DemoOrder | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -1743,10 +1786,10 @@ export function OrderConfirmationPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="line-clamp-2 text-[13.5px] font-extrabold leading-snug text-[#2B0B4E]">
-                    {item.productNameSnapshot}
+                    {localizeEntity(item.productNameSnapshot, 'name')}
                   </p>
                   <p className="mt-0.5 text-[12px] font-semibold text-[#6E5B85]">
-                    Qty: {item.quantity}
+                    {t('qtyShort')}: {item.quantity}
                   </p>
                 </div>
                 <span className="shrink-0 text-[14.5px] font-extrabold tabular-nums text-[#FF1F7A]">
@@ -1760,19 +1803,27 @@ export function OrderConfirmationPage() {
             <div className="flex items-start justify-between gap-3">
               <span className="text-[#6E5B85]">{t('deliveryAddress')}</span>
               <span className="max-w-[65%] text-right font-semibold leading-snug text-[#2B0B4E]">
-                {order.customer.addressLine1}, {order.customer.city} - {order.customer.pincode}
+                {order.customer.addressLine1}, {translatePlace(order.customer.city)} - {order.customer.pincode}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-[#6E5B85]">{t('paymentMethod')}</span>
               <span className="font-bold text-[#2B0B4E]">
-                {order.paymentMethod || t('codLabel')}
+                {translatePaymentMethod(order.paymentMethod || 'Cash on Delivery (COD)')}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-[#6E5B85]">{t('orderDate')}</span>
               <span className="font-semibold text-[#2B0B4E]">
-                {formatDateTime(order.createdAt)}
+                {language === 'bn'
+                  ? formatDate(order.createdAt, {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : formatDateTime(order.createdAt)}
               </span>
             </div>
             <div className="flex items-center justify-between border-t border-[#EFE3FF] pt-2.5 text-[15px] font-extrabold text-[#2B0B4E]">

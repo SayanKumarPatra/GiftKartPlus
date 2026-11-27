@@ -9,12 +9,12 @@ import type {
  * Future Cashfree Payment Gateway Adapter Contract (UNCONNECTED).
  *
  * Strictly does NOT simulate or fake payments.
- * Initial GiftKart checkout supports Demo Order Placement ONLY.
+ * Prepared for Phase 02 real backend payment integration.
  */
 export class CashfreeNotConnectedError extends Error {
   constructor() {
     super(
-      'Cashfree Payment Gateway is Integration Ready — Not Connected. Online payment collection is disabled in this demo phase.'
+      'Cashfree Payment Gateway is integration-ready and will be enabled after backend setup.'
     );
     this.name = 'CashfreeNotConnectedError';
   }
@@ -28,7 +28,7 @@ export class CashfreePlaceholderAdapter implements IPaymentGatewayService {
       statusCode: 'INTEGRATION_READY_NOT_CONNECTED',
       statusLabel: 'Integration Ready — Not Connected',
       description:
-        'Prepared TypeScript gateway interface for future Cashfree Checkout & Webhook verification. No real payment is collected in demo mode.',
+        'Prepared TypeScript gateway interface for future Cashfree Checkout & Webhook verification.',
     };
   }
 

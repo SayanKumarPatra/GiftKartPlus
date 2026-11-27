@@ -34,7 +34,7 @@ const DESKTOP_NAV_LINKS: { labelKey: TranslationKey; to: string; end: boolean }[
 export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
   const { itemCount, wishlistIds } = useCart();
   const { customerAccount, signOutCustomer } = useAuth();
-  const { t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [accountOpen, setAccountOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const headerRef = useRef<HTMLDivElement>(null);
@@ -271,9 +271,39 @@ export function DesktopHeader({ onOpenSearch }: DesktopHeaderProps) {
             ))}
           </div>
 
-          <p className="text-[12px] font-medium text-[#6C5987]">
-            {t('brandTagline')}
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-[12px] font-medium text-[#6C5987]">
+              {t('brandTagline')}
+            </p>
+            <div
+              role="group"
+              aria-label={t('chooseLanguage')}
+              className="inline-flex items-center rounded-lg border border-[#E5D4FA] bg-white p-0.5 text-[11px] font-bold"
+            >
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`cursor-pointer rounded-md px-2 py-0.5 transition-colors ${
+                  language === 'en'
+                    ? 'bg-[#6A11CB] text-white'
+                    : 'text-[#594A6B] hover:text-[#6A11CB]'
+                }`}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('bn')}
+                className={`font-tiro-bangla cursor-pointer rounded-md px-2 py-0.5 transition-colors ${
+                  language === 'bn'
+                    ? 'bg-[#6A11CB] text-white'
+                    : 'text-[#594A6B] hover:text-[#6A11CB]'
+                }`}
+              >
+                বাংলা
+              </button>
+            </div>
+          </div>
         </div>
       </nav>
     </header>

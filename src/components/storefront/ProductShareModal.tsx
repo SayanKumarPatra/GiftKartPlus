@@ -178,7 +178,7 @@ export function ProductShareHost() {
               id="product-share-title"
               className="text-[14.5px] font-extrabold text-[#2B0B4E]"
             >
-              {t('share')}
+              {t('shareGiftTitle')}
             </h2>
           </div>
           <button
@@ -223,7 +223,7 @@ export function ProductShareHost() {
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white shadow-xs transition-transform group-hover:scale-105">
                 <WhatsAppSvg className="h-5 w-5" />
               </span>
-              <span className="text-[10.5px] font-semibold text-[#3B2654]">WhatsApp</span>
+              <span className="text-[10.5px] font-semibold text-[#3B2654]">{t('whatsappShort')}</span>
             </a>
 
             <a
@@ -273,7 +273,7 @@ export function ProductShareHost() {
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#6A11CB] text-white shadow-xs transition-transform group-hover:scale-105">
                 <Mail className="h-4 w-4" />
               </span>
-              <span className="text-[10.5px] font-semibold text-[#3B2654]">Email</span>
+              <span className="text-[10.5px] font-semibold text-[#3B2654]">{t('emailShare')}</span>
             </a>
           </div>
 
@@ -285,7 +285,7 @@ export function ProductShareHost() {
               className="mt-3 flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] px-4 text-[12px] font-bold text-white shadow-xs transition-transform active:scale-[0.98]"
             >
               <Share2 className="h-3.5 w-3.5" />
-              <span>More Apps (Instagram, SMS...)</span>
+              <span>{t('moreAppsShare')}</span>
             </button>
           )}
 
@@ -306,12 +306,12 @@ export function ProductShareHost() {
               {copied ? (
                 <>
                   <Check className="h-3.5 w-3.5" />
-                  <span>Copied</span>
+                  <span>{t('copiedBtn')}</span>
                 </>
               ) : (
                 <>
                   <Copy className="h-3.5 w-3.5" />
-                  <span>Copy</span>
+                  <span>{t('copyLinkBtn')}</span>
                 </>
               )}
             </button>

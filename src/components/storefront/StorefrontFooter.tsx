@@ -18,10 +18,14 @@ import { BrandLogo } from '../ui/BrandLogo';
 import { BRAND_ASSETS } from '../../config/appConfig';
 import { useStoreSettings } from '../../hooks/useStoreData';
 import { useLanguage } from '../../context/LanguageContext';
+import {
+  cleanWhatsAppDigits,
+  normalizeOfficialContactFields,
+} from '../../utils/storefrontHelpers';
 
 export function StorefrontFooter() {
   const { data: settings } = useStoreSettings();
-  const { t, translateCategory } = useLanguage();
+  const { language, t, translateCategory, translatePlace } = useLanguage();
   const { pathname } = useLocation();
   const [openMobileGroup, setOpenMobileGroup] = useState<string | null>(null);
   const isHome = pathname === '/';
@@ -56,23 +60,43 @@ export function StorefrontFooter() {
     ];
 
   const socialLinks = settings?.socialLinks;
+  const resolvedContact = normalizeOfficialContactFields({
+    supportEmail: settings?.supportEmail,
+    supportPhone: settings?.supportPhone,
+    contactVersion: settings?.contactVersion,
+    socialLinks,
+  });
   const instagramUrl =
     socialLinks?.instagram?.trim() || 'https://www.instagram.com/giftkart.online';
   const facebookUrl =
     socialLinks?.facebook?.trim() || 'https://www.facebook.com/share/18v7Ev2crP/';
-  const whatsappUrl =
-    socialLinks?.whatsapp?.trim() || 'https://wa.me/919239505791';
+  const whatsappUrl = resolvedContact.whatsappUrl;
   const youtubeUrl = socialLinks?.youtube?.trim() || '';
-  const supportEmail = settings?.supportEmail?.trim() || 'hello.giftkart@gmail.com';
-  const supportPhone = settings?.supportPhone?.trim() || '+91 9239505791';
-  const supportPhoneTel = `tel:+${supportPhone.replace(/\D/g, '').replace(/^91/, '91')}`;
+  const supportEmail = resolvedContact.supportEmail;
+  const supportPhone = resolvedContact.supportPhone;
+  const supportPhoneTel = `tel:+${cleanWhatsAppDigits(supportPhone)}`;
 
+  const rawFooterDesc = settings?.footerContent?.description?.trim();
+  const isDefaultEnglishDesc =
+    !rawFooterDesc || rawFooterDesc.startsWith('Har Gift Mein Ek Kahani');
   const footerDesc =
-    settings?.footerContent?.description?.trim() ||
-    'Har Gift Mein Ek Kahani. Personalized mugs, T-shirts, photo frames, and boutique gift wrapping for Jalchak.';
+    language === 'en'
+      ? rawFooterDesc || t('footerDefaultDesc')
+      : isDefaultEnglishDesc
+        ? t('footerDefaultDesc')
+        : rawFooterDesc;
+
+  const rawCopyright = settings?.footerContent?.copyrightText?.trim();
+  const isDefaultEnglishCopyright =
+    !rawCopyright ||
+    rawCopyright === '© 2026 GiftKart. All Rights Reserved.' ||
+    rawCopyright === '© GiftKart. All rights reserved.';
   const copyrightText =
-    settings?.footerContent?.copyrightText?.trim() ||
-    '© 2026 GiftKart. All Rights Reserved.';
+    language === 'en'
+      ? rawCopyright || t('footerDefaultCopyright')
+      : isDefaultEnglishCopyright
+        ? t('footerDefaultCopyright')
+        : rawCopyright;
   const footerLogoSrc = settings?.logoUrl?.trim() || BRAND_ASSETS.logo;
 
   const socialItems = [
@@ -110,12 +134,12 @@ export function StorefrontFooter() {
       {!isHome && (
         <div
           aria-hidden="true"
-          className="h-[64px] bg-white lg:hidden"
+          className="h-[calc(82px+env(safe-area-inset-bottom,0px))] bg-transparent lg:hidden"
         />
       )}
       <footer
         className={`gk-footer-gradient relative overflow-hidden border-t border-[#EBD8FF] ${
-          isHome ? 'pb-[64px] lg:pb-0' : 'hidden lg:block'
+          isHome ? 'pb-[calc(82px+env(safe-area-inset-bottom,0px))] lg:pb-0' : 'hidden lg:block'
         }`}
       >
       {/* COMPACT DESKTOP 5-COLUMN FOOTER */}
@@ -189,7 +213,7 @@ export function StorefrontFooter() {
               {activeZones.map((zone) => (
                 <li key={zone} className="flex items-center gap-1.5">
                   <MapPin className="h-3.5 w-3.5 shrink-0 text-[#FF4D8D]" />
-                  <span>{zone}, West Bengal</span>
+                  <span>{translatePlace(zone)}, {translatePlace('West Bengal')}</span>
                 </li>
               ))}
             </ul>
@@ -354,12 +378,12 @@ export function StorefrontFooter() {
                       className="flex items-center gap-1.5 font-semibold text-[#2B0B4E]"
                     >
                       <MapPin className="h-3 w-3 shrink-0 text-[#FF4D8D]" />
-                      <span>{zone}, West Bengal</span>
+                      <span>{translatePlace(zone)}, {translatePlace('West Bengal')}</span>
                     </p>
                   ))}
                   <a
                     href={`mailto:${supportEmail}`}
-                    className="block text-[10.5px] leading-snug text-[#594A6B] hover:text-[#6A11CB]"
+                    className="block break-all text-[10.5px] leading-snug text-[#594A6B] hover:text-[#6A11CB]"
                   >
                     {supportEmail}
                   </a>
@@ -376,11 +400,12 @@ export function StorefrontFooter() {
         </div>
       </div>
 
-      {/* Compact Single-Line Purple Copyright Bar — Mobile Only (< 900px, Home Page Only) */}
-      <div className="bg-[#6A11CB] px-2 py-2 text-center text-[9.5px] font-medium text-white min-[390px]:text-[10.5px] min-[410px]:text-[11px] lg:hidden">
-        <p className="whitespace-nowrap">
-          {copyrightText}{' '}
-          <span className="mx-1 text-white/55">|</span> Made in India 🇮🇳
+      {/* Compact Purple Copyright Bar — Mobile Only (< 900px, Home Page Only) */}
+      <div className="bg-[#6A11CB] px-3 py-2 text-center text-[10px] font-medium text-white min-[390px]:text-[10.5px] lg:hidden">
+        <p className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 leading-snug">
+          <span>{copyrightText}</span>
+          <span className="text-white/55">|</span>
+          <span>{t('madeInIndia')} 🇮🇳</span>
         </p>
       </div>
       </>
@@ -391,9 +416,9 @@ export function StorefrontFooter() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-0.5 sm:flex-row sm:gap-2.5">
           <span>{copyrightText}</span>
           <span className="hidden text-white/40 sm:inline">|</span>
-          <span>Made with ♥ in Bengal</span>
+          <span>{t('madeInBengal')}</span>
           <span className="hidden text-white/40 sm:inline">|</span>
-          <span className="text-white/85">Jalchak, Paschim Medinipur, WB</span>
+          <span className="text-white/85">{t('storeLocationText')}</span>
         </div>
       </div>
       </footer>

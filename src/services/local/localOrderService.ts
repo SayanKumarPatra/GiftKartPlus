@@ -38,6 +38,7 @@ import {
   normalizeOrderStatus,
   normalizePaymentStatus,
 } from '../../utils/orderLifecycle';
+import { resolveOrderReceipt } from '../../utils/orderReceiptPdf';
 
 function generateLocalOrderNumber(sequence: number): string {
   const year = new Date().getFullYear();
@@ -437,7 +438,11 @@ export class LocalOrderService implements IOrderService {
           : []),
       ];
 
-      const updated: DemoOrder = {
+      if (canonicalStatus === 'Delivered' && !mergedShipping.deliveredAt) {
+        mergedShipping.deliveredAt = effectiveTimestamp;
+      }
+
+      const updatedBase: DemoOrder = {
         ...target,
         fulfillmentStatus: canonicalStatus,
         shippingDetails: mergedShipping,
@@ -447,6 +452,13 @@ export class LocalOrderService implements IOrderService {
         statusHistory: nextHistory,
         updatedAt: now,
       };
+      const updated: DemoOrder =
+        canonicalStatus === 'Delivered'
+          ? {
+              ...updatedBase,
+              receipt: resolveOrderReceipt(updatedBase),
+            }
+          : updatedBase;
 
       const nextAll = [...existing];
       nextAll[index] = updated;
@@ -564,7 +576,7 @@ export class LocalOrderService implements IOrderService {
             }
           : null;
 
-      const updated: DemoOrder = {
+      const updatedBase: DemoOrder = {
         ...target,
         paymentStatus: mapCanonicalPaymentToLegacyRecord(input.status),
         paymentDetails: {
@@ -610,6 +622,13 @@ export class LocalOrderService implements IOrderService {
         ],
         updatedAt: now,
       };
+      const updated: DemoOrder =
+        target.receipt || normalizeOrderStatus(target.fulfillmentStatus) === 'Delivered'
+          ? {
+              ...updatedBase,
+              receipt: resolveOrderReceipt(updatedBase),
+            }
+          : updatedBase;
 
       const nextAll = [...existing];
       nextAll[index] = updated;

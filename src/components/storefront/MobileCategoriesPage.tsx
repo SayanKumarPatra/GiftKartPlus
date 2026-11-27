@@ -136,7 +136,7 @@ export function MobileCategoriesPage() {
         {/* LEFT SIDEBAR: Vertical Category List */}
         <aside
           aria-label="Gift Categories"
-          className="sticky top-[56px] max-h-[calc(100dvh-134px)] w-[104px] shrink-0 self-start overflow-y-auto border-r border-[#EAE0F8] bg-[#F6EEFF] px-1.5 pb-6 pt-2 no-scrollbar min-[390px]:w-[114px] min-[412px]:w-[122px]"
+          className="sticky top-[56px] max-h-[calc(100dvh-134px)] w-[92px] shrink-0 self-start overflow-y-auto border-r border-[#EAE0F8] bg-[#F6EEFF] px-1.5 pb-6 pt-2 no-scrollbar min-[360px]:w-[102px] min-[390px]:w-[114px] min-[412px]:w-[122px]"
         >
           <ul className="space-y-1.5">
             {visibleSidebarCategories.map(({ id, label, Icon }) => {
@@ -246,7 +246,7 @@ export function MobileCategoriesPage() {
                 return (
                   <article
                     key={product.id}
-                    className="flex flex-col overflow-hidden rounded-2xl border border-[#EFE3FF] bg-white shadow-[0_3px_12px_rgba(106,17,203,0.06)] transition-transform duration-150 active:scale-[0.985]"
+                    className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#EFE3FF] bg-white shadow-[0_3px_12px_rgba(106,17,203,0.06)] transition-transform duration-150 active:scale-[0.985]"
                   >
                     {/* Product Image + Discount Badge + Wishlist Heart */}
                     <Link
@@ -308,12 +308,12 @@ export function MobileCategoriesPage() {
                       </Link>
 
                       <div className="mt-2 flex items-end justify-between gap-1">
-                        <div className="min-w-0 leading-tight">
-                          <p className="text-[12.5px] font-extrabold tabular-nums text-[#6A11CB] min-[390px]:text-[13px]">
+                        <div className="min-w-0 flex-1 leading-tight">
+                          <p className="truncate text-[12px] font-extrabold tabular-nums text-[#6A11CB] min-[390px]:text-[13px]">
                             {formatInr(product.priceInr)}
                           </p>
                           {hasDiscount && (
-                            <p className="text-[10px] font-medium tabular-nums text-[#8E7DA6] line-through">
+                            <p className="truncate text-[10px] font-medium tabular-nums text-[#8E7DA6] line-through">
                               {formatInr(product.compareAtPriceInr!)}
                             </p>
                           )}

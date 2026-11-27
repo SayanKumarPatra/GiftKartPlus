@@ -54,13 +54,13 @@ import { MobileAccountAuthPages } from '../../components/storefront/MobileAccoun
 import { LanguageSelector } from '../../components/storefront/LanguageSelector';
 
 const DESKTOP_LOGIN_ILLUSTRATION =
-  '/assets/aistudio/Vibrant_Purple_Shopping_Bag_Scene_2fb63564.png';
+  '/assets/aistudio/Vibrant_Purple_Shopping_Bag_Scene_2fb63564.webp';
 const DESKTOP_SIGNUP_ILLUSTRATION =
-  '/assets/aistudio/3D_Purple_Clipboard_Registration_Icon_30307bae.png';
+  '/assets/aistudio/3D_Purple_Clipboard_Registration_Icon_30307bae.webp';
 const DESKTOP_FORGOT_ILLUSTRATION =
-  '/assets/aistudio/Glossy_Purple_Forgot_Password_Envelope_7c26fe9d.png';
+  '/assets/aistudio/Glossy_Purple_Forgot_Password_Envelope_7c26fe9d.webp';
 const DESKTOP_ORDERS_LOGGED_OUT_ILLUSTRATION =
-  '/assets/aistudio/Vibrant_3D_Shopping_Essentials_49dd2758.png';
+  '/assets/aistudio/Vibrant_3D_Shopping_Essentials_49dd2758.webp';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -157,10 +157,10 @@ export function CustomerAccountPage() {
     password?: string;
   }>({});
 
-  // Forgot Password state
+  // Forgot Password & Backend Auth Ready notice state
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotError, setForgotError] = useState('');
-  const [forgotSentTo, setForgotSentTo] = useState<string | null>(null);
+  const [authStatusNotice, setAuthStatusNotice] = useState<string | null>(null);
 
   // Edit Profile & Preferences state
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
@@ -204,96 +204,109 @@ export function CustomerAccountPage() {
     ).length;
   }, [orders, customerAccount]);
 
-  async function completeAuth(input: {
-    fullName: string;
-    email: string;
-    phone: string;
-  }) {
-    await signInCustomerDemo({
-      fullName: input.fullName,
-      email: input.email,
-      phone: input.phone,
-      defaultCity: 'Jalchak',
-    });
-    const redirectTarget = navState?.from;
-    if (redirectTarget && redirectTarget !== '/account') {
-      navigate(redirectTarget, { replace: true });
-      return;
-    }
-    setActiveTab('overview');
+  function showBackendAuthNotice(context: 'login' | 'signup' | 'google' | 'forgot') {
+    const isBn = language === 'bn';
+    const messages: Record<typeof context, string> = {
+      login: isBn
+        ? 'রিয়েল কাস্টমার লগইন ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে। কোনো ডেমো লগইন সক্রিয় নেই।'
+        : 'Customer sign-in is structured for backend authentication and will activate once the backend is connected. Demo login has been removed.',
+      signup: isBn
+        ? 'নতুন অ্যাকাউন্ট রেজিস্ট্রেশন ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে।'
+        : 'Account registration is ready for backend authentication and will activate once the backend is connected.',
+      google: isBn
+        ? 'ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর আসল গুগল সাইন-ইন (OAuth) চালু হবে।'
+        : 'Real Google Sign-In (OAuth) will be enabled once backend authentication is connected.',
+      forgot: isBn
+        ? 'পাসওয়ার্ড রিসেট ইমেইল সেবা ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে।'
+        : 'Password reset emails will be enabled once backend authentication is connected.',
+    };
+    setAuthStatusNotice(messages[context]);
   }
 
   async function handleLoginSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: { email?: string; password?: string } = {};
     if (!loginEmail.trim()) {
-      errs.email = 'Please enter your email address.';
+      errs.email =
+        language === 'bn'
+          ? 'অনুগ্রহ করে আপনার ইমেইল ঠিকানা লিখুন।'
+          : 'Please enter your email address.';
     } else if (!EMAIL_PATTERN.test(loginEmail.trim())) {
-      errs.email = 'Please enter a valid email address.';
+      errs.email =
+        language === 'bn'
+          ? 'অনুগ্রহ করে একটি সঠিক ইমেইল ঠিকানা লিখুন।'
+          : 'Please enter a valid email address.';
     }
     if (!loginPassword.trim()) {
-      errs.password = 'Please enter your password.';
+      errs.password =
+        language === 'bn'
+          ? 'অনুগ্রহ করে আপনার পাসওয়ার্ড লিখুন।'
+          : 'Please enter your password.';
     } else if (loginPassword.trim().length < 6) {
-      errs.password = 'Password must be at least 6 characters.';
+      errs.password =
+        language === 'bn'
+          ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'
+          : 'Password must be at least 6 characters.';
     }
     setLoginErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
-    const cleanEmail = loginEmail.trim().toLowerCase();
-    const inferredName = cleanEmail
-      .split('@')[0]
-      .replace(/[._-]+/g, ' ')
-      .replace(/\b\w/g, (ch) => ch.toUpperCase());
-
-    await completeAuth({
-      fullName: inferredName || 'GiftKart Member',
-      email: cleanEmail,
-      phone: '',
-    });
+    showBackendAuthNotice('login');
   }
 
   async function handleSignUpSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: { name?: string; email?: string; password?: string } = {};
     if (!signupName.trim()) {
-      errs.name = 'Please enter your full name.';
+      errs.name =
+        language === 'bn'
+          ? 'অনুগ্রহ করে আপনার সম্পূর্ণ নাম লিখুন।'
+          : 'Please enter your full name.';
     }
     if (!signupEmail.trim()) {
-      errs.email = 'Email address is required.';
+      errs.email =
+        language === 'bn'
+          ? 'ইমেইল ঠিকানা আবশ্যক।'
+          : 'Email address is required.';
     } else if (!EMAIL_PATTERN.test(signupEmail.trim())) {
-      errs.email = 'Please enter a valid email address.';
+      errs.email =
+        language === 'bn'
+          ? 'অনুগ্রহ করে একটি সঠিক ইমেইল ঠিকানা লিখুন।'
+          : 'Please enter a valid email address.';
     }
     if (!signupPassword.trim()) {
-      errs.password = 'Please create a password.';
+      errs.password =
+        language === 'bn'
+          ? 'অনুগ্রহ করে একটি পাসওয়ার্ড তৈরি করুন।'
+          : 'Please create a password.';
     } else if (signupPassword.trim().length < 6) {
-      errs.password = 'Password must be at least 6 characters.';
+      errs.password =
+        language === 'bn'
+          ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'
+          : 'Password must be at least 6 characters.';
     }
     setSignupErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
-    await completeAuth({
-      fullName: signupName.trim(),
-      email: signupEmail.trim().toLowerCase(),
-      phone: signupPhone.replace(/\D/g, '').slice(-10),
-    });
+    showBackendAuthNotice('signup');
   }
 
-  async function handleGoogleContinue() {
-    await completeAuth({
-      fullName: 'Sayan Kumar',
-      email: 'sayan.kumar@gmail.com',
-      phone: '',
-    });
+  function handleGoogleContinue() {
+    showBackendAuthNotice('google');
   }
 
   function handleForgotSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!forgotEmail.trim() || !EMAIL_PATTERN.test(forgotEmail.trim())) {
-      setForgotError('Please enter a valid registered email address.');
+      setForgotError(
+        language === 'bn'
+          ? 'অনুগ্রহ করে একটি সঠিক নিবন্ধিত ইমেইল ঠিকানা লিখুন।'
+          : 'Please enter a valid registered email address.'
+      );
       return;
     }
     setForgotError('');
-    setForgotSentTo(forgotEmail.trim());
+    showBackendAuthNotice('forgot');
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
@@ -404,7 +417,7 @@ export function CustomerAccountPage() {
                 <form onSubmit={(e) => void handleLoginSubmit(e)} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-[#2B0B4E]">
-                      Email Address
+                      {t('emailAddress')}
                     </label>
                     <div className="relative mt-1">
                       <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8C75A8]" />
@@ -412,7 +425,7 @@ export function CustomerAccountPage() {
                         type="email"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
-                        placeholder="you@example.com"
+                        placeholder={t('enterEmailAddress')}
                         className="h-11 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] pl-10 pr-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
                       />
                     </div>
@@ -424,17 +437,17 @@ export function CustomerAccountPage() {
                   <div>
                     <div className="flex items-center justify-between">
                       <label className="block text-xs font-bold text-[#2B0B4E]">
-                        Password
+                        {t('passwordLabel')}
                       </label>
                       <button
                         type="button"
                         onClick={() => {
-                          setForgotSentTo(null);
+                          setAuthStatusNotice(null);
                           setAuthMode('forgot');
                         }}
                         className="cursor-pointer text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
                       >
-                        Forgot Password?
+                        {t('forgotPasswordQuestion')}
                       </button>
                     </div>
                     <div className="relative mt-1">
@@ -443,7 +456,7 @@ export function CustomerAccountPage() {
                         type={showLoginPassword ? 'text' : 'password'}
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        placeholder="Enter your password"
+                        placeholder={t('enterPassword')}
                         className="h-11 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] pl-10 pr-10 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
                       />
                       <button
@@ -474,18 +487,24 @@ export function CustomerAccountPage() {
                   <div className="relative my-4 flex items-center justify-center">
                     <span className="h-px flex-1 bg-[#EFE3FF]" />
                     <span className="px-3 text-[11px] font-semibold text-[#8C75A8]">
-                      or continue with
+                      {t('orDivider')}
                     </span>
                     <span className="h-px flex-1 bg-[#EFE3FF]" />
                   </div>
 
+                  {authStatusNotice && (
+                    <div className="rounded-xl border border-[#DFC8FF] bg-[#F6EDFF] px-3.5 py-2.5 text-xs font-medium text-[#4B148C]">
+                      {authStatusNotice}
+                    </div>
+                  )}
+
                   <button
                     type="button"
-                    onClick={() => void handleGoogleContinue()}
+                    onClick={handleGoogleContinue}
                     className="flex h-11 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-[#DFD2F2] bg-white text-sm font-bold text-[#1E1035] transition-colors hover:bg-[#FAF6FF]"
                   >
                     <GoogleOfficialLogo className="h-4 w-4" />
-                    <span>Continue with Google</span>
+                    <span>{t('continueWithGoogle')}</span>
                   </button>
                 </form>
               )}
@@ -495,13 +514,13 @@ export function CustomerAccountPage() {
                 <form onSubmit={(e) => void handleSignUpSubmit(e)} className="space-y-3.5">
                   <div>
                     <label className="block text-xs font-bold text-[#2B0B4E]">
-                      Full Name *
+                      {t('fullName')} *
                     </label>
                     <input
                       type="text"
                       value={signupName}
                       onChange={(e) => setSignupName(e.target.value)}
-                      placeholder="Enter your full name"
+                      placeholder={t('enterFullName')}
                       className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] px-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
                     />
                     {signupErrors.name && (
@@ -518,7 +537,7 @@ export function CustomerAccountPage() {
                         type="email"
                         value={signupEmail}
                         onChange={(e) => setSignupEmail(e.target.value)}
-                        placeholder="you@example.com"
+                        placeholder={t('enterEmailAddress')}
                         className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] px-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
                       />
                       {signupErrors.email && (
@@ -536,7 +555,7 @@ export function CustomerAccountPage() {
                         onChange={(e) =>
                           setSignupPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
                         }
-                        placeholder="10-digit mobile"
+                        placeholder={t('enterMobileNumber')}
                         className="mt-1 h-10 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] px-3.5 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
                       />
                     </div>
@@ -544,14 +563,14 @@ export function CustomerAccountPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-[#2B0B4E]">
-                      Create Password *
+                      {t('passwordLabel')} *
                     </label>
                     <div className="relative mt-1">
                       <input
                         type={showSignupPassword ? 'text' : 'password'}
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
-                        placeholder="Minimum 6 characters"
+                        placeholder={t('createStrongPassword')}
                         className="h-10 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] pl-3.5 pr-10 text-sm text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
                       />
                       <button
@@ -581,13 +600,19 @@ export function CustomerAccountPage() {
                     {t('createAccount')}
                   </button>
 
+                  {authStatusNotice && (
+                    <div className="rounded-xl border border-[#DFC8FF] bg-[#F6EDFF] px-3.5 py-2.5 text-xs font-medium text-[#4B148C]">
+                      {authStatusNotice}
+                    </div>
+                  )}
+
                   <button
                     type="button"
-                    onClick={() => void handleGoogleContinue()}
+                    onClick={handleGoogleContinue}
                     className="flex h-11 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-[#DFD2F2] bg-white text-sm font-bold text-[#1E1035] transition-colors hover:bg-[#FAF6FF]"
                   >
                     <GoogleOfficialLogo className="h-4 w-4" />
-                    <span>Continue with Google</span>
+                    <span>{t('continueWithGoogle')}</span>
                   </button>
                 </form>
               )}
@@ -597,50 +622,45 @@ export function CustomerAccountPage() {
                 <div className="space-y-4">
                   <button
                     type="button"
-                    onClick={() => setAuthMode('login')}
+                    onClick={() => {
+                      setAuthStatusNotice('');
+                      setAuthMode('login');
+                    }}
                     className="cursor-pointer text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
                   >
-                    ← {t('back')}
+                    ← {t('backToLogin')}
                   </button>
                   <h1 className="font-display text-xl font-bold text-[#1E1035]">
-                    Forgot Password
+                    {t('forgotPasswordQuestion')}
                   </h1>
-                  {forgotSentTo ? (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-900">
-                      <p className="flex items-center gap-1.5 font-bold">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                        Password reset link sent
-                      </p>
-                      <p className="mt-1">
-                        We&apos;ve sent password recovery instructions to{' '}
-                        <strong>{forgotSentTo}</strong>.
-                      </p>
+                  <form onSubmit={handleForgotSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#2B0B4E]">
+                        {t('emailAddress')}
+                      </label>
+                      <input
+                        type="email"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder={t('enterEmailAddress')}
+                        className="mt-1 h-11 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] px-3.5 text-sm focus:border-[#6A11CB] focus:bg-white focus:outline-none"
+                      />
+                      {forgotError && (
+                        <p className="mt-1 text-xs font-semibold text-[#C81E68]">{forgotError}</p>
+                      )}
                     </div>
-                  ) : (
-                    <form onSubmit={handleForgotSubmit} className="space-y-4">
-                      <div>
-                        <label className="block text-xs font-bold text-[#2B0B4E]">
-                          {t('emailAddress')}
-                        </label>
-                        <input
-                          type="email"
-                          value={forgotEmail}
-                          onChange={(e) => setForgotEmail(e.target.value)}
-                          placeholder="you@example.com"
-                          className="mt-1 h-11 w-full rounded-xl border border-[#DFD2F2] bg-[#FAF8FC] px-3.5 text-sm focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                        />
-                        {forgotError && (
-                          <p className="mt-1 text-xs font-semibold text-[#C81E68]">{forgotError}</p>
-                        )}
+                    <button
+                      type="submit"
+                      className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-sm font-bold text-white"
+                    >
+                      {t('sendResetLink')}
+                    </button>
+                    {authStatusNotice && (
+                      <div className="rounded-xl border border-[#DFC8FF] bg-[#F6EDFF] px-3.5 py-2.5 text-xs font-medium text-[#4B148C]">
+                        {authStatusNotice}
                       </div>
-                      <button
-                        type="submit"
-                        className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-sm font-bold text-white"
-                      >
-                        {t('submit')}
-                      </button>
-                    </form>
-                  )}
+                    )}
+                  </form>
                 </div>
               )}
             </div>
@@ -852,10 +872,14 @@ export function CustomerAccountPage() {
                 <div className="space-y-6">
                   <div>
                     <h1 className="font-display text-2xl font-bold text-[#1E1035]">
-                      Hello, {customerAccount.fullName}
+                      {language === 'bn'
+                        ? `স্বাগতম, ${customerAccount.fullName}`
+                        : `Hello, ${customerAccount.fullName}`}
                     </h1>
                     <p className="mt-0.5 text-xs text-[#685782]">
-                      Manage your GiftKart profile, saved delivery addresses, wishlist, and order history.
+                      {language === 'bn'
+                        ? 'আপনার GiftKart প্রোফাইল, সংরক্ষিত ডেলিভারি ঠিকানা, উইশলিস্ট ও অর্ডার ইতিহাস পরিচালনা করুন।'
+                        : 'Manage your GiftKart profile, saved delivery addresses, wishlist, and order history.'}
                     </p>
                   </div>
 
@@ -868,7 +892,9 @@ export function CustomerAccountPage() {
                       <p className="mt-2 font-mono text-2xl font-extrabold text-[#1E1035]">
                         {myOrdersCount}
                       </p>
-                      <p className="text-xs font-semibold text-[#685782]">Total Orders</p>
+                      <p className="text-xs font-semibold text-[#685782]">
+                        {language === 'bn' ? 'মোট অর্ডার' : 'Total Orders'}
+                      </p>
                     </Link>
 
                     <Link
@@ -879,7 +905,9 @@ export function CustomerAccountPage() {
                       <p className="mt-2 font-mono text-2xl font-extrabold text-[#1E1035]">
                         {wishlistIds.length}
                       </p>
-                      <p className="text-xs font-semibold text-[#685782]">Saved Wishlist</p>
+                      <p className="text-xs font-semibold text-[#685782]">
+                        {t('wishlist')}
+                      </p>
                     </Link>
 
                     <Link
@@ -888,10 +916,12 @@ export function CustomerAccountPage() {
                     >
                       <MapPin className="h-5 w-5 text-[#6A11CB]" />
                       <p className="mt-2 text-sm font-extrabold text-[#1E1035]">
-                        Addresses
+                        {t('savedAddresses')}
                       </p>
                       <p className="mt-1 text-xs font-semibold text-[#685782]">
-                        Manage delivery details →
+                        {language === 'bn'
+                          ? 'ডেলিভারির তথ্য পরিচালনা করুন →'
+                          : 'Manage delivery details →'}
                       </p>
                     </Link>
                   </div>
@@ -899,33 +929,34 @@ export function CustomerAccountPage() {
                   <div className="rounded-xl border border-[#EFE3FF] bg-[#FCFAFF] p-4">
                     <div className="flex items-center justify-between">
                       <h2 className="text-sm font-extrabold text-[#1E1035]">
-                        Account Details
+                        {t('profileDetails')}
                       </h2>
                       <button
                         type="button"
                         onClick={() => setActiveTab('edit-profile')}
                         className="cursor-pointer text-xs font-bold text-[#6A11CB] hover:underline"
                       >
-                        Edit Profile
+                        {t('editProfile')}
                       </button>
                     </div>
                     <dl className="mt-3 grid grid-cols-3 gap-4 text-xs">
                       <div>
-                        <dt className="text-[#7A6894]">Full Name</dt>
+                        <dt className="text-[#7A6894]">{t('fullName')}</dt>
                         <dd className="mt-0.5 font-bold text-[#1E1035]">
                           {customerAccount.fullName}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[#7A6894]">Email</dt>
+                        <dt className="text-[#7A6894]">{t('emailAddress')}</dt>
                         <dd className="mt-0.5 truncate font-bold text-[#1E1035]">
                           {customerAccount.email}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[#7A6894]">Phone</dt>
+                        <dt className="text-[#7A6894]">{t('phoneNumber')}</dt>
                         <dd className="mt-0.5 font-mono font-bold text-[#1E1035]">
-                          {customerAccount.phone || 'Not added'}
+                          {customerAccount.phone ||
+                            (language === 'bn' ? 'যোগ করা হয়নি' : 'Not added')}
                         </dd>
                       </div>
                     </dl>
@@ -937,17 +968,17 @@ export function CustomerAccountPage() {
                 <form onSubmit={(e) => void handleSaveProfile(e)} className="space-y-4">
                   <div>
                     <h1 className="font-display text-xl font-bold text-[#1E1035]">
-                      Edit Profile
+                      {t('editProfile')}
                     </h1>
                     <p className="mt-0.5 text-xs text-[#685782]">
-                      Update your name, email address, and contact mobile number.
+                      {t('editProfileSubtitle')}
                     </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
                       <label className="block text-xs font-bold text-[#2B0B4E]">
-                        Full Name
+                        {t('fullName')}
                       </label>
                       <input
                         type="text"
@@ -959,7 +990,7 @@ export function CustomerAccountPage() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[#2B0B4E]">
-                        Email Address
+                        {t('emailAddress')}
                       </label>
                       <input
                         type="email"
@@ -971,7 +1002,7 @@ export function CustomerAccountPage() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[#2B0B4E]">
-                        Mobile Number
+                        {t('phoneNumber')}
                       </label>
                       <div className="relative mt-1">
                         <Phone className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8C75A8]" />
@@ -991,13 +1022,13 @@ export function CustomerAccountPage() {
                   {profileSavedNotice && (
                     <p className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700">
                       <Check className="h-4 w-4" />
-                      Profile changes saved.
+                      {t('profileUpdatedDesc')}
                     </p>
                   )}
 
                   <div className="pt-1">
                     <Button type="submit" variant="primary" size="md">
-                      Save Changes
+                      {t('saveChanges')}
                     </Button>
                   </div>
                 </form>
@@ -1007,30 +1038,30 @@ export function CustomerAccountPage() {
                 <div className="space-y-4">
                   <div>
                     <h1 className="font-display text-xl font-bold text-[#1E1035]">
-                      Notifications &amp; Preferences
+                      {t('accountSettings')}
                     </h1>
                     <p className="mt-0.5 text-xs text-[#685782]">
-                      Control how GiftKart keeps you informed about orders and offers.
+                      {t('notificationsSubtitle')}
                     </p>
                   </div>
 
                   <div className="divide-y divide-[#EFE3FF] rounded-xl border border-[#EFE3FF]">
                     {[
                       {
-                        label: 'Order & Delivery Updates',
-                        desc: 'Receive live updates when your order moves from Placed to Shipped and Delivered.',
+                        label: t('orderDeliveryUpdates'),
+                        desc: t('orderDeliveryUpdatesDesc'),
                         checked: orderUpdatesOn,
                         onToggle: () => setOrderUpdatesOn((v) => !v),
                       },
                       {
-                        label: 'WhatsApp Customization Updates',
-                        desc: 'Allow our studio team to confirm custom photo prints on WhatsApp.',
+                        label: t('whatsappOrderAlerts'),
+                        desc: t('whatsappOrderAlertsDesc'),
                         checked: whatsappUpdatesOn,
                         onToggle: () => setWhatsappUpdatesOn((v) => !v),
                       },
                       {
-                        label: 'Festive Deals & New Gift Arrivals',
-                        desc: 'Stay updated on seasonal coupons and new personalized collections.',
+                        label: t('specialGiftOffers'),
+                        desc: t('specialGiftOffersDesc'),
                         checked: offersOn,
                         onToggle: () => setOffersOn((v) => !v),
                       },
@@ -1092,7 +1123,16 @@ export function MyOrdersPage() {
   );
   const { data: products } = useProducts();
   const { addToCart } = useCart();
-  const { t } = useLanguage();
+  const {
+    language,
+    t,
+    localizeEntity,
+    translateOrderStatus,
+    translatePaymentStatus,
+    translatePaymentMethod,
+    translatePlace,
+    formatDate,
+  } = useLanguage();
   const navigate = useNavigate();
 
   const [activeFilter, setActiveFilter] = useState<'All' | CustomerOrderDisplayStatus>(
@@ -1175,10 +1215,14 @@ export function MyOrdersPage() {
               className="mx-auto h-44 w-auto object-contain drop-shadow-[0_10px_22px_rgba(106,17,203,0.14)]"
             />
             <h1 className="mt-4 font-display text-2xl font-bold text-[#1E1035]">
-              Track &amp; Manage Your Orders
+              {language === 'bn'
+                ? 'আপনার অর্ডার ট্র্যাক ও পরিচালনা করুন'
+                : 'Track & Manage Your Orders'}
             </h1>
             <p className="mx-auto mt-1.5 max-w-md text-sm text-[#594A6B]">
-              Sign in to view your GiftKart order history, check live status progress, and manage deliveries.
+              {language === 'bn'
+                ? 'আপনার GiftKart অর্ডারের ইতিহাস, লাইভ স্ট্যাটাস এবং ডেলিভারি পরিচালনা করতে সাইন ইন করুন।'
+                : 'Sign in to view your GiftKart order history, check live status progress, and manage deliveries.'}
             </p>
 
             <div className="mx-auto mt-6 flex max-w-sm flex-col gap-2.5">
@@ -1189,7 +1233,7 @@ export function MyOrdersPage() {
               >
                 <span className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  <span>Login / Sign In</span>
+                  <span>{t('loginOrSignIn')}</span>
                 </span>
                 <ChevronRight className="h-4 w-4" />
               </Link>
@@ -1199,7 +1243,7 @@ export function MyOrdersPage() {
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#DFD2F2] bg-[#FAF6FF] px-5 text-sm font-bold text-[#6A11CB] hover:bg-[#F2E7FF]"
               >
                 <UserPlus className="h-4 w-4" />
-                <span>Create New Account</span>
+                <span>{t('createAccount')}</span>
               </Link>
             </div>
 
@@ -1209,9 +1253,11 @@ export function MyOrdersPage() {
                   <Truck className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#1E1035]">Live Status</p>
+                  <p className="text-xs font-bold text-[#1E1035]">{t('liveStatus')}</p>
                   <p className="text-[11px] text-[#685782]">
-                    Follow Placed, Processing &amp; Shipped updates.
+                    {language === 'bn'
+                      ? 'অর্ডার প্লেসড, প্রসেসিং ও শিপড আপডেট দেখুন।'
+                      : 'Follow Placed, Processing & Shipped updates.'}
                   </p>
                 </div>
               </div>
@@ -1220,9 +1266,11 @@ export function MyOrdersPage() {
                   <RotateCcw className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#1E1035]">Easy Returns</p>
+                  <p className="text-xs font-bold text-[#1E1035]">{t('easyReturns')}</p>
                   <p className="text-[11px] text-[#685782]">
-                    7-day return on standard non-customized items.
+                    {language === 'bn'
+                      ? 'সাধারণ নন-কাস্টমাইজড পণ্যে ৭ দিনের সহজ রিটার্ন।'
+                      : '7-day return on standard non-customized items.'}
                   </p>
                 </div>
               </div>
@@ -1231,9 +1279,11 @@ export function MyOrdersPage() {
                   <ShieldCheck className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#1E1035]">Order Support</p>
+                  <p className="text-xs font-bold text-[#1E1035]">{t('orderSupport')}</p>
                   <p className="text-[11px] text-[#685782]">
-                    Direct WhatsApp support whenever you need help.
+                    {language === 'bn'
+                      ? 'যেকোনো প্রয়োজনে সরাসরি হোয়াটসঅ্যাপ সহায়তা।'
+                      : 'Direct WhatsApp support whenever you need help.'}
                   </p>
                 </div>
               </div>
@@ -1273,13 +1323,13 @@ export function MyOrdersPage() {
                   tab === 'All'
                     ? t('allOrders')
                     : tab === 'Order Placed'
-                      ? t('statusPending')
+                      ? t('stepOrderPlaced')
                       : tab === 'Processing'
-                        ? t('statusConfirmed')
+                        ? t('stepProcessing')
                         : tab === 'Shipped'
-                          ? t('statusShipped')
+                          ? t('stepShippedDispatch')
                           : tab === 'Delivered'
-                            ? t('statusDelivered')
+                            ? t('stepDelivered')
                             : t('statusCancelled');
                 return (
                   <button
@@ -1356,7 +1406,7 @@ export function MyOrdersPage() {
                         <div className="flex flex-wrap items-center gap-6">
                           <div>
                             <p className="text-[10.5px] font-semibold uppercase tracking-wider text-[#7A6894]">
-                              Order ID
+                              {t('orderNumber')}
                             </p>
                             <p className="font-mono font-extrabold text-[#6A11CB]">
                               {order.orderNumber}
@@ -1364,23 +1414,33 @@ export function MyOrdersPage() {
                           </div>
                           <div>
                             <p className="text-[10.5px] font-semibold uppercase tracking-wider text-[#7A6894]">
-                              Order Date
+                              {t('orderDate')}
                             </p>
                             <p className="font-semibold text-[#1E1035]">
-                              {formatDateTime(order.createdAt)}
+                              {language === 'bn'
+                                ? formatDate(order.createdAt, {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : formatDateTime(order.createdAt)}
                             </p>
                           </div>
                           <div>
                             <p className="text-[10.5px] font-semibold uppercase tracking-wider text-[#7A6894]">
-                              Payment Method
+                              {t('paymentMethod')}
                             </p>
                             <p className="font-bold text-[#1E1035]">
-                              {order.paymentMethod || 'Cash on Delivery (COD)'}
+                              {translatePaymentMethod(
+                                order.paymentMethod || 'Cash on Delivery (COD)'
+                              )}
                             </p>
                           </div>
                           <div>
                             <p className="text-[10.5px] font-semibold uppercase tracking-wider text-[#7A6894]">
-                              Total
+                              {t('total')}
                             </p>
                             <p className="font-mono font-extrabold tabular-nums text-[#1E1035]">
                               {formatInr(order.grandTotalInr)}
@@ -1394,12 +1454,12 @@ export function MyOrdersPage() {
                               paymentStatus
                             )}`}
                           >
-                            {paymentStatus}
+                            {translatePaymentStatus(paymentStatus)}
                           </span>
                           <span
                             className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${badgeClass}`}
                           >
-                            {exactStatusLabel}
+                            {translateOrderStatus(exactStatusLabel)}
                           </span>
                         </div>
                       </div>
@@ -1419,24 +1479,30 @@ export function MyOrdersPage() {
                             )}
                             <div>
                               <p className="text-sm font-extrabold text-[#1E1035]">
-                                {primaryItem?.productNameSnapshot ?? 'GiftKart Order'}
+                                {primaryItem
+                                  ? localizeEntity(primaryItem.productNameSnapshot, 'name')
+                                  : language === 'bn'
+                                    ? 'GiftKart অর্ডার'
+                                    : 'GiftKart Order'}
                                 {order.items.length > 1 && (
                                   <span className="ml-1.5 text-xs font-semibold text-[#6A11CB]">
-                                    +{order.items.length - 1} more{' '}
-                                    {order.items.length - 1 === 1 ? 'item' : 'items'}
+                                    +{order.items.length - 1} {t('moreItems')}{' '}
+                                    {order.items.length - 1 === 1 ? t('item') : t('items')}
                                   </span>
                                 )}
                               </p>
                               <p className="mt-0.5 text-xs text-[#685782]">
-                                Total Qty: {totalQty} · Delivering to{' '}
+                                {t('qtyShort')}: {totalQty} ·{' '}
+                                {language === 'bn' ? 'ডেলিভারি' : 'Delivering to'}{' '}
                                 <span className="font-semibold text-[#2B0B4E]">
-                                  {order.customer.fullName}, {order.customer.city} -{' '}
+                                  {order.customer.fullName},{' '}
+                                  {translatePlace(order.customer.city)} -{' '}
                                   {order.customer.pincode}
                                 </span>
                               </p>
                               {order.giftWrap.enabled && (
                                 <p className="mt-1 text-xs font-semibold text-[#FF4D8D]">
-                                  Includes Gift Wrapping ({order.giftWrap.styleNameSnapshot})
+                                  {t('giftWrapCharge')} ({order.giftWrap.styleNameSnapshot})
                                 </p>
                               )}
                             </div>
@@ -1450,14 +1516,14 @@ export function MyOrdersPage() {
                                 className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-[#DFD2F2] bg-[#FAF6FF] px-3.5 text-xs font-bold text-[#6A11CB] hover:bg-[#F1E4FF]"
                               >
                                 <RotateCcw className="h-3.5 w-3.5" />
-                                <span>Reorder</span>
+                                <span>{t('reorder')}</span>
                               </button>
                             )}
                             <Link
                               to={`/order/${order.orderNumber}`}
                               className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#DFD2F2] bg-white px-3.5 text-xs font-bold text-[#1E1035] transition-colors hover:border-[#6A11CB] hover:text-[#6A11CB]"
                             >
-                              <span>View Order Details</span>
+                              <span>{t('viewOrderDetails')}</span>
                               <ChevronRight className="h-3.5 w-3.5" />
                             </Link>
                           </div>
@@ -1489,7 +1555,7 @@ export function MyOrdersPage() {
                                         done ? 'text-[#1E1035]' : 'text-[#9B8AB4]'
                                       }`}
                                     >
-                                      {stage}
+                                      {translateOrderStatus(stage)}
                                     </span>
                                     {idx < PROGRESS_STAGES.length - 1 && (
                                       <span
@@ -1546,14 +1612,14 @@ export function MyOrdersPage() {
                                   {t('cancelOrder')}
                                 </button>
                                 <span className="text-[11px] text-[#7A6894]">
-                                  Cancellation is allowed only before processing starts.
+                                  {t('canCancelBeforeProcessing')}
                                 </span>
                               </div>
                             )
                           ) : statusLabel === 'Processing' ||
                             statusLabel === 'Shipped' ? (
                             <span className="text-xs font-medium text-[#685782]">
-                              Cancellation is unavailable once processing has started.
+                              {t('processingCancelBlocked')}
                             </span>
                           ) : (
                             <span />

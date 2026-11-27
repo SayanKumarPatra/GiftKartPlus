@@ -7,9 +7,13 @@ import {
   Check,
   ChevronRight,
   CreditCard,
+  Download,
+  Eye,
+  FileText,
   Gift,
   Headset,
   Info,
+  Loader2,
   MapPin,
   Package,
   RefreshCw,
@@ -24,11 +28,16 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { useCustomerOrders, useProductReviews } from '../../hooks/useStoreData';
+import {
+  useCustomerOrders,
+  useProductReviews,
+  useStoreSettings,
+} from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
-import type { DemoOrder, OrderFulfillmentStatus, ProductReview } from '../../types';
+import type { DemoOrder, OrderFulfillmentStatus, ProductReview, StoreSettings } from '../../types';
 import { ProductImage } from '../ui/ProductImage';
 import { DeliveryVanTracker } from '../order/DeliveryVanTracker';
+import { OrderReceiptModal } from '../order/OrderReceiptModal';
 import { ProductReviewModal, type ReviewModalTarget } from './ProductReviewModal';
 import { formatInr } from '../../utils/format';
 import {
@@ -38,9 +47,16 @@ import {
   normalizeOrderStatus,
   normalizePaymentStatus,
 } from '../../utils/orderLifecycle';
+import {
+  downloadOrderReceiptPdf,
+  isOrderReceiptAvailable,
+  resolveOrderReceipt,
+} from '../../utils/orderReceiptPdf';
+import { getDateLocale } from '../../i18n/bengaliAutoTranslate';
+import type { LanguageCode, TranslationKey } from '../../i18n/translations';
 
 const VIEW_ORDERS_ILLUSTRATION =
-  '/assets/aistudio/Vibrant_3D_Shopping_Essentials_49dd2758.png';
+  '/assets/aistudio/Vibrant_3D_Shopping_Essentials_49dd2758.webp';
 
 type DisplayOrderStatus =
   | 'Order Placed'
@@ -91,19 +107,29 @@ interface MobileOrderViewModel {
   cancellationNote?: string;
 }
 
-function formatShortDate(iso: string): string {
+interface OrderLocalizationHelpers {
+  language: LanguageCode;
+  t: (key: TranslationKey) => string;
+  translateOrderStatus: (status: string) => string;
+  translatePaymentStatus: (status: string) => string;
+  translatePaymentMethod: (method: string) => string;
+  localizeEntity: (fallback: string, field: 'name' | 'shortDescription' | 'description') => string;
+  translatePlace: (text: string) => string;
+}
+
+function formatShortDate(iso: string, language: LanguageCode): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('en-IN', {
+  return date.toLocaleDateString(getDateLocale(language), {
     day: '2-digit',
     month: 'short',
   });
 }
 
-function formatFullDate(iso: string): string {
+function formatFullDate(iso: string, language: LanguageCode): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString('en-IN', {
+  return date.toLocaleDateString(getDateLocale(language), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -135,7 +161,10 @@ function mapFulfillmentToDisplayStatus(
   }
 }
 
-function buildOrderTimeline(order: DemoOrder): TimelineStep[] {
+function buildOrderTimeline(
+  order: DemoOrder,
+  loc: OrderLocalizationHelpers
+): TimelineStep[] {
   const placedEntry = order.statusHistory.find(
     (h) => h.status === 'New Order' || h.status === 'New' || h.status === 'Demo Placed'
   );
@@ -152,8 +181,9 @@ function buildOrderTimeline(order: DemoOrder): TimelineStep[] {
     (h) => h.status === 'Completed' || h.status === 'Delivered'
   );
 
-  const placedDate = formatShortDate(placedEntry?.timestamp ?? order.createdAt);
+  const placedDate = formatShortDate(placedEntry?.timestamp ?? order.createdAt, loc.language);
   const displayStatus = mapFulfillmentToDisplayStatus(order.fulfillmentStatus);
+  const isBn = loc.language === 'bn';
 
   const stepIndex: Record<Exclude<DisplayOrderStatus, 'Cancelled'>, number> = {
     'Order Placed': 0,
@@ -167,51 +197,62 @@ function buildOrderTimeline(order: DemoOrder): TimelineStep[] {
 
   return [
     {
-      label: 'Order Placed',
+      label: loc.t('stepOrderPlaced'),
       dateLabel: placedDate,
       state: currentIdx === 0 ? 'current' : 'completed',
-      detail: 'Your GiftKart order has been received and confirmed.',
+      detail: isBn
+        ? 'আপনার GiftKart অর্ডারটি সফলভাবে গৃহীত ও নিশ্চিত হয়েছে।'
+        : 'Your GiftKart order has been received and confirmed.',
     },
     {
-      label: 'Processing',
+      label: loc.t('stepProcessing'),
       dateLabel: processingEntry
-        ? formatShortDate(processingEntry.timestamp)
+        ? formatShortDate(processingEntry.timestamp, loc.language)
         : currentIdx === 1
-          ? 'Now'
+          ? loc.t('nowLabel')
           : '',
       state:
         currentIdx > 1 ? 'completed' : currentIdx === 1 ? 'current' : 'pending',
       detail:
         processingEntry?.note ||
-        'Our gifting studio is preparing and quality-checking your order.',
+        (isBn
+          ? 'আমাদের গিফটিং স্টুডিও আপনার অর্ডারটি যত্ন সহকারে তৈরি ও মান যাচাই করছে।'
+          : 'Our gifting studio is preparing and quality-checking your order.'),
     },
     {
-      label: 'Shipped',
+      label: loc.t('stepShippedDispatch'),
       dateLabel: shippedEntry
-        ? formatShortDate(shippedEntry.timestamp)
+        ? formatShortDate(shippedEntry.timestamp, loc.language)
         : currentIdx === 2
-          ? 'In Transit'
+          ? loc.t('inTransitShort')
           : '',
       state:
         currentIdx > 2 ? 'completed' : currentIdx === 2 ? 'current' : 'pending',
       detail:
         shippedEntry?.note ||
-        'Package dispatched and on the way to your delivery address.',
+        (isBn
+          ? 'প্যাকেজটি পাঠানো হয়েছে এবং আপনার ডেলিভারি ঠিকানার পথে রয়েছে।'
+          : 'Package dispatched and on the way to your delivery address.'),
     },
     {
-      label: 'Delivered',
+      label: loc.t('stepDelivered'),
       dateLabel: deliveredEntry
-        ? formatShortDate(deliveredEntry.timestamp)
+        ? formatShortDate(deliveredEntry.timestamp, loc.language)
         : '',
       state: currentIdx >= 3 ? 'completed' : 'pending',
       detail:
         deliveredEntry?.note ||
-        'Delivered safely to your doorstep with protective packaging.',
+        (isBn
+          ? 'সুরক্ষিত প্যাকেজিং সহ আপনার ঠিকানায় নিরাপদে ডেলিভারি সম্পন্ন হয়েছে।'
+          : 'Delivered safely to your doorstep with protective packaging.'),
     },
   ];
 }
 
-function toMobileOrderViewModel(order: DemoOrder): MobileOrderViewModel {
+function toMobileOrderViewModel(
+  order: DemoOrder,
+  loc: OrderLocalizationHelpers
+): MobileOrderViewModel {
   const displayStatus = mapFulfillmentToDisplayStatus(order.fulfillmentStatus);
   const canonicalStatus = normalizeOrderStatus(order.fulfillmentStatus);
   const canonicalPayment = normalizePaymentStatus(order);
@@ -226,18 +267,19 @@ function toMobileOrderViewModel(order: DemoOrder): MobileOrderViewModel {
       h.status === 'Delivery Failed' ||
       h.status === 'Returned'
   );
-  const paymentMethod = order.paymentMethod?.trim() || 'Cash on Delivery (COD)';
+  const rawPaymentMethod = order.paymentMethod?.trim() || 'Cash on Delivery (COD)';
+  const rawPrimaryName = firstItem?.productNameSnapshot ?? 'GiftKart Order';
 
   return {
     rawOrder: order,
     id: order.id,
     orderNumber: order.orderNumber,
-    orderIdLabel: `Order #${order.orderNumber}`,
-    placedOn: formatFullDate(order.createdAt),
+    orderIdLabel: `${loc.t('orderShort')} #${order.orderNumber}`,
+    placedOn: formatFullDate(order.createdAt, loc.language),
     deliveredOn: deliveredEntry
-      ? formatFullDate(deliveredEntry.timestamp)
+      ? formatFullDate(deliveredEntry.timestamp, loc.language)
       : undefined,
-    primaryProductName: firstItem?.productNameSnapshot ?? 'GiftKart Order',
+    primaryProductName: loc.localizeEntity(rawPrimaryName, 'name'),
     extraItemsCount: Math.max(0, order.items.length - 1),
     productImage: firstItem?.imageSnapshot,
     totalQuantity,
@@ -249,19 +291,19 @@ function toMobileOrderViewModel(order: DemoOrder): MobileOrderViewModel {
     grandTotalInr: order.grandTotalInr,
     rawStatus: order.fulfillmentStatus,
     displayStatus,
-    exactStatusLabel: getStatusDisplayLabel(canonicalStatus),
+    exactStatusLabel: loc.translateOrderStatus(getStatusDisplayLabel(canonicalStatus)),
     // Strictly cancellable ONLY before Processing begins
     canCancel: canonicalStatus === 'New Order',
-    paymentMethod,
-    paymentBadge: canonicalPayment,
+    paymentMethod: loc.translatePaymentMethod(rawPaymentMethod),
+    paymentBadge: loc.translatePaymentStatus(canonicalPayment),
     deliveryAddress: {
       name: order.customer.fullName,
       line1: order.customer.addressLine1,
       line2: order.customer.addressLine2,
-      cityStatePin: `${order.customer.city}, ${order.customer.state} — ${order.customer.pincode}`,
+      cityStatePin: `${loc.translatePlace(order.customer.city)}, ${loc.translatePlace(order.customer.state)} — ${order.customer.pincode}`,
       phone: order.customer.phone,
     },
-    timeline: buildOrderTimeline(order),
+    timeline: buildOrderTimeline(order, loc),
     cancellationNote: cancelledEntry?.note,
   };
 }
@@ -367,18 +409,45 @@ function MobileOrderDetailsView({
   onOrderCancelled,
   allReviews,
   onOpenReview,
+  storeSettings,
+  onPreviewReceipt,
 }: {
   order: MobileOrderViewModel;
   onBack: () => void;
   onOrderCancelled: () => void;
   allReviews: ProductReview[];
   onOpenReview: (item: DemoOrder['items'][number], orderObj: DemoOrder, existing?: ProductReview) => void;
+  storeSettings: StoreSettings | null;
+  onPreviewReceipt: (orderObj: DemoOrder) => void;
 }) {
   const { pushToast } = useToast();
-  const { t } = useLanguage();
+  const { t, localizeEntity } = useLanguage();
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const isDeliveredOrder = order.displayStatus === 'Delivered';
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+  const isDeliveredOrder = isOrderReceiptAvailable(order.rawOrder);
+  const receiptInfo = isDeliveredOrder ? resolveOrderReceipt(order.rawOrder) : null;
+
+  async function handleDownloadReceipt() {
+    if (!isDeliveredOrder || downloadingReceipt) return;
+    setDownloadingReceipt(true);
+    try {
+      await downloadOrderReceiptPdf(order.rawOrder, storeSettings);
+      pushToast({
+        title: t('officialOrderReceipt'),
+        description: t('receiptDownloadedToast'),
+        variant: 'success',
+      });
+    } catch {
+      pushToast({
+        title: t('officialOrderReceipt'),
+        description: 'Could not generate PDF receipt. Please try again.',
+        variant: 'error',
+      });
+    } finally {
+      setDownloadingReceipt(false);
+    }
+  }
 
   async function handleConfirmCancel() {
     if (!order.canCancel || cancelling) return;
@@ -391,17 +460,17 @@ function MobileOrderDetailsView({
       setConfirmCancelOpen(false);
       onOrderCancelled();
       pushToast({
-        title: 'Order Cancelled',
-        description: `${order.orderIdLabel} has been cancelled successfully.`,
+        title: t('orderCancelled'),
+        description: `${order.orderIdLabel} ${t('orderCancelledSuccess')}`,
         variant: 'info',
       });
     } catch (err) {
       pushToast({
-        title: 'Unable to Cancel Order',
+        title: t('unableToCancelOrder'),
         description:
           err instanceof Error
             ? err.message
-            : 'Order cannot be cancelled once processing has started.',
+            : t('processingCancelBlocked'),
         variant: 'error',
       });
     } finally {
@@ -448,6 +517,7 @@ function MobileOrderDetailsView({
               const existingRev = allReviews.find(
                 (r) => r.orderId === order.id && r.productId === item.productId
               );
+              const localizedItemName = localizeEntity(item.productNameSnapshot, 'name');
               return (
                 <div
                   key={`${item.productSkuSnapshot}-${idx}`}
@@ -457,16 +527,16 @@ function MobileOrderDetailsView({
                     <div className="h-[70px] w-[70px] shrink-0 overflow-hidden rounded-2xl border border-[#EFE2FF] bg-[#FAF6FF]">
                       <ProductImage
                         src={item.imageSnapshot}
-                        alt={item.productNameSnapshot}
+                        alt={localizedItemName}
                         aspectClass="aspect-square"
                       />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[13.5px] font-extrabold leading-snug text-[#2B0B4E]">
-                        {item.productNameSnapshot}
+                        {localizedItemName}
                       </p>
                       <p className="mt-0.5 text-[12px] font-semibold text-[#6F5C88]">
-                        Quantity: {item.quantity}
+                        {t('quantity')}: {item.quantity}
                       </p>
                       <p className="mt-0.5 text-[14.5px] font-extrabold tabular-nums text-[#6A11CB]">
                         {formatInr(item.lineTotalInr)}
@@ -478,8 +548,8 @@ function MobileOrderDetailsView({
                     <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-[#FAF6FF] px-2.5 py-1.5">
                       <span className="text-[11px] font-semibold text-[#5E4A77]">
                         {existingRev
-                          ? `Rated ${existingRev.rating}/5 ★ · Live on store`
-                          : 'Delivered! Share rating, photo & review'}
+                          ? `${existingRev.rating}/5 ★ · ${t('ratedLiveOnStore')}`
+                          : t('deliveredShareReviewPrompt')}
                       </span>
                       <button
                         type="button"
@@ -495,7 +565,7 @@ function MobileOrderDetailsView({
                             existingRev ? 'fill-amber-400 text-amber-400' : 'fill-white text-white'
                           }`}
                         />
-                        <span>{existingRev ? 'Edit Review' : 'Rate & Review'}</span>
+                        <span>{existingRev ? t('editReview') : t('rateAndReview')}</span>
                       </button>
                     </div>
                   )}
@@ -507,6 +577,53 @@ function MobileOrderDetailsView({
 
         {/* Animated Live GiftKart Delivery Van Tracker */}
         <DeliveryVanTracker order={order.rawOrder} compact />
+
+        {/* Official Order Receipt Card — STRICTLY visible only after Delivery Completed */}
+        {isDeliveredOrder && receiptInfo && (
+          <div className="rounded-[22px] border border-[#DEC7FF] bg-gradient-to-br from-[#FAF5FF] via-white to-[#FFF3F9] p-4 shadow-[0_6px_18px_rgba(106,17,203,0.08)]">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6A11CB] to-[#8E2DE2] text-white shadow-sm">
+                <FileText className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13.5px] font-extrabold text-[#2B0B4E]">
+                  {t('officialOrderReceipt')}
+                </p>
+                <p className="mt-0.5 text-[11px] font-bold text-[#6A11CB] break-all">
+                  {t('receiptNumberLabel')}: {receiptInfo.receiptNumber}
+                </p>
+                <p className="mt-1 text-[11.5px] leading-snug text-[#5E4A77]">
+                  {t('receiptReadyDesc')}
+                </p>
+              </div>
+            </div>
+            <div className="mt-3.5 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => onPreviewReceipt(order.rawOrder)}
+                className="flex min-h-[42px] items-center justify-center gap-1.5 rounded-full border border-[#DEC7FF] bg-white px-3 text-[12px] font-bold text-[#6A11CB] shadow-xs active:scale-[0.98]"
+              >
+                <Eye className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{t('viewReceipt')}</span>
+              </button>
+              <button
+                type="button"
+                disabled={downloadingReceipt}
+                onClick={() => void handleDownloadReceipt()}
+                className="flex min-h-[42px] items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#6A11CB] to-[#8E2DE2] px-3 text-[12px] font-bold text-white shadow-[0_6px_14px_rgba(106,17,203,0.25)] active:scale-[0.98] disabled:opacity-60"
+              >
+                {downloadingReceipt ? (
+                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5 shrink-0" />
+                )}
+                <span className="truncate">
+                  {downloadingReceipt ? t('downloadingReceipt') : t('downloadReceipt')}
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Order Status / Tracking Timeline */}
         {order.displayStatus === 'Cancelled' ? (
@@ -694,8 +811,8 @@ function MobileOrderDetailsView({
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6A11CB]" />
             <p className="leading-snug">
               {order.displayStatus === 'Processing'
-                ? 'Cancellation is no longer available because your order has entered processing.'
-                : 'Cancellation is no longer available because your order has already been shipped.'}
+                ? t('processingCancelBlocked')
+                : t('shippedCancelBlocked')}
             </p>
           </div>
         )}
@@ -710,8 +827,7 @@ function MobileOrderDetailsView({
                   {t('cancelOrder')}?
                 </p>
                 <p className="mt-0.5 text-[12px] leading-snug text-[#C81E68]">
-                  You can cancel this order now because processing has not
-                  started yet.
+                  {t('canCancelBeforeProcessing')}
                 </p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <button
@@ -799,7 +915,31 @@ export function MobileOrdersPage() {
     customerAccount?.email
   );
   const { data: allReviews, refresh: refreshReviews } = useProductReviews();
+  const { data: storeSettings } = useStoreSettings();
   const [reviewTarget, setReviewTarget] = useState<ReviewModalTarget | null>(null);
+  const [receiptModalOrder, setReceiptModalOrder] = useState<DemoOrder | null>(null);
+  const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
+
+  async function handleCardDownloadReceipt(orderObj: DemoOrder) {
+    if (!isOrderReceiptAvailable(orderObj) || downloadingOrderId) return;
+    setDownloadingOrderId(orderObj.id);
+    try {
+      await downloadOrderReceiptPdf(orderObj, storeSettings);
+      pushToast({
+        title: t('officialOrderReceipt'),
+        description: t('receiptDownloadedToast'),
+        variant: 'success',
+      });
+    } catch {
+      pushToast({
+        title: t('officialOrderReceipt'),
+        description: 'Could not generate PDF receipt. Please try again.',
+        variant: 'error',
+      });
+    } finally {
+      setDownloadingOrderId(null);
+    }
+  }
 
   function handleOpenReview(
     item: DemoOrder['items'][number],
@@ -820,7 +960,15 @@ export function MobileOrdersPage() {
     });
   }
   const { pushToast } = useToast();
-  const { t } = useLanguage();
+  const {
+    language,
+    t,
+    translateOrderStatus,
+    translatePaymentStatus,
+    translatePaymentMethod,
+    localizeEntity,
+    translatePlace,
+  } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -841,8 +989,28 @@ export function MobileOrdersPage() {
 
   const ordersSource = useMemo<MobileOrderViewModel[]>(() => {
     if (isEmptyPreview || !customerAccount) return [];
-    return rawOrders.map(toMobileOrderViewModel);
-  }, [rawOrders, customerAccount, isEmptyPreview]);
+    const loc: OrderLocalizationHelpers = {
+      language,
+      t,
+      translateOrderStatus,
+      translatePaymentStatus,
+      translatePaymentMethod,
+      localizeEntity,
+      translatePlace,
+    };
+    return rawOrders.map((order) => toMobileOrderViewModel(order, loc));
+  }, [
+    rawOrders,
+    customerAccount,
+    isEmptyPreview,
+    language,
+    t,
+    translateOrderStatus,
+    translatePaymentStatus,
+    translatePaymentMethod,
+    localizeEntity,
+    translatePlace,
+  ]);
 
   const statusCounts = useMemo(
     () => ({
@@ -947,27 +1115,21 @@ export function MobileOrdersPage() {
             <div className="flex flex-col items-center justify-center rounded-xl border border-[#EFE2FF] bg-[#FAF4FF]/90 px-2 py-2.5 text-center shadow-[0_3px_10px_rgba(106,17,203,0.05)]">
               <Package className="h-[19px] w-[19px] text-[#3B1764] stroke-[1.9]" />
               <span className="mt-1 text-[11px] font-bold leading-[1.2] text-[#2B0B4E] min-[390px]:text-[11.5px]">
-                Live
-                <br />
-                Status
+                {t('liveStatus')}
               </span>
             </div>
 
             <div className="flex flex-col items-center justify-center rounded-xl border border-[#EFE2FF] bg-[#FAF4FF]/90 px-2 py-2.5 text-center shadow-[0_3px_10px_rgba(106,17,203,0.05)]">
               <RotateCcw className="h-[19px] w-[19px] text-[#3B1764] stroke-[1.9]" />
               <span className="mt-1 text-[11px] font-bold leading-[1.2] text-[#2B0B4E] min-[390px]:text-[11.5px]">
-                Easy
-                <br />
-                Returns
+                {t('easyReturns')}
               </span>
             </div>
 
             <div className="flex flex-col items-center justify-center rounded-xl border border-[#EFE2FF] bg-[#FAF4FF]/90 px-2 py-2.5 text-center shadow-[0_3px_10px_rgba(106,17,203,0.05)]">
               <ShieldCheck className="h-[19px] w-[19px] text-[#3B1764] stroke-[1.9]" />
               <span className="mt-1 text-[11px] font-bold leading-[1.2] text-[#2B0B4E] min-[390px]:text-[11.5px]">
-                Order
-                <br />
-                Support
+                {t('orderSupport')}
               </span>
             </div>
           </div>
@@ -980,6 +1142,8 @@ export function MobileOrdersPage() {
           onOrderCancelled={reloadOrders}
           allReviews={allReviews}
           onOpenReview={handleOpenReview}
+          storeSettings={storeSettings}
+          onPreviewReceipt={(orderObj) => setReceiptModalOrder(orderObj)}
         />
       ) : ordersSource.length === 0 ? (
         /* EMPTY ORDERS SCREEN */
@@ -1035,7 +1199,7 @@ export function MobileOrdersPage() {
           {filteredOrders.length === 0 ? (
             <div className="mt-3 rounded-[20px] border border-[#EFE2FF] bg-white p-5 text-center shadow-[0_6px_18px_rgba(106,17,203,0.06)]">
               <p className="text-[13.5px] font-bold text-[#2B0B4E]">
-                No orders in {activeFilter}
+                {t('noOrdersInFilter')}
               </p>
               <button
                 type="button"
@@ -1086,33 +1250,35 @@ export function MobileOrdersPage() {
                       </div>
 
                       <p className="mt-0.5 text-[11px] font-medium text-[#705D89]">
-                        Placed on: {order.placedOn}
+                        {t('placedOnLabel')}: {order.placedOn}
                       </p>
 
                       <div className="mt-1 flex items-center justify-between gap-1.5">
                         <p className="truncate text-[12.5px] font-bold text-[#2B0B4E] min-[390px]:text-[13px]">
                           {order.primaryProductName}
                           {order.extraItemsCount > 0
-                            ? ` +${order.extraItemsCount} more`
+                            ? ` +${order.extraItemsCount} ${t('moreItems')}`
                             : ''}
                         </p>
                         <ChevronRight className="h-4 w-4 shrink-0 text-[#6A11CB] stroke-[2.2]" />
                       </div>
 
-                      <p className="mt-0.5 text-[12px] font-medium text-[#6B5884]">
-                        Qty:{' '}
-                        <span className="font-bold text-[#2B0B4E]">
-                          {order.totalQuantity}
+                      <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px] font-medium text-[#6B5884]">
+                        <span>
+                          {t('qtyShort')}:{' '}
+                          <span className="font-bold text-[#2B0B4E]">
+                            {order.totalQuantity}
+                          </span>
                         </span>
-                        <span className="mx-1.5 text-[#D5C4EA]">|</span>
+                        <span className="text-[#D5C4EA]">|</span>
                         <span className="font-extrabold tabular-nums text-[#2B0B4E]">
                           {formatInr(order.grandTotalInr)}
                         </span>
-                        <span className="mx-1.5 text-[#D5C4EA]">|</span>
+                        <span className="text-[#D5C4EA]">|</span>
                         <span className="text-[11px] font-semibold text-[#6A11CB]">
                           {order.paymentMethod}
                         </span>
-                      </p>
+                      </div>
                     </div>
                   </div>
 
@@ -1126,9 +1292,9 @@ export function MobileOrdersPage() {
                     <HorizontalOrderTimeline steps={order.timeline} />
                   )}
 
-                  {/* Delivered Order Footer */}
-                  {order.displayStatus === 'Delivered' && (
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-[#F8F3FF] px-3 py-2">
+                  {/* Delivered Order Footer — Receipt button strictly gated by isOrderReceiptAvailable */}
+                  {isOrderReceiptAvailable(order.rawOrder) && (
+                    <div className="mt-3 flex flex-col gap-2 rounded-2xl bg-[#F8F3FF] px-3 py-2.5">
                       <div className="flex min-w-0 items-center gap-1.5">
                         <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#16A34A] text-white">
                           <Check className="h-2.5 w-2.5 stroke-[3]" />
@@ -1136,18 +1302,35 @@ export function MobileOrdersPage() {
                         <span className="truncate text-[11px] font-medium text-[#4A3566] min-[390px]:text-[11.5px]">
                           {order.deliveredOn ? (
                             <>
-                              Delivered on{' '}
+                              {t('deliveredOnLabel')}{' '}
                               <strong className="font-bold text-[#2B0B4E]">
                                 {order.deliveredOn}
                               </strong>
                             </>
                           ) : (
-                            <strong className="font-bold text-[#2B0B4E]">Delivered</strong>
+                            <strong className="font-bold text-[#2B0B4E]">{t('statusDelivered')}</strong>
                           )}
                         </span>
                       </div>
 
-                      <div className="flex shrink-0 items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={downloadingOrderId === order.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleCardDownloadReceipt(order.rawOrder);
+                          }}
+                          className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#6A11CB] to-[#8E2DE2] px-2.5 py-1.5 text-[11px] font-bold text-white shadow-xs active:scale-[0.97] disabled:opacity-60"
+                        >
+                          {downloadingOrderId === order.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Download className="h-3 w-3" />
+                          )}
+                          <span>{t('downloadReceipt')}</span>
+                        </button>
+
                         {order.items[0] && (() => {
                           const firstItem = order.items[0];
                           const existingRev = allReviews.find(
@@ -1163,7 +1346,7 @@ export function MobileOrdersPage() {
                               className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold active:scale-[0.97] ${
                                 existingRev
                                   ? 'border border-amber-200 bg-amber-50 text-amber-800'
-                                  : 'bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] text-white shadow-xs'
+                                  : 'bg-gradient-to-r from-[#D6296B] to-[#FF4D8D] text-white shadow-xs'
                               }`}
                             >
                               <Star
@@ -1174,7 +1357,7 @@ export function MobileOrdersPage() {
                                 }`}
                               />
                               <span>
-                                {existingRev ? `Rated ${existingRev.rating}★` : 'Rate & Review'}
+                                {existingRev ? `${existingRev.rating}★` : t('rateAndReview')}
                               </span>
                             </button>
                           );
@@ -1185,8 +1368,8 @@ export function MobileOrdersPage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             pushToast({
-                              title: 'Ready to Reorder',
-                              description: `Exploring "${order.primaryProductName}" in GiftKart store.`,
+                              title: t('readyToReorder'),
+                              description: order.primaryProductName,
                               variant: 'success',
                             });
                             navigate('/shop');
@@ -1194,7 +1377,7 @@ export function MobileOrdersPage() {
                           className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#DEC7FF] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#6A11CB] shadow-[0_2px_6px_rgba(106,17,203,0.08)] active:scale-[0.97]"
                         >
                           <RefreshCw className="h-3 w-3 stroke-[2.4]" />
-                          <span>Buy Again</span>
+                          <span>{t('buyAgain')}</span>
                         </button>
                       </div>
                     </div>
@@ -1211,6 +1394,19 @@ export function MobileOrdersPage() {
         onClose={() => setReviewTarget(null)}
         onSubmitted={() => {
           refreshReviews();
+        }}
+      />
+
+      <OrderReceiptModal
+        order={receiptModalOrder}
+        storeSettings={storeSettings}
+        onClose={() => setReceiptModalOrder(null)}
+        onDownloadComplete={() => {
+          pushToast({
+            title: t('officialOrderReceipt'),
+            description: t('receiptDownloadedToast'),
+            variant: 'success',
+          });
         }}
       />
     </div>

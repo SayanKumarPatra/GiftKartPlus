@@ -53,32 +53,12 @@ import {
   validateIndianPincode,
   validateRequired,
 } from '../../utils/validation';
+import { pickSavedAddress } from '../../utils/storefrontHelpers';
 
 function normalizeIndianPhoneInput(raw?: string): string {
   if (!raw) return '';
   const digits = raw.replace(/\D/g, '');
   return digits.length > 10 ? digits.slice(-10) : digits;
-}
-
-function pickSavedAddress(
-  addresses: SavedAddress[],
-  preferredId?: string | null
-): SavedAddress | null {
-  if (addresses.length === 0) return null;
-  const candidate =
-    (preferredId ? addresses.find((a) => a.id === preferredId) : undefined) ??
-    addresses.find((a) => a.isDefault) ??
-    addresses[0];
-  if (
-    candidate &&
-    candidate.fullName.trim() &&
-    candidate.phone.trim() &&
-    candidate.addressLine1.trim() &&
-    candidate.pincode.trim()
-  ) {
-    return candidate;
-  }
-  return null;
 }
 
 type CheckoutStep = 1 | 2 | 3;
@@ -128,7 +108,7 @@ export function MobileCheckoutPage() {
     useCart();
   const { customerAccount } = useAuth();
   const { pushToast } = useToast();
-  const { t } = useLanguage();
+  const { t, translateCategory, localizeEntity, translatePlace } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const routeState = (location.state as CheckoutRouterState | null) ?? null;
@@ -393,8 +373,8 @@ export function MobileCheckoutPage() {
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
       pushToast({
-        title: 'Incomplete Delivery Details',
-        description: 'Please fill in all required address fields.',
+        title: t('incompleteDeliveryDetails'),
+        description: t('fillRequiredAddressFields'),
         variant: 'error',
       });
       return;
@@ -432,7 +412,7 @@ export function MobileCheckoutPage() {
   async function applyCouponCode(rawCode: string) {
     const code = rawCode.trim().toUpperCase();
     if (!code) {
-      setCouponError('Please enter a valid coupon code.');
+      setCouponError(t('enterValidCoupon'));
       return;
     }
     setCouponError('');
@@ -478,7 +458,7 @@ export function MobileCheckoutPage() {
         customer: {
           fullName: fullName.trim(),
           phone: phone.trim(),
-          email: email.trim() || customerAccount?.email || 'customer@giftkart.in',
+          email: email.trim() || customerAccount?.email || '',
           addressLine1: addressLine1.trim(),
           addressLine2: landmark.trim() || undefined,
           deliveryZoneId: zoneId,
@@ -512,8 +492,8 @@ export function MobileCheckoutPage() {
 
       clearCart();
       pushToast({
-        title: `Order ${created.orderNumber} Placed`,
-        description: 'Cash on Delivery order confirmed.',
+        title: `${t('orderPlacedPrefix')} ${created.orderNumber} ${t('orderPlacedSuffix')}`,
+        description: t('codOrderConfirmedDesc'),
         variant: 'success',
       });
       navigate(`/order-confirmation/${created.orderNumber}`, { replace: true });
@@ -564,7 +544,7 @@ export function MobileCheckoutPage() {
     const existing = savedAddresses.find((a) => a.id === activeAddressId);
     const city = existing?.city || matchedZone?.name || 'Jalchak';
     const state = existing?.state || matchedZone?.state || 'West Bengal';
-    return `${city}, ${state}`;
+    return `${translatePlace(city)}, ${translatePlace(state)}`;
   })();
 
   const localizedStepLabels: { step: CheckoutStep; label: string }[] = [
@@ -574,7 +554,7 @@ export function MobileCheckoutPage() {
   ];
 
   return (
-    <div className="min-h-[calc(100dvh-128px)] w-full overflow-x-clip bg-gradient-to-b from-[#FDF9FF] via-[#FAF5FF] to-[#F6EEFF] pb-3">
+    <div className="min-h-[calc(100dvh-128px)] w-full overflow-x-clip bg-gradient-to-b from-[#FDF9FF] via-[#FAF5FF] to-[#F6EEFF] pb-8">
       {/* TOP CHECKOUT BAR */}
       <div className="flex items-center gap-1 px-3 pb-0.5 pt-1.5">
         <button
@@ -643,7 +623,7 @@ export function MobileCheckoutPage() {
                   )}
                 </span>
                 <span
-                  className={`text-[11px] leading-tight whitespace-nowrap ${
+                  className={`px-1 text-[10.5px] leading-tight text-center ${
                     isCurrent
                       ? 'font-extrabold text-[#2B0B4E]'
                       : isCompleted
@@ -1038,6 +1018,11 @@ export function MobileCheckoutPage() {
           >
             {items.map((item) => {
               const catalogProduct = productById.get(item.productId);
+              const displayProductName = localizeEntity(
+                item.productName,
+                'name',
+                catalogProduct?.translations
+              );
               const categoryLabel =
                 (catalogProduct &&
                   categoryNameById.get(catalogProduct.categoryId)) ||
@@ -1052,7 +1037,7 @@ export function MobileCheckoutPage() {
                   <div className="h-[64px] w-[64px] shrink-0 overflow-hidden rounded-xl border border-[#F2E6FF] bg-[#FAF6FF]">
                     <ProductImage
                       src={item.image}
-                      alt={item.productName}
+                      alt={displayProductName}
                       aspectClass="aspect-square"
                     />
                   </div>
@@ -1063,11 +1048,11 @@ export function MobileCheckoutPage() {
                         aria-hidden="true"
                         className="h-2.5 w-2.5 shrink-0 stroke-[2.2]"
                       />
-                      <span className="truncate">{categoryLabel}</span>
+                      <span className="truncate">{translateCategory(categoryLabel)}</span>
                     </span>
 
                     <p className="mt-0.5 line-clamp-1 text-[13px] font-extrabold leading-snug text-[#2B0B4E]">
-                      {item.productName}
+                      {displayProductName}
                     </p>
 
                     <div className="mt-1 flex items-center gap-2">
@@ -1075,7 +1060,7 @@ export function MobileCheckoutPage() {
                         {formatInr(item.unitPriceInr * item.quantity)}
                       </p>
                       <span className="inline-block rounded-md bg-[#F4ECFF] px-2 py-0.5 text-[11px] font-bold tabular-nums text-[#3B0764]">
-                        Qty: {item.quantity}
+                        {t('qtyShort')}: {item.quantity}
                       </span>
                     </div>
                   </div>
@@ -1101,7 +1086,7 @@ export function MobileCheckoutPage() {
                   {appliedCouponCode ? (
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="truncate text-[13px] font-extrabold text-[#2B0B4E]">
-                        {appliedCouponCode} Applied
+                        {appliedCouponCode} {t('applied')}
                       </span>
                       <span className="shrink-0 rounded-full bg-[#DCFCE7] px-2 py-0.5 text-[10.5px] font-bold text-[#15803D]">
                         -{formatInr(couponDiscount)}
@@ -1199,7 +1184,7 @@ export function MobileCheckoutPage() {
                                   : 'border border-[#DEC7FF] bg-white text-[#6A11CB]'
                               }`}
                             >
-                              {isApplied ? 'Applied' : 'Apply'}
+                              {isApplied ? t('applied') : t('apply')}
                             </button>
                           </div>
                         );
@@ -1385,7 +1370,7 @@ export function MobileCheckoutPage() {
                   {t('onlinePaymentLabel')} (UPI)
                 </p>
                 <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#C81E68]">
-                  UPI payment is currently not available.
+                  {t('upiUnavailableNotice')}
                 </p>
               </div>
 

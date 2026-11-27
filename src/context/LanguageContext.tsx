@@ -10,6 +10,14 @@ import {
   type LanguageOption,
   type TranslationKey,
 } from '../i18n/translations';
+import {
+  formatLocalizedDate,
+  translateOrderStatusLabel,
+  translatePaymentMethodLabel,
+  translatePaymentStatusLabel,
+  translatePlaceText,
+  translateVariantText,
+} from '../i18n/bengaliAutoTranslate';
 import { readStorage, STORAGE_KEYS, writeStorage } from '../storage/localStorageEngine';
 import { useAuth } from './AuthContext';
 import type { LocalizedEntityText } from '../types';
@@ -29,6 +37,12 @@ interface LanguageContextValue {
     field: keyof LocalizedEntityText,
     translations?: Partial<Record<LanguageCode, LocalizedEntityText>>
   ) => string;
+  translateOrderStatus: (status: string) => string;
+  translatePaymentStatus: (status: string) => string;
+  translatePaymentMethod: (method: string) => string;
+  translateVariant: (text: string) => string;
+  translatePlace: (text: string) => string;
+  formatDate: (iso?: string, options?: Intl.DateTimeFormatOptions) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -62,10 +76,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [customerAccount?.email]);
 
-  // Keep <html lang="..."> updated dynamically without reload
+  // Keep <html lang="..."> and .lang-bn (Tiro Bangla font switch) updated instantly without reload
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.documentElement.lang = language;
+      document.documentElement.classList.toggle('lang-bn', language === 'bn');
     }
   }, [language]);
 
@@ -73,6 +88,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     (nextLang: LanguageCode) => {
       if (!isValidLanguage(nextLang)) return;
       setLanguageState(nextLang);
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = nextLang;
+        document.documentElement.classList.toggle('lang-bn', nextLang === 'bn');
+      }
       try {
         writeStorage(STORAGE_KEYS.LANGUAGE, nextLang);
         const email = customerAccount?.email?.trim().toLowerCase();
@@ -117,6 +136,37 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [language]
   );
 
+  const translateOrderStatus = useCallback(
+    (status: string) => translateOrderStatusLabel(status, language),
+    [language]
+  );
+
+  const translatePaymentStatus = useCallback(
+    (status: string) => translatePaymentStatusLabel(status, language),
+    [language]
+  );
+
+  const translatePaymentMethod = useCallback(
+    (method: string) => translatePaymentMethodLabel(method, language),
+    [language]
+  );
+
+  const translateVariant = useCallback(
+    (text: string) => translateVariantText(text, language),
+    [language]
+  );
+
+  const translatePlace = useCallback(
+    (text: string) => translatePlaceText(text, language),
+    [language]
+  );
+
+  const formatDate = useCallback(
+    (iso?: string, options?: Intl.DateTimeFormatOptions) =>
+      formatLocalizedDate(iso, language, options),
+    [language]
+  );
+
   const value = useMemo<LanguageContextValue>(
     () => ({
       language,
@@ -126,8 +176,27 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       translateCategory,
       translateOccasion,
       localizeEntity,
+      translateOrderStatus,
+      translatePaymentStatus,
+      translatePaymentMethod,
+      translateVariant,
+      translatePlace,
+      formatDate,
     }),
-    [language, setLanguage, t, translateCategory, translateOccasion, localizeEntity]
+    [
+      language,
+      setLanguage,
+      t,
+      translateCategory,
+      translateOccasion,
+      localizeEntity,
+      translateOrderStatus,
+      translatePaymentStatus,
+      translatePaymentMethod,
+      translateVariant,
+      translatePlace,
+      formatDate,
+    ]
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

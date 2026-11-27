@@ -407,6 +407,3 @@ export function ProductListingSection() {
   );
 }
 
-// Backward-compatible aliases in case external imports reference them
-export const OccasionsSection = ShopByCategorySection;
-export const ForYouSection = ProductListingSection;

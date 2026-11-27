@@ -39,7 +39,7 @@ export function NotificationBell({ variant }: NotificationBellProps) {
     customerAccount?.id,
     customerAccount?.email
   );
-  const { t } = useLanguage();
+  const { t, language, formatDate } = useLanguage();
   const [open, setOpen] = useState(false);
   const [lastSeenStamp, setLastSeenStamp] = useState<string>(() =>
     readStorage<string>(STORAGE_KEYS.NOTIF_SEEN_AT, '')
@@ -146,11 +146,18 @@ export function NotificationBell({ variant }: NotificationBellProps) {
         playGiftKartNotificationChime(true);
         void showLocalDeviceNotification({
           id: `welcome-${Date.now()}`,
-          title: 'GiftKart Alerts Enabled',
-          body: 'You will now receive instant offer & order alerts with sound.',
+          title: language === 'bn' ? 'GiftKart অ্যালার্ট চালু হয়েছে' : 'GiftKart Alerts Enabled',
+          body:
+            language === 'bn'
+              ? 'এখন থেকে সাউন্ডসহ অফার ও অর্ডারের নোটিফিকেশন পাবেন।'
+              : 'You will now receive instant offer & order alerts with sound.',
           url: '/',
         });
-        setPushStatusNote('Phone alerts active! You will be notified even when screen is off.');
+        setPushStatusNote(
+          language === 'bn'
+            ? 'নোটিফিকেশন চালু হয়েছে! স্ক্রিন অফ থাকলেও আপডেট পাবেন।'
+            : 'Phone alerts active! You will be notified even when screen is off.'
+        );
       } else if (res.reason) {
         setPushStatusNote(res.reason);
       }
@@ -165,7 +172,11 @@ export function NotificationBell({ variant }: NotificationBellProps) {
     try {
       await disablePushNotifications();
       setPushEnabled(false);
-      setPushStatusNote('Phone push alerts turned off on this device.');
+      setPushStatusNote(
+        language === 'bn'
+          ? 'এই ডিভাইসে ওয়েবসাইট নোটিফিকেশন বন্ধ করা হয়েছে।'
+          : 'Website push alerts turned off on this device.'
+      );
     } finally {
       setPushBusy(false);
     }
@@ -235,17 +246,27 @@ export function NotificationBell({ variant }: NotificationBellProps) {
             <div className="border-b border-[#EFE3FF] bg-[#FCFAFF] px-3.5 py-2.5">
               {pushSupport === 'ios-needs-install' ? (
                 <p className="text-[11px] font-medium leading-snug text-[#594A6B]">
-                  On iPhone Safari, tap <strong>Share → Add to Home Screen</strong> once to allow browser push alerts.
+                  {language === 'bn' ? (
+                    <>
+                      iPhone Safari-তে ব্রাউজার নোটিফিকেশন চালু করতে একবার <strong>Share → Add to Home Screen</strong> ট্যাপ করুন।
+                    </>
+                  ) : (
+                    <>
+                      On iPhone Safari, tap <strong>Share → Add to Home Screen</strong> once to allow browser push alerts.
+                    </>
+                  )}
                 </p>
               ) : permissionState === 'denied' ? (
                 <p className="text-[11px] font-medium leading-snug text-rose-700">
-                  Website notifications are blocked in browser settings. Allow them to get alerts.
+                  {language === 'bn'
+                    ? 'ব্রাউজার সেটিংস থেকে ওয়েবসাইট নোটিফিকেশন ব্লক করা আছে। অ্যালার্ট পেতে অনুমতি দিন।'
+                    : 'Website notifications are blocked in browser settings. Allow them to get alerts.'}
                 </p>
               ) : pushEnabled ? (
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-1.5 text-[11.5px] font-bold text-emerald-700">
                     <BellRing className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">Website Push &amp; Sound On</span>
+                    <span className="truncate">{t('pushAlertsOnLabel')}</span>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <button
@@ -254,7 +275,7 @@ export function NotificationBell({ variant }: NotificationBellProps) {
                       className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg border border-[#E2D1FA] bg-white px-2 text-[11px] font-bold text-[#6A11CB] hover:bg-[#F5ECFF]"
                     >
                       <Volume2 className="h-3 w-3" />
-                      <span>Tone</span>
+                      <span>{t('toneTestBtn')}</span>
                     </button>
                     <button
                       type="button"
@@ -262,7 +283,7 @@ export function NotificationBell({ variant }: NotificationBellProps) {
                       onClick={() => void handleDisableAlerts()}
                       className="h-7 cursor-pointer rounded-lg px-2 text-[11px] font-semibold text-[#75648E] hover:bg-[#F3ECFC] hover:text-[#1E1035]"
                     >
-                      Off
+                      {t('turnOffBtn')}
                     </button>
                   </div>
                 </div>
@@ -270,10 +291,10 @@ export function NotificationBell({ variant }: NotificationBellProps) {
                 <div className="flex items-center justify-between gap-2.5">
                   <div className="min-w-0">
                     <p className="text-[11.5px] font-extrabold text-[#1E1035]">
-                      Instant Browser &amp; Mobile Alerts
+                      {t('enablePushTitle')}
                     </p>
                     <p className="text-[10.5px] leading-tight text-[#685782]">
-                      Get website offer &amp; order notifications with sound
+                      {t('enablePushSubtitle')}
                     </p>
                   </div>
                   <button
@@ -283,7 +304,7 @@ export function NotificationBell({ variant }: NotificationBellProps) {
                     className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] px-3 text-[11.5px] font-extrabold text-white shadow-xs transition-transform active:scale-95 disabled:opacity-60"
                   >
                     <BellRing className="h-3.5 w-3.5" />
-                    <span>{pushBusy ? 'Turning on...' : 'Enable'}</span>
+                    <span>{pushBusy ? t('enablingBtn') : t('enableBtn')}</span>
                   </button>
                 </div>
               )}
@@ -321,7 +342,14 @@ export function NotificationBell({ variant }: NotificationBellProps) {
                             {item.message}
                           </p>
                           <p className="mt-1 text-[10px] font-semibold text-[#6E5B85]">
-                            {formatDateTime(item.timestamp)}
+                            {language === 'bn'
+                              ? formatDate(item.timestamp, {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : formatDateTime(item.timestamp)}
                           </p>
                         </div>
                       </div>

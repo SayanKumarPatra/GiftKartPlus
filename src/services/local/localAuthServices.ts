@@ -279,7 +279,7 @@ export const sharedCustomerDirectory = new LocalCustomerDirectoryService();
 
 export class LocalCustomerAuthService implements ICustomerAuthService {
   readonly isDemoImplementation = false;
-  readonly providerLabel = 'GiftKart Customer Account';
+  readonly providerLabel = 'GiftKart Customer Account (Backend Auth Ready)';
 
   async getCurrentAccount(): Promise<CustomerDemoAccount | null> {
     const current = readStorage<CustomerDemoAccount | null>(
@@ -287,6 +287,14 @@ export class LocalCustomerAuthService implements ICustomerAuthService {
       null
     );
     if (!current) return null;
+    // Purge any legacy mock/demo customer sessions so zero fake user sessions remain
+    if (
+      current.isDemoMode ||
+      current.email?.trim().toLowerCase() === 'sayan.kumar@gmail.com'
+    ) {
+      removeStorage(STORAGE_KEYS.CUSTOMER_DEMO_ACCOUNT, 'auth');
+      return null;
+    }
     try {
       const status = await apiRequest<{ blocked: boolean }>(
         `/api/public/customers/status?email=${encodeURIComponent(current.email)}`
@@ -309,53 +317,10 @@ export class LocalCustomerAuthService implements ICustomerAuthService {
     return current;
   }
 
-  async signInDemo(input: CustomerSignInInput): Promise<CustomerDemoAccount> {
-    const email = input.email.trim().toLowerCase();
-    const fullName = input.fullName.trim();
-    const phone = input.phone.trim();
-    if (!fullName || !email) {
-      throw new Error('Please provide your full name and email address.');
-    }
-
-    try {
-      const res = await apiRequest<{ account: CustomerDemoAccount }>(
-        '/api/public/customers/signin',
-        {
-          method: 'POST',
-          body: {
-            fullName,
-            email,
-            phone,
-            defaultCity: input.defaultCity || 'Jalchak',
-          },
-        }
-      );
-
-      writeStorage(STORAGE_KEYS.CUSTOMER_DEMO_ACCOUNT, res.account, 'auth');
-      return res.account;
-    } catch (err) {
-      if (isBackendUnavailableError(err)) {
-        await ensureServerHydrated();
-        const synced = upsertCustomerLocally({
-          fullName,
-          email,
-          phone,
-          defaultCity: input.defaultCity || 'Jalchak',
-        });
-        const account: CustomerDemoAccount = {
-          id: synced.id,
-          fullName: synced.fullName,
-          email: synced.email,
-          phone: synced.phone,
-          defaultCity: synced.defaultCity,
-          isDemoMode: true,
-          signedInAt: new Date().toISOString(),
-        };
-        writeStorage(STORAGE_KEYS.CUSTOMER_DEMO_ACCOUNT, account, 'auth');
-        return account;
-      }
-      throw err;
-    }
+  async signInDemo(_input: CustomerSignInInput): Promise<CustomerDemoAccount> {
+    throw new Error(
+      'Demo customer login has been disabled. Real backend authentication will be connected in the next phase.'
+    );
   }
 
   async signOut(): Promise<void> {

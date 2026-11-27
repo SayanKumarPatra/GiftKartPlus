@@ -1,4 +1,4 @@
-// GiftKart PWA Service Worker v5 — supports background Web Push lock-screen alerts, vibration, click routing & fresh HTML
+// GiftKart PWA Service Worker v7 — supports background Web Push lock-screen alerts, vibration, click routing & fresh HTML
 self.addEventListener('install', () => {
   self.skipWaiting();
 });

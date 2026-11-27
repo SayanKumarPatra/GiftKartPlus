@@ -18,6 +18,7 @@ import type {
 } from '../types';
 import { STORAGE_KEYS } from './localStorageEngine';
 import { storeEvents, type StoreEventTopic } from './storeEvents';
+import { normalizeOfficialContactFields } from '../utils/storefrontHelpers';
 
 export interface LiveStoreSnapshot {
   version: number;
@@ -330,20 +331,24 @@ function mergePublicData(
   }
   if (data.storeSettings && typeof data.storeSettings === 'object') {
     const incomingSocial = data.storeSettings.socialLinks;
+    const normalizedContact = normalizeOfficialContactFields({
+      supportEmail: data.storeSettings.supportEmail,
+      supportPhone: data.storeSettings.supportPhone,
+      contactVersion: data.storeSettings.contactVersion,
+      socialLinks: incomingSocial,
+    });
     liveStore.storeSettings = {
       ...SEED_STORE_SETTINGS,
       ...data.storeSettings,
-      supportEmail:
-        data.storeSettings.supportEmail?.trim() || SEED_STORE_SETTINGS.supportEmail,
-      supportPhone:
-        data.storeSettings.supportPhone?.trim() || SEED_STORE_SETTINGS.supportPhone,
+      supportEmail: normalizedContact.supportEmail,
+      supportPhone: normalizedContact.supportPhone,
+      contactVersion: normalizedContact.contactVersion,
       socialLinks: {
         instagram:
           incomingSocial?.instagram?.trim() || SEED_STORE_SETTINGS.socialLinks!.instagram,
         facebook:
           incomingSocial?.facebook?.trim() || SEED_STORE_SETTINGS.socialLinks!.facebook,
-        whatsapp:
-          incomingSocial?.whatsapp?.trim() || SEED_STORE_SETTINGS.socialLinks!.whatsapp,
+        whatsapp: normalizedContact.whatsappUrl,
         youtube: incomingSocial?.youtube?.trim() || '',
       },
       seo: {

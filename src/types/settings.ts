@@ -170,4 +170,5 @@ export interface StoreSettings {
   policies?: StorePoliciesConfig;
   footerContent?: StoreFooterConfig;
   notifications?: StoreNotification[];
+  contactVersion?: number;
 }

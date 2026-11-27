@@ -43,6 +43,7 @@ import {
   buildWhatsAppPersonalizationUrl,
   getVisibleVariantGroups,
   isProductPersonalized,
+  normalizeOfficialContactFields,
 } from '../../utils/storefrontHelpers';
 
 export function ProductDetailPage() {
@@ -63,7 +64,14 @@ export function ProductDetailPage() {
     setGiftWrapEnabled,
   } = useCart();
   const { pushToast } = useToast();
-  const { t, translateCategory, localizeEntity } = useLanguage();
+  const {
+    language,
+    t,
+    translateCategory,
+    localizeEntity,
+    translateVariant,
+    translatePlace,
+  } = useLanguage();
 
   const product = products.find((p) => p.slug === slug);
   const { data: productReviews } = useProductReviews(product?.id);
@@ -151,8 +159,15 @@ export function ProductDetailPage() {
         )
       : 0;
 
+  const resolvedContact = normalizeOfficialContactFields({
+    supportEmail: settings?.supportEmail,
+    supportPhone: settings?.supportPhone,
+    contactVersion: settings?.contactVersion,
+    socialLinks: settings?.socialLinks,
+  });
+
   const whatsappUrl = buildWhatsAppPersonalizationUrl(
-    settings?.supportPhone,
+    resolvedContact.supportPhone,
     product.name,
     product.sku,
     selectedVariants
@@ -173,7 +188,11 @@ export function ProductDetailPage() {
       return;
     }
     if (!file.type.startsWith('image/')) {
-      setPhotoError('Please choose a JPG, PNG, or WebP image file.');
+      setPhotoError(
+        language === 'bn'
+          ? 'অনুগ্রহ করে JPG, PNG, অথবা WebP ছবি নির্বাচন করুন।'
+          : 'Please choose a JPG, PNG, or WebP image file.'
+      );
       return;
     }
     setPhotoError(null);
@@ -234,7 +253,7 @@ export function ProductDetailPage() {
           category={category}
           categories={categories}
           products={products}
-          supportPhone={settings?.supportPhone}
+          supportPhone={resolvedContact.supportPhone}
         />
       </div>
 
@@ -394,8 +413,9 @@ export function ProductDetailPage() {
                     {liveRatingAvg}
                   </span>
                   <span>
-                    {approvedReviews.length} Verified{' '}
-                    {approvedReviews.length === 1 ? 'Review' : 'Reviews'}
+                    {language === 'bn'
+                      ? `${approvedReviews.length}টি যাচাইকৃত রিভিউ`
+                      : `${approvedReviews.length} Verified ${approvedReviews.length === 1 ? 'Review' : 'Reviews'}`}
                   </span>
                 </a>
               )}
@@ -432,9 +452,9 @@ export function ProductDetailPage() {
                 {visibleVariantGroups.map((group) => (
                   <div key={group.name}>
                     <p className="text-xs font-bold text-[#2B0B4E]">
-                      {group.name}:{' '}
+                      {translateVariant(group.name)}:{' '}
                       <span className="text-[#6A11CB]">
-                        {selectedVariants[group.name] ?? group.options[0]}
+                        {translateVariant(selectedVariants[group.name] ?? group.options[0])}
                       </span>
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -456,7 +476,7 @@ export function ProductDetailPage() {
                                 : 'border border-[#EBD8FF] bg-[#FAF6FF] text-[#2B0B4E] hover:border-[#6A11CB]/50'
                             }`}
                           >
-                            {opt}
+                            {translateVariant(opt)}
                           </button>
                         );
                       })}
@@ -472,7 +492,9 @@ export function ProductDetailPage() {
                 {product.supportsPersonalization && (
                   <div>
                     <label className="block text-xs font-bold text-[#2B0B4E]">
-                      Personalization Note / Custom Name
+                      {language === 'bn'
+                        ? 'পার্সোনালাইজেশন নোট / কাস্টম নাম'
+                        : 'Personalization Note / Custom Name'}
                     </label>
                     <input
                       type="text"
@@ -480,8 +502,10 @@ export function ProductDetailPage() {
                       onChange={(e) => setPersonalizationText(e.target.value)}
                       maxLength={120}
                       placeholder={
-                        product.personalizationPrompt ??
-                        'Enter custom name, date, or short message'
+                        language === 'bn'
+                          ? t('personalizationPlaceholder')
+                          : product.personalizationPrompt ??
+                            'Enter custom name, date, or short message'
                       }
                       className="mt-1.5 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 py-2.5 text-sm text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
                     />
@@ -491,12 +515,16 @@ export function ProductDetailPage() {
                 {product.supportsPhotoUpload && (
                   <div>
                     <label className="block text-xs font-bold text-[#2B0B4E]">
-                      Attach Custom Photo (Optional)
+                      {language === 'bn'
+                        ? 'কাস্টম ছবি যুক্ত করুন (ঐচ্ছিক)'
+                        : 'Attach Custom Photo (Optional)'}
                     </label>
                     <div className="mt-1.5 flex flex-wrap items-center gap-3">
                       <label className="inline-flex min-h-[38px] cursor-pointer items-center gap-2 rounded-xl border border-dashed border-[#6A11CB]/50 bg-white px-4 text-xs font-bold text-[#6A11CB] hover:bg-[#FFF0F6]">
                         <ImagePlus className="h-4 w-4 text-[#FF4D8D]" />
-                        <span>{photoFileName ? 'Change Photo' : 'Choose Photo'}</span>
+                        <span>
+                          {photoFileName ? t('changePhoto') : t('uploadPhoto')}
+                        </span>
                         <input
                           type="file"
                           accept="image/*"
@@ -541,10 +569,14 @@ export function ProductDetailPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-emerald-900">
-                      Share Photos or Custom Details on WhatsApp
+                      {language === 'bn'
+                        ? 'হোয়াটসঅ্যাপে ছবি বা কাস্টম তথ্য পাঠান'
+                        : 'Share Photos or Custom Details on WhatsApp'}
                     </p>
                     <p className="mt-0.5 text-[11px] text-emerald-800/80">
-                      Send high-resolution photos or special print instructions directly to our GiftKart studio team.
+                      {language === 'bn'
+                        ? `উচ্চ-মানের ছবি বা বিশেষ প্রিন্টের নির্দেশনা সরাসরি GiftKart-এ পাঠান (${resolvedContact.supportPhone})।`
+                        : `Send high-resolution photos or special print instructions directly to GiftKart (${resolvedContact.supportPhone}).`}
                     </p>
                   </div>
                   <a
@@ -554,7 +586,7 @@ export function ProductDetailPage() {
                     className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[#16A34A] px-3.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#15803D]"
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
-                    <span>WhatsApp Studio</span>
+                    <span>{language === 'bn' ? 'হোয়াটসঅ্যাপ স্টুডিও' : 'WhatsApp Studio'}</span>
                   </a>
                 </div>
               </div>
@@ -567,12 +599,14 @@ export function ProductDetailPage() {
                   <Gift className="mt-0.5 h-5 w-5 shrink-0 text-[#FF4D8D]" />
                   <div>
                     <p className="text-xs font-bold text-[#2B0B4E]">
-                      Add Boutique Gift Wrapping &amp; Message Card
+                      {language === 'bn'
+                        ? 'প্রিমিয়াম গিফট র‍্যাপিং ও মেসেজ কার্ড যোগ করুন'
+                        : 'Add Boutique Gift Wrapping & Message Card'}
                     </p>
                     <p className="text-[11px] text-[#594A6B]">
-                      Starts from{' '}
-                      {formatInr(Math.min(...activeStyles.map((s) => s.chargeInr)))} ·
-                      Customize style &amp; note in Cart.
+                      {language === 'bn'
+                        ? `${formatInr(Math.min(...activeStyles.map((s) => s.chargeInr)))} থেকে শুরু · কার্টে স্টাইল ও বার্তা বেছে নিন।`
+                        : `Starts from ${formatInr(Math.min(...activeStyles.map((s) => s.chargeInr)))} · Customize style & note in Cart.`}
                     </p>
                   </div>
                 </div>
@@ -586,7 +620,15 @@ export function ProductDetailPage() {
                   }`}
                 >
                   {giftWrap.enabled && <Check className="h-3.5 w-3.5" />}
-                  <span>{giftWrap.enabled ? 'Wrap Added' : 'Add Wrap'}</span>
+                  <span>
+                    {giftWrap.enabled
+                      ? language === 'bn'
+                        ? 'র‍্যাপ যুক্ত হয়েছে'
+                        : 'Wrap Added'
+                      : language === 'bn'
+                        ? 'র‍্যাপ যোগ করুন'
+                        : 'Add Wrap'}
+                  </span>
                 </button>
               </div>
             )}
@@ -665,7 +707,8 @@ export function ProductDetailPage() {
                 <span>
                   {t('deliveryZone')}:{' '}
                   <strong className="text-[#2B0B4E]">
-                    {activeZones.map((z) => z.name).join(' & ') || 'Jalchak'}
+                    {activeZones.map((z) => translatePlace(z.name)).join(' & ') ||
+                      translatePlace('Jalchak')}
                   </strong>
                 </span>
               </div>
@@ -677,8 +720,12 @@ export function ProductDetailPage() {
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 <span>
                   {personalized
-                    ? 'Customized items are non-returnable'
-                    : '7-day return on unused items'}
+                    ? language === 'bn'
+                      ? 'কাস্টমাইজড পণ্য ফেরতযোগ্য নয়'
+                      : 'Customized items are non-returnable'
+                    : language === 'bn'
+                      ? 'অব্যবহৃত পণ্যে ৭ দিনের রিটার্ন'
+                      : '7-day return on unused items'}
                 </span>
               </div>
             </div>

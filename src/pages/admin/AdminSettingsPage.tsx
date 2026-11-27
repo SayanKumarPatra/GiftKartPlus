@@ -20,6 +20,10 @@ import {
   AdminToggleSwitch,
   readImageFileAsDataUrl,
 } from '../../components/admin/AdminSharedUI';
+import {
+  cleanWhatsAppDigits,
+  STORE_CONTACT_MIGRATION_VERSION,
+} from '../../utils/storefrontHelpers';
 
 type SettingsSectionId =
   | 'general'
@@ -159,17 +163,33 @@ export function AdminSettingsPage() {
     if (!draft) return;
     setSaving(true);
     try {
+      const nextPhone = draft.supportPhone.trim() || '+91 9239505791';
+      const nextEmail = draft.supportEmail.trim() || 'hello.giftkart@gmail.com';
+      const nextWhatsapp =
+        activeSection === 'contact'
+          ? `https://wa.me/${cleanWhatsAppDigits(nextPhone)}`
+          : normalizeOptionalUrl(draft.socialLinks?.whatsapp ?? '') ||
+            `https://wa.me/${cleanWhatsAppDigits(nextPhone)}`;
+
       const sanitized: StoreSettings = {
         ...draft,
         storeName: draft.storeName.trim() || 'GiftKart',
+        supportEmail: nextEmail,
+        supportPhone: nextPhone,
+        contactVersion: STORE_CONTACT_MIGRATION_VERSION,
         socialLinks: draft.socialLinks
           ? {
               instagram: normalizeOptionalUrl(draft.socialLinks.instagram),
               facebook: normalizeOptionalUrl(draft.socialLinks.facebook),
-              whatsapp: normalizeOptionalUrl(draft.socialLinks.whatsapp),
+              whatsapp: nextWhatsapp,
               youtube: normalizeOptionalUrl(draft.socialLinks.youtube),
             }
-          : draft.socialLinks,
+          : {
+              instagram: 'https://www.instagram.com/giftkart.online',
+              facebook: 'https://www.facebook.com/share/18v7Ev2crP/',
+              whatsapp: nextWhatsapp,
+              youtube: '',
+            },
       };
       await services.settings.updateSettings(sanitized);
       const sectionTitle =

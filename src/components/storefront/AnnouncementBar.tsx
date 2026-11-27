@@ -2,19 +2,26 @@ import { Link } from 'react-router-dom';
 import { Headphones, Sparkles } from 'lucide-react';
 import { useStoreSettings } from '../../hooks/useStoreData';
 import { useLanguage } from '../../context/LanguageContext';
+import { autoTranslateToBengali } from '../../i18n/bengaliAutoTranslate';
 
 export function AnnouncementBar() {
   const { data: settings } = useStoreSettings();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const announcement = settings?.announcement;
 
   if (announcement && !announcement.enabled) {
     return null;
   }
 
-  const desktopText =
+  const rawDesktopText =
     announcement?.desktopText ??
     'Delivery in Jalchak • Customization Available';
+  const desktopText =
+    language === 'bn'
+      ? rawDesktopText === 'Delivery in Jalchak • Customization Available'
+        ? 'জলচক-এ ডেলিভারি • কাস্টমাইজেশন উপলব্ধ'
+        : autoTranslateToBengali(rawDesktopText)
+      : rawDesktopText;
   const showSupport = announcement?.showSupportLink ?? true;
 
   return (

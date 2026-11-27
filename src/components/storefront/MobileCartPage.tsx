@@ -68,7 +68,7 @@ export function MobileCartPage() {
   } = useCart();
   const { customerAccount } = useAuth();
   const { pushToast } = useToast();
-  const { t, translateCategory } = useLanguage();
+  const { t, translateCategory, localizeEntity, translatePlace } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -197,7 +197,7 @@ export function MobileCartPage() {
     }
     const added = toggleWishlist(productId);
     pushToast({
-      title: added ? 'Saved to Wishlist' : 'Removed from Wishlist',
+      title: added ? t('savedToWishlistToast') : t('removedFromWishlistToast'),
       description: productName,
       variant: 'info',
     });
@@ -206,7 +206,7 @@ export function MobileCartPage() {
   function handleRemoveItem(cartItemId: string, productName: string) {
     removeItem(cartItemId);
     pushToast({
-      title: 'Removed from Cart',
+      title: t('removedFromCartToast'),
       description: productName,
       variant: 'info',
     });
@@ -215,7 +215,7 @@ export function MobileCartPage() {
   async function applyCouponCode(rawCode: string) {
     const code = rawCode.trim().toUpperCase();
     if (!code) {
-      setCouponError('Please enter a valid coupon code.');
+      setCouponError(t('enterValidCoupon'));
       return;
     }
     setCouponError('');
@@ -322,7 +322,7 @@ export function MobileCartPage() {
             />
             <p className="truncate text-[13.5px] font-bold text-[#2B0B4E]">
               {selectedAddress
-                ? `${selectedAddress.city} - ${selectedAddress.pincode}`
+                ? `${translatePlace(selectedAddress.city)} - ${selectedAddress.pincode}`
                 : t('deliveryAddress')}
             </p>
           </div>
@@ -347,6 +347,11 @@ export function MobileCartPage() {
       <section aria-label="Cart items" className="mt-3 space-y-3 px-3.5">
         {items.map((item) => {
           const catalogProduct = productById.get(item.productId);
+          const displayProductName = localizeEntity(
+            item.productName,
+            'name',
+            catalogProduct?.translations
+          );
           const categoryLabel =
             (catalogProduct && categoryNameById.get(catalogProduct.categoryId)) ||
             'GiftKart';
@@ -366,7 +371,7 @@ export function MobileCartPage() {
               >
                 <ProductImage
                   src={item.image}
-                  alt={item.productName}
+                  alt={displayProductName}
                   aspectClass="aspect-square"
                 />
               </Link>
@@ -388,7 +393,7 @@ export function MobileCartPage() {
                     to={`/product/${item.productSlug}`}
                     className="mt-1.5 block line-clamp-2 text-[14px] font-extrabold leading-[1.28] text-[#2B0B4E]"
                   >
-                    {item.productName}
+                    {displayProductName}
                   </Link>
 
                   {/* Current Product Price */}
@@ -404,7 +409,7 @@ export function MobileCartPage() {
                     onClick={() =>
                       updateQuantity(item.cartItemId, item.quantity - 1)
                     }
-                    aria-label={`Decrease quantity of ${item.productName}`}
+                    aria-label={`Decrease quantity of ${displayProductName}`}
                     className="flex h-[30px] w-[32px] items-center justify-center rounded-full text-[#4C1D95] transition-colors active:bg-[#EBD8FF]"
                   >
                     <Minus className="h-3.5 w-3.5 stroke-[2.4]" />
@@ -417,7 +422,7 @@ export function MobileCartPage() {
                     onClick={() =>
                       updateQuantity(item.cartItemId, item.quantity + 1)
                     }
-                    aria-label={`Increase quantity of ${item.productName}`}
+                    aria-label={`Increase quantity of ${displayProductName}`}
                     className="flex h-[30px] w-[32px] items-center justify-center rounded-full text-[#4C1D95] transition-colors active:bg-[#EBD8FF]"
                   >
                     <Plus className="h-3.5 w-3.5 stroke-[2.4]" />
@@ -430,12 +435,12 @@ export function MobileCartPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    handleWishlistToggle(item.productId, item.productName)
+                    handleWishlistToggle(item.productId, displayProductName)
                   }
                   aria-label={
                     saved
-                      ? `Remove ${item.productName} from wishlist`
-                      : `Save ${item.productName} to wishlist`
+                      ? `${t('removeFromWishlist')} ${displayProductName}`
+                      : `${t('saveToWishlist')} ${displayProductName}`
                   }
                   className="flex h-9 w-9 items-center justify-center rounded-full border border-[#EFE2FF] bg-white shadow-[0_2px_8px_rgba(106,17,203,0.08)] transition-transform active:scale-90"
                 >
@@ -451,9 +456,9 @@ export function MobileCartPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    handleRemoveItem(item.cartItemId, item.productName)
+                    handleRemoveItem(item.cartItemId, displayProductName)
                   }
-                  aria-label={`Remove ${item.productName} from cart`}
+                  aria-label={`${t('remove')} ${displayProductName}`}
                   className="flex h-9 w-9 items-center justify-center rounded-full text-[#5B4675] transition-colors active:scale-90 active:bg-[#FFF0F6] active:text-[#C81E68]"
                 >
                   <Trash2 className="h-[18px] w-[18px] stroke-[1.9]" />
@@ -549,7 +554,7 @@ export function MobileCartPage() {
               {activeCoupons.length > 0 && (
                 <div className="mt-3 space-y-2">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-[#76628E]">
-                    Available Coupons
+                    {t('availableCoupons')}
                   </p>
                   {activeCoupons.map((coupon) => {
                     const isApplied = appliedCouponCode === coupon.code;
@@ -576,7 +581,7 @@ export function MobileCartPage() {
                               : 'border border-[#DEC7FF] bg-white text-[#6A11CB]'
                           }`}
                         >
-                          {isApplied ? 'Applied' : 'Apply'}
+                          {isApplied ? t('applied') : t('apply')}
                         </button>
                       </div>
                     );
@@ -730,12 +735,12 @@ export function MobileCartPage() {
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#E6D4FF]" />
             <div className="flex items-center justify-between gap-2 pb-2">
               <h2 className="text-[16px] font-extrabold text-[#2B0B4E]">
-                Select Delivery Address
+                {t('selectDeliveryAddressTitle')}
               </h2>
               <button
                 type="button"
                 onClick={() => setAddressSheetOpen(false)}
-                aria-label="Close address selector"
+                aria-label={t('close')}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F5ECFF] text-[#4C1D95]"
               >
                 <X className="h-4 w-4 stroke-[2.3]" />
@@ -745,6 +750,16 @@ export function MobileCartPage() {
             <div className="max-h-[48vh] space-y-2.5 overflow-y-auto py-1">
               {savedAddresses.map((addr) => {
                 const isSelected = selectedAddress?.id === addr.id;
+                const localizedCity = translatePlace(addr.city);
+                const localizedState = translatePlace(addr.state);
+                const addrLabel =
+                  addr.label.toLowerCase() === 'home'
+                    ? t('homeLabel')
+                    : addr.label.toLowerCase() === 'work'
+                      ? t('workLabel')
+                      : addr.label.toLowerCase() === 'other'
+                        ? t('otherLabel')
+                        : addr.label;
                 return (
                   <button
                     key={addr.id}
@@ -753,8 +768,8 @@ export function MobileCartPage() {
                       setSelectedAddressId(addr.id);
                       setAddressSheetOpen(false);
                       pushToast({
-                        title: 'Delivery Address Updated',
-                        description: `${addr.label} (${addr.city} - ${addr.pincode})`,
+                        title: t('deliveryAddressUpdated'),
+                        description: `${addrLabel} (${localizedCity} - ${addr.pincode})`,
                         variant: 'success',
                       });
                     }}
@@ -766,14 +781,14 @@ export function MobileCartPage() {
                   >
                     <div className="min-w-0 flex-1">
                       <p className="text-[13.5px] font-extrabold text-[#2B0B4E]">
-                        {addr.label} · {addr.fullName}
+                        {addrLabel} · {addr.fullName}
                       </p>
                       <p className="mt-0.5 text-[12px] leading-snug text-[#5B4775]">
                         {addr.addressLine1}
-                        {addr.area ? `, ${addr.area}` : ''}
+                        {addr.area ? `, ${translatePlace(addr.area)}` : ''}
                       </p>
                       <p className="mt-0.5 text-[12px] font-semibold text-[#6A11CB]">
-                        {addr.city}, {addr.state} - {addr.pincode}
+                        {localizedCity}, {localizedState} - {addr.pincode}
                       </p>
                     </div>
                     <span
@@ -795,7 +810,7 @@ export function MobileCartPage() {
               onClick={() => setAddressSheetOpen(false)}
               className="mt-3 flex h-[44px] w-full items-center justify-center rounded-full border border-[#DEC7FF] bg-[#FAF5FF] text-[13.5px] font-extrabold text-[#6A11CB] active:scale-[0.985]"
             >
-              Manage / Add New Address
+              {t('manageOrAddAddress')}
             </Link>
           </div>
         </div>

@@ -65,7 +65,7 @@ export function ProductCard({
   }
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-[#ECE4F5] bg-white shadow-[0_1px_4px_rgba(43,11,78,0.04)] transition-all duration-200 hover:border-[#D7B9FA] hover:shadow-[0_12px_26px_-12px_rgba(106,17,203,0.18)]">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-[#ECE4F5] bg-white shadow-[0_1px_4px_rgba(43,11,78,0.04)] transition-all duration-200 hover:border-[#D7B9FA] hover:shadow-[0_12px_26px_-12px_rgba(106,17,203,0.18)]">
       {/* Flush Square Product Image + Top-Right Circular Wishlist Toggle */}
       <div className="relative overflow-hidden bg-[#FAF7FD]">
         <Link to={`/product/${product.slug}`} className="block">
@@ -77,7 +77,7 @@ export function ProductCard({
           />
         </Link>
 
-        <div className="absolute right-2.5 top-2.5 flex flex-col gap-1.5">
+        <div className="absolute right-2 top-2 flex flex-col gap-1.5 sm:right-2.5 sm:top-2.5">
           <button
             type="button"
             onClick={handleWishlistClick}
@@ -106,9 +106,9 @@ export function ProductCard({
       </div>
 
       {/* Clean Modern E-Commerce Card Body */}
-      <div className={`flex flex-1 flex-col ${compact ? 'p-3' : 'p-3.5'}`}>
+      <div className={`flex min-w-0 flex-1 flex-col ${compact ? 'p-2.5 sm:p-3' : 'p-2.5 sm:p-3.5'}`}>
         {displayCategory && (
-          <p className="truncate text-[11px] font-semibold text-[#6A11CB]">
+          <p className="truncate text-[10.5px] font-semibold text-[#6A11CB] sm:text-[11px]">
             {displayCategory}
           </p>
         )}
@@ -116,22 +116,22 @@ export function ProductCard({
         <Link
           to={`/product/${product.slug}`}
           className={`mt-0.5 line-clamp-2 font-semibold leading-[1.35] text-[#1E1035] transition-colors hover:text-[#6A11CB] ${
-            compact ? 'text-[13px]' : 'text-[14px]'
+            compact ? 'text-[12.5px] sm:text-[13px]' : 'text-[13px] sm:text-[14px]'
           }`}
         >
           {displayName}
         </Link>
 
-        <div className="mt-2 flex items-baseline justify-between gap-2">
+        <div className="mt-2 flex flex-wrap items-baseline justify-between gap-1.5">
           <span
             className={`font-bold tabular-nums text-[#1E1035] ${
-              compact ? 'text-[14.5px]' : 'text-[16px]'
+              compact ? 'text-[14px] sm:text-[14.5px]' : 'text-[15px] sm:text-[16px]'
             }`}
           >
             {formatInr(product.priceInr)}
           </span>
           {product.stockCount <= 0 && (
-            <span className="text-[11px] font-semibold text-[#C81E68]">
+            <span className="text-[10.5px] font-semibold text-[#C81E68] sm:text-[11px]">
               {t('outOfStock')}
             </span>
           )}
@@ -143,8 +143,8 @@ export function ProductCard({
             type="button"
             onClick={handleAddToCart}
             disabled={!isInCart && product.stockCount <= 0}
-            className={`flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-              compact ? 'h-8 text-[11.5px]' : 'h-[38px] text-[12.5px]'
+            className={`flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 ${
+              compact ? 'h-8 text-[11px] sm:text-[11.5px]' : 'h-[38px] text-[12px] sm:text-[12.5px]'
             } ${
               isInCart
                 ? 'border border-[#6A11CB] bg-[#F5ECFF] text-[#6A11CB] hover:bg-[#EDE0FF]'
@@ -152,7 +152,7 @@ export function ProductCard({
             }`}
           >
             <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-            <span>
+            <span className="truncate">
               {isInCart
                 ? t('goToCart')
                 : product.stockCount > 0

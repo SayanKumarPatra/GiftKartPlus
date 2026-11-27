@@ -24,21 +24,25 @@ import {
   isVanInMotion,
   normalizeOrderStatus,
 } from '../../utils/orderLifecycle';
+import { useLanguage } from '../../context/LanguageContext';
+import { getDateLocale } from '../../i18n/bengaliAutoTranslate';
+import type { LanguageCode, TranslationKey } from '../../i18n/translations';
 
 interface DeliveryVanTrackerProps {
   order: DemoOrder;
   compact?: boolean;
 }
 
-function formatCompactTimestamp(iso?: string): string {
+function formatCompactTimestamp(iso: string | undefined, language: LanguageCode): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  const datePart = d.toLocaleDateString('en-IN', {
+  const locale = getDateLocale(language);
+  const datePart = d.toLocaleDateString(locale, {
     day: '2-digit',
     month: 'short',
   });
-  const timePart = d.toLocaleTimeString('en-IN', {
+  const timePart = d.toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
@@ -62,28 +66,88 @@ function getStageTimestamp(order: DemoOrder, stage: CanonicalOrderStatus): strin
   return undefined;
 }
 
-function getStageShortHeading(stage: CanonicalOrderStatus): string {
+function getStageShortHeading(
+  stage: CanonicalOrderStatus,
+  t: (key: TranslationKey) => string
+): string {
   switch (stage) {
     case 'New Order':
-      return 'Order Placed';
+      return t('stepOrderPlaced');
     case 'Processing':
-      return 'Processing';
+      return t('stepProcessing');
     case 'Packed':
-      return 'Packed';
+      return t('stepPacked');
     case 'Shipped':
-      return 'Shipped (Dispatch)';
+      return t('stepShippedDispatch');
     case 'In Transit':
-      return 'In Transit';
+      return t('stepInTransit');
     case 'Out for Delivery':
-      return 'Out for Delivery';
+      return t('stepOutForDelivery');
     case 'Delivered':
-      return 'Delivered';
+      return t('stepDelivered');
     default:
       return stage;
   }
 }
 
-function getStageHeadline(status: CanonicalOrderStatus): { title: string; subtitle: string } {
+function getStageHeadline(
+  status: CanonicalOrderStatus,
+  language: LanguageCode
+): { title: string; subtitle: string } {
+  if (language === 'bn') {
+    switch (status) {
+      case 'New Order':
+        return {
+          title: 'আপনার GiftKart অর্ডারটি সম্পন্ন হয়েছে!',
+          subtitle: 'অর্ডার গৃহীত হয়েছে এবং স্টুডিও প্রসেসিংয়ের অপেক্ষায় আছে।',
+        };
+      case 'Processing':
+        return {
+          title: 'আপনার অর্ডারটি প্রস্তুত করা হচ্ছে!',
+          subtitle: 'আমাদের GiftKart স্টুডিও যত্ন সহকারে আপনার উপহারটি তৈরি ও মান যাচাই করছে।',
+        };
+      case 'Packed':
+        return {
+          title: 'আপনার উপহারটি প্যাক করা ও প্রস্তুত!',
+          subtitle: 'সুরক্ষিতভাবে মোড়ানো হয়েছে এবং কুরিয়ারে দেওয়ার জন্য প্রস্তুত।',
+        };
+      case 'Shipped':
+        return {
+          title: 'আপনার অর্ডারটি শিপ করা হয়েছে!',
+          subtitle: 'আপনার উপহারটি ডেলিভারি হাবের উদ্দেশ্যে রওনা হয়েছে।',
+        };
+      case 'In Transit':
+        return {
+          title: 'আপনার অর্ডারটি পথে রয়েছে!',
+          subtitle: 'আপনার গন্তব্য শহরের দিকে এগিয়ে চলেছে।',
+        };
+      case 'Out for Delivery':
+        return {
+          title: 'আজই ডেলিভারির জন্য বের হয়েছে!',
+          subtitle: 'ডেলিভারি পার্টনার আপনার ঠিকানার উদ্দেশ্যে আসছেন।',
+        };
+      case 'Delivered':
+        return {
+          title: 'সফলভাবে ডেলিভারি সম্পন্ন হয়েছে!',
+          subtitle: 'GiftKart-এর সাথে কেনাকাটা করার জন্য আন্তরিক ধন্যবাদ।',
+        };
+      case 'Cancelled':
+        return {
+          title: 'এই অর্ডারটি বাতিল করা হয়েছে।',
+          subtitle: 'এই অর্ডারের জন্য আর কোনো শিপিং আপডেট নির্ধারিত নেই।',
+        };
+      case 'Delivery Failed':
+        return {
+          title: 'ডেলিভারির চেষ্টা ব্যর্থ হয়েছে।',
+          subtitle: 'পুনরায় ডেলিভারির জন্য অনুগ্রহ করে আমাদের সাপোর্টে যোগাযোগ করুন।',
+        };
+      case 'Returned':
+        return {
+          title: 'অর্ডারটি GiftKart-এ ফেরত এসেছে।',
+          subtitle: 'রিটার্নের তথ্য অর্ডার হিস্ট্রিতে যুক্ত করা হয়েছে।',
+        };
+    }
+  }
   switch (status) {
     case 'New Order':
       return {
@@ -160,6 +224,7 @@ function StageStepIcon({ stage }: { stage: CanonicalOrderStatus }) {
 }
 
 export function DeliveryVanTracker({ order, compact = false }: DeliveryVanTrackerProps) {
+  const { language, t, translateOrderStatus, translatePlace } = useLanguage();
   const [copiedTracking, setCopiedTracking] = useState(false);
 
   const canonicalStatus = normalizeOrderStatus(order.fulfillmentStatus);
@@ -167,13 +232,17 @@ export function DeliveryVanTracker({ order, compact = false }: DeliveryVanTracke
   const isException = isExceptionOrderStatus(canonicalStatus);
   const moving = isVanInMotion(canonicalStatus);
   const vanPercent = getDeliveryVanProgressPercent(canonicalStatus);
-  const headline = getStageHeadline(canonicalStatus);
+  const headline = getStageHeadline(canonicalStatus, language);
   const shipping = order.shippingDetails || {};
 
   const destinationLabel =
-    [order.customer.city, order.customer.pincode].filter(Boolean).join(' • ') ||
-    order.customer.deliveryZoneNameSnapshot ||
-    'Customer Address';
+    [order.customer.city ? translatePlace(order.customer.city) : '', order.customer.pincode]
+      .filter(Boolean)
+      .join(' • ') ||
+    (order.customer.deliveryZoneNameSnapshot
+      ? translatePlace(order.customer.deliveryZoneNameSnapshot)
+      : '') ||
+    t('deliveryAddress');
 
   async function handleCopyTracking() {
     if (!shipping.trackingId) return;
@@ -206,7 +275,7 @@ export function DeliveryVanTracker({ order, compact = false }: DeliveryVanTracke
             )}
           </span>
           <h3 className="truncate text-[14.5px] font-extrabold tracking-tight text-[#2B0B4E] sm:text-[15.5px]">
-            Order Progress &amp; Shipping
+            {t('orderProgressShipping')}
           </h3>
         </div>
 
@@ -222,10 +291,10 @@ export function DeliveryVanTracker({ order, compact = false }: DeliveryVanTracke
           />
           <span>
             {isException
-              ? getStatusDisplayLabel(canonicalStatus)
+              ? translateOrderStatus(getStatusDisplayLabel(canonicalStatus))
               : canonicalStatus === 'Delivered'
-              ? 'Delivered'
-              : 'Live Tracking'}
+              ? t('stepDelivered')
+              : t('liveTracking')}
           </span>
         </span>
       </div>
@@ -253,7 +322,7 @@ export function DeliveryVanTracker({ order, compact = false }: DeliveryVanTracke
                 const completed = idx < stageIndex;
                 const current = idx === stageIndex;
                 const stamp = idx <= stageIndex ? getStageTimestamp(order, stage) : undefined;
-                const formattedStamp = formatCompactTimestamp(stamp);
+                const formattedStamp = formatCompactTimestamp(stamp, language);
 
                 return (
                   <div
@@ -281,7 +350,7 @@ export function DeliveryVanTracker({ order, compact = false }: DeliveryVanTracke
                           : 'font-semibold text-[#8E7AA8]'
                       }`}
                     >
-                      {getStageShortHeading(stage)}
+                      {getStageShortHeading(stage, t)}
                     </span>
 
                     {formattedStamp && (
@@ -298,7 +367,7 @@ export function DeliveryVanTracker({ order, compact = false }: DeliveryVanTracke
       ) : (
         <div className="mt-3.5 rounded-2xl border border-[#FF4D8D]/30 bg-[#FFF0F6] px-3.5 py-2.5 text-xs">
           <p className="font-extrabold text-[#C81E62]">
-            {getLiveTrackingStatusLabel(canonicalStatus)}
+            {translateOrderStatus(getLiveTrackingStatusLabel(canonicalStatus))}
             {shipping.exceptionReason ? ` — ${shipping.exceptionReason}` : ''}
           </p>
           {shipping.deliveryRemarks && (
@@ -525,33 +594,33 @@ export function DeliveryVanTracker({ order, compact = false }: DeliveryVanTracke
 
       {/* Bottom Live Status Message & Courier / Tracking Pill — Matches Mockup */}
       <div className="mt-3.5 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex min-w-0 items-start gap-2.5 sm:items-center">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#F4EAFF] text-[#6A11CB]">
             <Truck className="h-5 w-5" />
           </span>
-          <div className="min-w-0">
-            <p className="text-[13.5px] font-extrabold leading-snug text-[#6A11CB]">
+          <div className="min-w-0 flex-1">
+            <p className="break-words text-[13.5px] font-extrabold leading-snug text-[#6A11CB]">
               {headline.title}
             </p>
-            <p className="truncate text-[11.5px] font-medium text-[#5B4874]">
+            <p className="mt-0.5 line-clamp-2 break-words text-[11.5px] font-medium text-[#5B4874]">
               {shipping.currentShippingUpdate || headline.subtitle}
             </p>
           </div>
         </div>
 
         {shipping.courierName || shipping.trackingId ? (
-          <div className="flex shrink-0 items-center justify-between gap-2.5 rounded-2xl border border-[#F8D0E4] bg-gradient-to-r from-[#FFF0F6] to-[#FAF2FF] px-3 py-2">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className="flex max-w-full min-w-0 shrink-0 items-center justify-between gap-2.5 rounded-2xl border border-[#F8D0E4] bg-gradient-to-r from-[#FFF0F6] to-[#FAF2FF] px-3 py-2">
+            <div className="flex min-w-0 items-center gap-2">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white text-[#FF4D8D] shadow-xs">
                 <Truck className="h-3.5 w-3.5" />
               </span>
               <div className="min-w-0 text-[11px] leading-tight">
                 <p className="truncate font-extrabold text-[#2B0B4E]">
-                  Courier: {shipping.courierName || 'GiftKart Partner'}
+                  {t('courierLabel')}: {shipping.courierName || 'GiftKart'}
                 </p>
                 {shipping.trackingId && (
                   <p className="mt-0.5 truncate font-mono text-[10.5px] font-bold text-[#6E5B85]">
-                    Tracking ID: {shipping.trackingId}
+                    {t('trackingIdLabel')}: {shipping.trackingId}
                   </p>
                 )}
               </div>
@@ -560,7 +629,7 @@ export function DeliveryVanTracker({ order, compact = false }: DeliveryVanTracke
               <button
                 type="button"
                 onClick={() => void handleCopyTracking()}
-                title="Copy Tracking ID"
+                title={t('copyLinkBtn')}
                 className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#EBD8FF] bg-white text-[#6A11CB] transition-colors hover:bg-[#F4EAFF]"
               >
                 {copiedTracking ? (
@@ -572,18 +641,18 @@ export function DeliveryVanTracker({ order, compact = false }: DeliveryVanTracke
             )}
           </div>
         ) : (
-          <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] px-3 py-2 text-[11px]">
+          <div className="flex max-w-full min-w-0 shrink-0 items-center gap-2 rounded-2xl border border-[#EBD8FF] bg-[#FAF6FF] px-3 py-2 text-[11px]">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-[#FF4D8D]" />
-            <div className="leading-tight">
-              <p className="font-extrabold text-[#2B0B4E]">{destinationLabel}</p>
+            <div className="min-w-0 leading-tight">
+              <p className="truncate font-extrabold text-[#2B0B4E]">{destinationLabel}</p>
               {shipping.expectedDeliveryDate ? (
                 <p className="mt-0.5 flex items-center gap-1 text-[10.5px] font-semibold text-[#6E5B85]">
-                  <Clock className="h-2.5 w-2.5 text-[#6A11CB]" />
-                  ETA: {shipping.expectedDeliveryDate}
+                  <Clock className="h-2.5 w-2.5 shrink-0 text-[#6A11CB]" />
+                  <span className="truncate">{t('etaLabel')}: {shipping.expectedDeliveryDate}</span>
                 </p>
               ) : (
-                <p className="mt-0.5 text-[10.5px] font-semibold text-[#6E5B85]">
-                  From GiftKart Studio
+                <p className="mt-0.5 truncate text-[10.5px] font-semibold text-[#6E5B85]">
+                  {t('fromGiftKartStudio')}
                 </p>
               )}
             </div>

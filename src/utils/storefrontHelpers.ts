@@ -45,23 +45,23 @@ const CATEGORY_DEFAULT_ARTWORK_BY_ID: Record<
   { url: string; isPng: boolean }
 > = {
   [ALL_GIFTS_CATEGORY_ID]: {
-    url: '/assets/aistudio/Glossy_Purple_Gift_Box_with_Golden_Bow-edited_09de3fec.png',
+    url: '/assets/aistudio/Glossy_Purple_Gift_Box_with_Golden_Bow-edited_09de3fec.webp',
     isPng: true,
   },
   'cat-photo-frame': {
-    url: '/assets/aistudio/Romantic_Framed_Couple_on_Golden_Pedestal_ac3f2968.png',
+    url: '/assets/aistudio/Romantic_Framed_Couple_on_Golden_Pedestal_ac3f2968.webp',
     isPng: true,
   },
   'cat-coffee-mugs': {
-    url: '/assets/aistudio/Festive_Red_Ribbon_Coffee_Mug_195c9bba.png',
+    url: '/assets/aistudio/Festive_Red_Ribbon_Coffee_Mug_195c9bba.webp',
     isPng: true,
   },
   'cat-tshirt-prints': {
-    url: '/assets/aistudio/Tropical_Sunset_T-Shirt_on_Golden_Display_cf5d3e8e.png',
+    url: '/assets/aistudio/Tropical_Sunset_T-Shirt_on_Golden_Display_cf5d3e8e.webp',
     isPng: true,
   },
   'cat-home-decor': {
-    url: '/assets/aistudio/Warm_Buddha_Moonlight_Decor_Display_c24a114f.png',
+    url: '/assets/aistudio/Warm_Buddha_Moonlight_Decor_Display_c24a114f.webp',
     isPng: true,
   },
   'cat-hand-made': {
@@ -69,15 +69,15 @@ const CATEGORY_DEFAULT_ARTWORK_BY_ID: Record<
     isPng: false,
   },
   'cat-keychain': {
-    url: '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.png',
+    url: '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.webp',
     isPng: true,
   },
   'cat-gifts-bag-box': {
-    url: '/assets/aistudio/Luxury_Purple_Valentine_Gift_Hamper_7db1384e.png',
+    url: '/assets/aistudio/Luxury_Purple_Valentine_Gift_Hamper_7db1384e.webp',
     isPng: true,
   },
   'cat-led-lighting': {
-    url: '/assets/aistudio/Romantic_Moonlight_Couple_Lamp_Gift_Set_a4d8a6f1.png',
+    url: '/assets/aistudio/Romantic_Moonlight_Couple_Lamp_Gift_Set_a4d8a6f1.webp',
     isPng: true,
   },
   'cat-pvc-card': {
@@ -96,10 +96,26 @@ export function isAllGiftsCategory(
   );
 }
 
+function normalizeLegacyAssetUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+  if (trimmed.startsWith('/assets/aistudio/') && trimmed.endsWith('.png') && !trimmed.includes('GiftKart_Gift_Cart_Logo_604a8052')) {
+    return trimmed.replace(/\.png$/i, '.webp');
+  }
+  if (trimmed.startsWith('/src/assets/images/')) {
+    return trimmed.replace(/^\/src\/assets\/images\//, '/assets/images/').replace(/\.(jpg|jpeg|png)$/i, '.webp');
+  }
+  return trimmed;
+}
+
 export function getCategoryPresentation(category: Category): CategoryPresentation {
   const defaultMeta = CATEGORY_DEFAULT_ARTWORK_BY_ID[category.id];
-  const resolvedUrl = category.imageUrl?.trim() || defaultMeta?.url || STUDIO_MEDIA.giftBox;
-  const isPng = resolvedUrl.toLowerCase().endsWith('.png');
+  const rawUrl = category.imageUrl?.trim() || defaultMeta?.url || STUDIO_MEDIA.giftBox;
+  const resolvedUrl = normalizeLegacyAssetUrl(rawUrl);
+  const lower = resolvedUrl.toLowerCase();
+  const isPng =
+    lower.endsWith('.png') ||
+    lower.startsWith('/assets/aistudio/') ||
+    Boolean(defaultMeta?.isPng && resolvedUrl === defaultMeta.url);
   const Icon = CATEGORY_ICON_BY_ID[category.id] ?? Gift;
 
   return {
@@ -248,10 +264,105 @@ export function isProductPersonalized(product: Product): boolean {
   return Boolean(product.supportsPersonalization || product.supportsPhotoUpload);
 }
 
+const LEGACY_PLACEHOLDER_PHONE_DIGITS = new Set([
+  '9876543210',
+  '919876543210',
+  '9800000000',
+  '919800000000',
+  '9000000000',
+  '919000000000',
+  '9999999999',
+  '919999999999',
+  '1234567890',
+  '911234567890',
+  '0000000000',
+  '910000000000',
+]);
+
+const LEGACY_EMAIL_PATTERN =
+  /@(giftkart\.in|giftkart\.com|example\.com)$|^(support|care|info|contact|help|hello)@giftkart\./i;
+
+export const OFFICIAL_GIFTKART_EMAIL = 'hello.giftkart@gmail.com';
+export const OFFICIAL_GIFTKART_PHONE = '+91 9239505791';
+export const OFFICIAL_GIFTKART_WHATSAPP_DIGITS = '919239505791';
+export const OFFICIAL_GIFTKART_WHATSAPP_URL = 'https://wa.me/919239505791';
+export const STORE_CONTACT_MIGRATION_VERSION = 2;
+
 export function cleanWhatsAppDigits(rawPhone?: string): string {
-  const digits = (rawPhone ?? '919239505791').replace(/\D/g, '');
-  if (!digits) return '919239505791';
+  const digits = (rawPhone ?? OFFICIAL_GIFTKART_WHATSAPP_DIGITS).replace(/\D/g, '');
+  if (!digits || digits.length < 10 || LEGACY_PLACEHOLDER_PHONE_DIGITS.has(digits)) {
+    return OFFICIAL_GIFTKART_WHATSAPP_DIGITS;
+  }
   return digits.length === 10 ? `91${digits}` : digits;
+}
+
+export function normalizeOfficialContactFields(input: {
+  supportEmail?: string;
+  supportPhone?: string;
+  contactVersion?: number;
+  socialLinks?: {
+    instagram?: string;
+    facebook?: string;
+    whatsapp?: string;
+    youtube?: string;
+  };
+}): {
+  supportEmail: string;
+  supportPhone: string;
+  whatsappUrl: string;
+  contactVersion: number;
+  migrated: boolean;
+} {
+  const currentVersion =
+    typeof input.contactVersion === 'number' ? input.contactVersion : 0;
+  const needsVersionMigration = currentVersion < STORE_CONTACT_MIGRATION_VERSION;
+
+  if (needsVersionMigration) {
+    return {
+      supportEmail: OFFICIAL_GIFTKART_EMAIL,
+      supportPhone: OFFICIAL_GIFTKART_PHONE,
+      whatsappUrl: OFFICIAL_GIFTKART_WHATSAPP_URL,
+      contactVersion: STORE_CONTACT_MIGRATION_VERSION,
+      migrated: true,
+    };
+  }
+
+  const rawEmail = (input.supportEmail ?? '').trim();
+  const isLegacyEmail = !rawEmail || LEGACY_EMAIL_PATTERN.test(rawEmail);
+  const supportEmail = isLegacyEmail ? OFFICIAL_GIFTKART_EMAIL : rawEmail;
+
+  const rawPhone = (input.supportPhone ?? '').trim();
+  const rawPhoneDigits = rawPhone.replace(/\D/g, '');
+  const isLegacyPhone =
+    !rawPhone ||
+    rawPhoneDigits.length < 10 ||
+    LEGACY_PLACEHOLDER_PHONE_DIGITS.has(rawPhoneDigits);
+  const supportPhone = isLegacyPhone ? OFFICIAL_GIFTKART_PHONE : rawPhone;
+
+  const normalizedDigits = cleanWhatsAppDigits(supportPhone);
+  const rawWhatsapp = (input.socialLinks?.whatsapp ?? '').trim();
+  const rawWaDigits = rawWhatsapp.replace(/\D/g, '');
+  const isLegacyWa =
+    !rawWhatsapp ||
+    !rawWaDigits ||
+    rawWaDigits.length < 10 ||
+    LEGACY_PLACEHOLDER_PHONE_DIGITS.has(rawWaDigits);
+  const whatsappUrl = isLegacyWa
+    ? `https://wa.me/${normalizedDigits}`
+    : rawWhatsapp;
+
+  const migrated =
+    supportEmail !== rawEmail ||
+    supportPhone !== rawPhone ||
+    whatsappUrl !== rawWhatsapp;
+
+  return {
+    supportEmail,
+    supportPhone,
+    whatsappUrl,
+    contactVersion: STORE_CONTACT_MIGRATION_VERSION,
+    migrated,
+  };
 }
 
 export function buildWhatsAppPersonalizationUrl(
@@ -506,10 +617,17 @@ export function isValidSavedAddress(addr: SavedAddress | undefined | null): addr
   );
 }
 
-export function pickSavedAddress(addresses: SavedAddress[]): SavedAddress | null {
+export function pickSavedAddress(
+  addresses: SavedAddress[],
+  preferredId?: string | null
+): SavedAddress | null {
   const valid = addresses.filter(isValidSavedAddress);
   if (valid.length === 0) return null;
-  return valid.find((a) => a.isDefault) ?? valid[0];
+  return (
+    (preferredId ? valid.find((a) => a.id === preferredId) : undefined) ??
+    valid.find((a) => a.isDefault) ??
+    valid[0]
+  );
 }
 
 /* ============================================================================

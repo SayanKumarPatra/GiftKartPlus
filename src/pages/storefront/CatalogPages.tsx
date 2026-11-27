@@ -69,7 +69,7 @@ export function ShopPage({
           ? `${t('searchResultsFor')} "${searchQuery}"`
           : t('search')
         : activeSubcategory
-          ? activeSubcategory.name
+          ? translateCategory(activeSubcategory.name)
           : activeCategory
             ? translateCategory(activeCategory.name, activeCategory.translations)
             : occasionParam

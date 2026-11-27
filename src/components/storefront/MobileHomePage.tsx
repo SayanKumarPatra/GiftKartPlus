@@ -189,7 +189,7 @@ export function MobileHomePage() {
                   transform: `translate3d(-${safeSlideIndex * 100}%, 0, 0)`,
                 }}
               >
-                {heroEntries.map((entry) => (
+                {heroEntries.map((entry, idx) => (
                   <Link
                     key={entry.id}
                     to={entry.href}
@@ -198,7 +198,7 @@ export function MobileHomePage() {
                     <img
                       src={entry.imageUrl}
                       alt={entry.alt}
-                      loading="eager"
+                      loading={idx === 0 ? 'eager' : 'lazy'}
                       decoding="async"
                       draggable={false}
                       referrerPolicy="no-referrer"
@@ -247,7 +247,8 @@ export function MobileHomePage() {
                     <img
                       src={cat.imageUrl}
                       alt={cat.label}
-                      loading="eager"
+                      loading="lazy"
+                      decoding="async"
                       referrerPolicy="no-referrer"
                       className="h-full w-auto max-w-[66px] object-contain drop-shadow-[0_4px_8px_rgba(43,11,78,0.14)] min-[400px]:max-w-[70px]"
                     />
@@ -256,7 +257,8 @@ export function MobileHomePage() {
                       <img
                         src={cat.imageUrl}
                         alt={cat.label}
-                        loading="eager"
+                        loading="lazy"
+                        decoding="async"
                         referrerPolicy="no-referrer"
                         className="h-full w-full object-cover"
                       />

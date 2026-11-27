@@ -132,7 +132,7 @@ export function MobileSavedAddressesPage() {
   const { data: settings } = useStoreSettings();
   const { customerAccount } = useAuth();
   const { pushToast } = useToast();
-  const { t } = useLanguage();
+  const { t, translatePlace } = useLanguage();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -363,10 +363,10 @@ export function MobileSavedAddressesPage() {
 
       pushToast({
         title: editingAddress
-          ? 'Address updated successfully.'
+          ? t('addressUpdatedSuccess')
           : saveForFuture
-            ? 'Address saved successfully.'
-            : 'Address saved for this order.',
+            ? t('addressSavedSuccess')
+            : t('addressSavedOrder'),
         variant: 'success',
         compact: true,
       });
@@ -395,9 +395,9 @@ export function MobileSavedAddressesPage() {
     const parts = [
       addr.addressLine1,
       addr.landmark,
-      addr.area,
-      addr.city,
-      addr.state,
+      addr.area ? translatePlace(addr.area) : '',
+      addr.city ? translatePlace(addr.city) : '',
+      addr.state ? translatePlace(addr.state) : '',
     ]
       .map((p) => (p ?? '').trim())
       .filter(Boolean);
@@ -740,7 +740,7 @@ export function MobileSavedAddressesPage() {
                   className="h-3.5 w-3.5 text-[#6A11CB] stroke-[2.1]"
                 />
                 <span className="text-[12px] font-extrabold text-[#1E0A3C]">
-                  {t('deliveryAddress')} <span className="text-[#FF4D8D]">*</span>
+                  {t('addressTypeTitle')} <span className="text-[#FF4D8D]">*</span>
                 </span>
               </div>
 
@@ -898,7 +898,15 @@ export function MobileSavedAddressesPage() {
                         {addr.fullName}{' '}
                         {!isSelected && addr.label && (
                           <span className="font-semibold text-[#5E497A]">
-                            ({addr.label})
+                            (
+                            {addr.label.toLowerCase() === 'home'
+                              ? t('homeLabel')
+                              : addr.label.toLowerCase() === 'work'
+                                ? t('workLabel')
+                                : addr.label.toLowerCase() === 'other'
+                                  ? t('otherLabel')
+                                  : addr.label}
+                            )
                           </span>
                         )}
                       </p>

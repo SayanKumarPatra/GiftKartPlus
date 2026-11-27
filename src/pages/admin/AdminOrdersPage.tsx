@@ -13,6 +13,7 @@ import {
   Clock,
   Coins,
   CreditCard,
+  Eye,
   FileDown,
   FileText,
   Gift,
@@ -49,8 +50,14 @@ import {
   normalizeOrderStatus,
   normalizePaymentStatus,
 } from '../../utils/orderLifecycle';
-import { downloadOrderReceiptPdf, printOrderReceipt } from '../../utils/orderReceiptPdf';
+import {
+  downloadOrderReceiptPdf,
+  isOrderReceiptAvailable,
+  printOrderReceipt,
+  resolveOrderReceipt,
+} from '../../utils/orderReceiptPdf';
 import { DeliveryVanTracker } from '../../components/order/DeliveryVanTracker';
+import { OrderReceiptModal } from '../../components/order/OrderReceiptModal';
 import type {
   CanonicalOrderStatus,
   CanonicalPaymentStatus,
@@ -184,8 +191,9 @@ export function AdminOrdersPage() {
   const [confirmPaidOpen, setConfirmPaidOpen] = useState(false);
   const [savingPayment, setSavingPayment] = useState(false);
 
-  // Quick Actions / PDF / Previous Orders Modal
+  // Quick Actions / PDF / Receipt Preview / Previous Orders Modal
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [receiptPreviewOpen, setReceiptPreviewOpen] = useState(false);
   const [previousOrdersOpen, setPreviousOrdersOpen] = useState(false);
 
   const selectedOrder = useMemo(
@@ -243,6 +251,7 @@ export function AdminOrdersPage() {
       if (!q) return true;
       return (
         order.orderNumber.toLowerCase().includes(q) ||
+        (order.receipt?.receiptNumber || '').toLowerCase().includes(q) ||
         order.customer.fullName.toLowerCase().includes(q) ||
         order.customer.phone.toLowerCase().includes(q) ||
         (order.customer.email || '').toLowerCase().includes(q) ||
@@ -359,10 +368,11 @@ export function AdminOrdersPage() {
     setGeneratingPdf(true);
     try {
       await downloadOrderReceiptPdf(selectedOrder, storeSettings);
-      showNotice(`Received Copy PDF downloaded for #${selectedOrder.orderNumber}.`);
+      const rcp = resolveOrderReceipt(selectedOrder);
+      showNotice(`Official Receipt PDF (${rcp.receiptNumber}) downloaded.`);
     } catch (err) {
       showNotice(
-        err instanceof Error ? err.message : 'Unable to generate Received Copy PDF.',
+        err instanceof Error ? err.message : 'Unable to generate Official Receipt PDF.',
         'error'
       );
     } finally {
@@ -497,6 +507,60 @@ export function AdminOrdersPage() {
 
             {/* 2. ORDER PROGRESS & ANIMATED RUNNING GIFTKART VAN */}
             <DeliveryVanTracker order={selectedOrder} />
+
+            {/* 2B. OFFICIAL CUSTOMER RECEIPT RECORD (Synced with Customer Download) */}
+            {isOrderReceiptAvailable(selectedOrder) && (() => {
+              const savedReceipt = resolveOrderReceipt(selectedOrder);
+              return (
+                <section className="rounded-[26px] border border-[#DEC7FF] bg-gradient-to-r from-[#FAF5FF] via-white to-[#FFF4FA] p-4 shadow-[0_12px_28px_-16px_rgba(106,17,203,0.22)] sm:p-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6A11CB] to-[#8E2DE2] text-white shadow-sm">
+                        <FileText className="h-5 w-5" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-[14.5px] font-extrabold text-[#2B0B4E]">
+                            Official Order Receipt
+                          </h3>
+                          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                            Customer Download Active
+                          </span>
+                        </div>
+                        <p className="mt-0.5 font-mono text-xs font-extrabold text-[#6A11CB] break-all">
+                          {savedReceipt.receiptNumber}
+                        </p>
+                        <p className="mt-0.5 text-[11px] font-medium text-[#6E5B85]">
+                          Issued: {formatDateTime(savedReceipt.issuedAt)} · Payment:{' '}
+                          <strong className="text-[#2B0B4E]">{savedReceipt.paymentStatus}</strong> ·
+                          Paid: <strong className="text-[#2B0B4E]">{formatInr(savedReceipt.paidAmountInr)}</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setReceiptPreviewOpen(true)}
+                        className="inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#DEC7FF] bg-white px-3.5 text-xs font-extrabold text-[#6A11CB] hover:bg-[#F6ECFF] transition-colors"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>View Receipt</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={generatingPdf}
+                        onClick={() => void handleDownloadReceivedCopy()}
+                        className="inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#6A11CB] to-[#540CA6] px-4 text-xs font-extrabold text-white shadow-sm hover:opacity-95 disabled:opacity-60"
+                      >
+                        <FileDown className="h-3.5 w-3.5" />
+                        <span>{generatingPdf ? 'Preparing...' : 'Download PDF'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              );
+            })()}
 
             {/* 3. UPDATE ORDER STATUS CARD (VISUAL ICON TILE GRID) */}
             <section className="rounded-[26px] border border-white/80 bg-white/95 p-4 shadow-[0_12px_30px_-16px_rgba(106,17,203,0.2)] sm:p-5">
@@ -824,7 +888,7 @@ export function AdminOrdersPage() {
                   className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full border-2 border-[#6A11CB]/70 bg-white px-5 text-xs font-extrabold text-[#6A11CB] shadow-xs transition-all hover:bg-[#F8F2FF] active:scale-[0.99] disabled:opacity-60"
                 >
                   <FileDown className="h-4 w-4" />
-                  <span>{generatingPdf ? 'Generating PDF...' : 'Received Copy'}</span>
+                  <span>{generatingPdf ? 'Generating PDF...' : 'Download Receipt'}</span>
                   <span className="rounded bg-[#FFF0F6] px-1.5 py-0.5 text-[9.5px] font-extrabold text-[#FF4D8D]">
                     PDF
                   </span>
@@ -1425,6 +1489,18 @@ export function AdminOrdersPage() {
             })}
           </div>
         </AdminSheetModal>
+
+        {/* Official Order Receipt Preview & Download Modal (Same Receipt as Customer) */}
+        <OrderReceiptModal
+          order={receiptPreviewOpen ? selectedOrder : null}
+          storeSettings={storeSettings}
+          showPrintButton
+          onClose={() => setReceiptPreviewOpen(false)}
+          onDownloadComplete={() => {
+            const rcp = resolveOrderReceipt(selectedOrder);
+            showNotice(`Official Receipt PDF (${rcp.receiptNumber}) downloaded.`);
+          }}
+        />
       </div>
     );
   }
@@ -1516,6 +1592,12 @@ export function AdminOrdersPage() {
                     >
                       {canonicalPayment}
                     </span>
+                    {isOrderReceiptAvailable(order) && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-[#DEC7FF] bg-[#FAF5FF] px-2 py-0.5 font-mono text-[9.5px] font-extrabold text-[#6A11CB]">
+                        <FileText className="h-2.5 w-2.5" />
+                        {resolveOrderReceipt(order).receiptNumber}
+                      </span>
+                    )}
                   </div>
 
                   <p className="mt-1 truncate text-xs font-bold text-[#3E2A56]">

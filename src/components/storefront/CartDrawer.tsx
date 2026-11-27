@@ -7,7 +7,7 @@ import { Button } from '../ui/Button';
 import { ProductImage } from '../ui/ProductImage';
 
 export function CartDrawer() {
-  const { t } = useLanguage();
+  const { language, t, localizeEntity, translateVariant } = useLanguage();
   const {
     items,
     giftWrap,
@@ -47,7 +47,7 @@ export function CartDrawer() {
                 {t('yourCart')}
               </h2>
               <p className="text-[11px] text-[#5F4B78]">
-                {items.reduce((sum, i) => sum + i.quantity, 0)} {t('items')} · INR (₹)
+                {items.reduce((sum, i) => sum + i.quantity, 0)} {t('items')} · {language === 'bn' ? 'টাকা (₹)' : 'INR (₹)'}
               </p>
             </div>
           </div>
@@ -106,12 +106,12 @@ export function CartDrawer() {
                           onClick={closeCartDrawer}
                           className="line-clamp-2 text-sm font-semibold text-[#2A0E4D] hover:text-[#6A11CB]"
                         >
-                          {item.productName}
+                          {localizeEntity(item.productName, 'name')}
                         </Link>
                         <button
                           type="button"
                           onClick={() => removeItem(item.cartItemId)}
-                          aria-label={`${t('remove')} ${item.productName}`}
+                          aria-label={`${t('remove')} ${localizeEntity(item.productName, 'name')}`}
                           className="rounded-lg p-1 text-[#7B6496] hover:bg-[#FFF0F6] hover:text-[#C81E68]"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -119,20 +119,20 @@ export function CartDrawer() {
                       </div>
 
                       <p className="mt-0.5 font-mono text-[11px] text-[#7B6496]">
-                        SKU: {item.productSku}
+                        {t('sku')}: {item.productSku}
                       </p>
 
                       {Object.keys(item.selectedVariants).length > 0 && (
                         <p className="mt-1 text-xs text-[#5F4B78]">
                           {Object.entries(item.selectedVariants)
-                            .map(([k, v]) => `${k}: ${v}`)
+                            .map(([k, v]) => `${translateVariant(k)}: ${translateVariant(v)}`)
                             .join(' · ')}
                         </p>
                       )}
 
                       {item.personalizationDetails && (
                         <p className="mt-1 text-xs font-medium text-[#6A11CB]">
-                          Note: {item.personalizationDetails}
+                          {language === 'bn' ? 'নোট' : 'Note'}: {item.personalizationDetails}
                         </p>
                       )}
 
@@ -180,22 +180,24 @@ export function CartDrawer() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-bold text-[#6A11CB]">
                     <Gift className="h-4 w-4 text-[#FF4D8D]" />
-                    <span>Gift Wrapping Summary</span>
+                    <span>
+                      {language === 'bn' ? 'গিফট র‍্যাপিং সারসংক্ষেপ' : 'Gift Wrapping Summary'}
+                    </span>
                   </div>
                   <Link
                     to="/cart"
                     onClick={closeCartDrawer}
                     className="text-xs font-semibold text-[#FF4D8D] hover:underline"
                   >
-                    Configure
+                    {language === 'bn' ? 'পরিবর্তন করুন' : 'Configure'}
                   </Link>
                 </div>
                 {giftWrap.enabled ? (
                   <div className="mt-2 space-y-1 text-xs text-[#5F4B78]">
                     <p>
-                      Style:{' '}
+                      {language === 'bn' ? 'স্টাইল' : 'Style'}:{' '}
                       <span className="font-semibold text-[#2A0E4D]">
-                        {giftWrap.styleNameSnapshot || 'Selected'}
+                        {giftWrap.styleNameSnapshot || (language === 'bn' ? 'নির্বাচিত' : 'Selected')}
                       </span>{' '}
                       ·{' '}
                       <span className="font-mono font-semibold tabular-nums text-[#6A11CB]">
@@ -204,7 +206,7 @@ export function CartDrawer() {
                     </p>
                     {giftWrap.recipientName && (
                       <p>
-                        Recipient:{' '}
+                        {language === 'bn' ? 'প্রাপক' : 'Recipient'}:{' '}
                         <span className="font-medium text-[#2A0E4D]">
                           {giftWrap.recipientName}
                         </span>
@@ -218,7 +220,9 @@ export function CartDrawer() {
                   </div>
                 ) : (
                   <p className="mt-1.5 text-xs text-[#5F4B78]">
-                    Not enabled yet. Add boutique wrapping, recipient name &amp; a personal note in Cart.
+                    {language === 'bn'
+                      ? 'এখনও যুক্ত করা হয়নি। কার্টে গিয়ে প্রিমিয়াম র‍্যাপিং, প্রাপকের নাম ও ব্যক্তিগত বার্তা যোগ করুন।'
+                      : 'Not enabled yet. Add boutique wrapping, recipient name & a personal note in Cart.'}
                   </p>
                 )}
               </div>

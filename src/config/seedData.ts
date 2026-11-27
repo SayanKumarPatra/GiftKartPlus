@@ -10,7 +10,7 @@ export const SEED_CATEGORIES: Category[] = [
     description:
       'Explore every personalized and curated gift collection across GiftKart.',
     imageUrl:
-      '/assets/aistudio/Glossy_Purple_Gift_Box_with_Golden_Bow-edited_09de3fec.png',
+      '/assets/aistudio/Glossy_Purple_Gift_Box_with_Golden_Bow-edited_09de3fec.webp',
     sortOrder: 1,
     isActive: true,
     subcategories: [],
@@ -22,7 +22,7 @@ export const SEED_CATEGORIES: Category[] = [
     description:
       'Memory frames across Normal, LED Lighting, Stone Print, Crystal, Collage, Wooden, and Acrylic finishes.',
     imageUrl:
-      '/assets/aistudio/Romantic_Framed_Couple_on_Golden_Pedestal_ac3f2968.png',
+      '/assets/aistudio/Romantic_Framed_Couple_on_Golden_Pedestal_ac3f2968.webp',
     sortOrder: 2,
     isActive: true,
     subcategories: [
@@ -41,7 +41,7 @@ export const SEED_CATEGORIES: Category[] = [
     name: 'Coffee Mugs',
     description:
       'Custom ceramic, magic heat-reveal, photo, couple, and name-printed coffee mugs.',
-    imageUrl: '/assets/aistudio/Festive_Red_Ribbon_Coffee_Mug_195c9bba.png',
+    imageUrl: '/assets/aistudio/Festive_Red_Ribbon_Coffee_Mug_195c9bba.webp',
     sortOrder: 3,
     isActive: true,
     subcategories: [
@@ -60,7 +60,7 @@ export const SEED_CATEGORIES: Category[] = [
     description:
       'Custom printed T-shirts in Regular, Infinity, Leather Print, Couple, Name, Oversized, and Polo styles.',
     imageUrl:
-      '/assets/aistudio/Tropical_Sunset_T-Shirt_on_Golden_Display_cf5d3e8e.png',
+      '/assets/aistudio/Tropical_Sunset_T-Shirt_on_Golden_Display_cf5d3e8e.webp',
     sortOrder: 4,
     isActive: true,
     subcategories: [
@@ -80,7 +80,7 @@ export const SEED_CATEGORIES: Category[] = [
     description:
       'Custom wall clocks, tabletop nameplates, photo keepsakes, and home decor accents.',
     imageUrl:
-      '/assets/aistudio/Warm_Buddha_Moonlight_Decor_Display_c24a114f.png',
+      '/assets/aistudio/Warm_Buddha_Moonlight_Decor_Display_c24a114f.webp',
     sortOrder: 5,
     isActive: true,
     subcategories: [],
@@ -91,7 +91,7 @@ export const SEED_CATEGORIES: Category[] = [
     name: 'Hand Made',
     description:
       'Artisan explosion boxes, scrapbook albums, and handcrafted personalized keepsakes.',
-    imageUrl: '/src/assets/images/category_handmade_gift_1795289475494.jpg',
+    imageUrl: '/assets/images/category_handmade_gift_1795289475494.webp',
     sortOrder: 6,
     isActive: true,
     subcategories: [],
@@ -103,7 +103,7 @@ export const SEED_CATEGORIES: Category[] = [
     description:
       'Engraved metal, acrylic photo, and wooden monogram keychains.',
     imageUrl:
-      '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.png',
+      '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.webp',
     sortOrder: 7,
     isActive: true,
     subcategories: [],
@@ -115,7 +115,7 @@ export const SEED_CATEGORIES: Category[] = [
     description:
       'Signature rigid presentation gift boxes, hampers, and boutique ribbon gift bags.',
     imageUrl:
-      '/assets/aistudio/Luxury_Purple_Valentine_Gift_Hamper_7db1384e.png',
+      '/assets/aistudio/Luxury_Purple_Valentine_Gift_Hamper_7db1384e.webp',
     sortOrder: 8,
     isActive: true,
     subcategories: [],
@@ -127,7 +127,7 @@ export const SEED_CATEGORIES: Category[] = [
     description:
       'Custom 3D heart photo lamps, moon lamps, and warm acrylic bedside keepsakes.',
     imageUrl:
-      '/assets/aistudio/Romantic_Moonlight_Couple_Lamp_Gift_Set_a4d8a6f1.png',
+      '/assets/aistudio/Romantic_Moonlight_Couple_Lamp_Gift_Set_a4d8a6f1.webp',
     sortOrder: 9,
     isActive: true,
     subcategories: [],
@@ -138,7 +138,7 @@ export const SEED_CATEGORIES: Category[] = [
     name: 'PVC Card',
     description:
       'Custom printed glossy PVC photo cards, wallet keepsake cards, and personalized ID cards.',
-    imageUrl: '/src/assets/images/category_pvc_card_1795608982570.jpg',
+    imageUrl: '/assets/images/category_pvc_card_1795608982570.webp',
     sortOrder: 10,
     isActive: true,
     subcategories: [],
@@ -193,6 +193,12 @@ export const SEED_GIFT_WRAP_CONFIG: GiftWrapConfig = {
   ],
 };
 
+export const OFFICIAL_SUPPORT_EMAIL = 'hello.giftkart@gmail.com';
+export const OFFICIAL_SUPPORT_PHONE = '+91 9239505791';
+export const OFFICIAL_WHATSAPP_DIGITS = '919239505791';
+export const OFFICIAL_WHATSAPP_URL = 'https://wa.me/919239505791';
+export const CONTACT_MIGRATION_VERSION = 2;
+
 export const SEED_STORE_SETTINGS: StoreSettings = {
   storeName: 'GiftKart',
   tagline: 'Har Gift Mein Ek Kahani.',
@@ -200,8 +206,9 @@ export const SEED_STORE_SETTINGS: StoreSettings = {
   maintenanceMode: false,
   currencyCode: 'INR',
   currencySymbol: '₹',
-  supportEmail: 'hello.giftkart@gmail.com',
-  supportPhone: '+91 9239505791',
+  supportEmail: OFFICIAL_SUPPORT_EMAIL,
+  supportPhone: OFFICIAL_SUPPORT_PHONE,
+  contactVersion: CONTACT_MIGRATION_VERSION,
   serviceCitiesSummary: 'Jalchak, West Bengal',
   deliveryZones: [
     {

@@ -17,52 +17,56 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import type { TranslationKey } from '../../i18n/translations';
 import { useStoreSettings } from '../../hooks/useStoreData';
-import { cleanWhatsAppDigits } from '../../utils/storefrontHelpers';
+import {
+  cleanWhatsAppDigits,
+  normalizeOfficialContactFields,
+} from '../../utils/storefrontHelpers';
 
 const LOGGED_OUT_HELP_ILLUSTRATION =
-  '/assets/aistudio/3D_Headset_Support_Illustration_e1278b5b.png';
+  '/assets/aistudio/3D_Headset_Support_Illustration_e1278b5b.webp';
 const SUPPORT_GIRL_ILLUSTRATION =
-  '/assets/aistudio/Cheerful_Customer_Support_Agent_with_Laptop_b3ec24dc.png';
+  '/assets/aistudio/Cheerful_Customer_Support_Agent_with_Laptop_b3ec24dc.webp';
 
 const WHATSAPP_PREFILLED_MESSAGE =
   'Hello GiftKart Support, I need help with an issue.';
 
 interface SupportTopicItem {
   id: string;
-  label: string;
+  labelKey: TranslationKey;
   Icon: LucideIcon;
 }
 
 const SUPPORT_TOPICS: SupportTopicItem[] = [
   {
     id: 'order-issues',
-    label: 'Order Related Issues',
+    labelKey: 'supportTopicOrder',
     Icon: ShoppingBag,
   },
   {
     id: 'payment-issues',
-    label: 'Payment Issues',
+    labelKey: 'supportTopicPayment',
     Icon: CreditCard,
   },
   {
     id: 'delivery-issues',
-    label: 'Delivery Issues',
+    labelKey: 'supportTopicDelivery',
     Icon: Truck,
   },
   {
     id: 'return-refund',
-    label: 'Return & Refund',
+    labelKey: 'supportTopicReturn',
     Icon: RotateCcw,
   },
   {
     id: 'product-issues',
-    label: 'Product Related Issues',
+    labelKey: 'supportTopicProduct',
     Icon: Package,
   },
   {
     id: 'other-queries',
-    label: 'Other Queries',
+    labelKey: 'supportTopicOther',
     Icon: MessageCircle,
   },
 ];
@@ -96,10 +100,16 @@ export function MobileHelpSupportPage() {
         : Boolean(customerAccount);
 
   const encodedMessage = encodeURIComponent(WHATSAPP_PREFILLED_MESSAGE);
-  const cleanPhone = cleanWhatsAppDigits(settings?.supportPhone);
+  const resolvedContact = normalizeOfficialContactFields({
+    supportEmail: settings?.supportEmail,
+    supportPhone: settings?.supportPhone,
+    contactVersion: settings?.contactVersion,
+    socialLinks: settings?.socialLinks,
+  });
+  const cleanPhone = cleanWhatsAppDigits(resolvedContact.supportPhone);
   const whatsappHref = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
-  const supportPhoneDisplay = settings?.supportPhone?.trim() || '+91 9239505791';
-  const supportEmail = settings?.supportEmail?.trim() || 'hello.giftkart@gmail.com';
+  const supportPhoneDisplay = resolvedContact.supportPhone;
+  const supportEmail = resolvedContact.supportEmail;
   const instagramUrl =
     settings?.socialLinks?.instagram?.trim() || 'https://www.instagram.com/giftkart.online';
   const facebookUrl =
@@ -222,11 +232,11 @@ export function MobileHelpSupportPage() {
           {/* Support Topics Section (Informational 2-Column Grid — No Forms/Tickets/FAQ) */}
           <div className="mt-3.5">
             <h2 className="mb-2 pl-0.5 text-[13px] font-extrabold text-[#2B0B4E] min-[390px]:text-[13.5px]">
-              You can contact us for:
+              {t('supportIntroTitle')}
             </h2>
 
             <div className="grid grid-cols-2 gap-2">
-              {SUPPORT_TOPICS.map(({ id, label, Icon }) => (
+              {SUPPORT_TOPICS.map(({ id, labelKey, Icon }) => (
                 <div
                   key={id}
                   className="flex items-center gap-2 rounded-xl border border-[#EFE2FF] bg-white px-2.5 py-2.5 shadow-[0_3px_10px_rgba(106,17,203,0.05)]"
@@ -234,8 +244,8 @@ export function MobileHelpSupportPage() {
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F6EEFF] text-[#6A11CB]">
                     <Icon className="h-[15px] w-[15px] stroke-[1.95]" />
                   </div>
-                  <span className="text-[11px] font-bold leading-[1.2] text-[#2B0B4E] min-[390px]:text-[11.5px]">
-                    {label}
+                  <span className="text-[11.5px] font-bold leading-[1.25] text-[#2B0B4E] min-[390px]:text-[12px]">
+                    {t(labelKey)}
                   </span>
                 </div>
               ))}
@@ -244,8 +254,8 @@ export function MobileHelpSupportPage() {
 
           {/* Direct Contact & Official Social Channels */}
           <div className="mt-3.5 rounded-[20px] border border-[#EFE2FF] bg-white p-3.5 shadow-[0_4px_14px_rgba(106,17,203,0.06)]">
-            <h2 className="text-[12.5px] font-extrabold text-[#2B0B4E]">
-              Connect with GiftKart
+            <h2 className="text-[13px] font-extrabold text-[#2B0B4E]">
+              {t('connectWithGiftKart')}
             </h2>
             <div className="mt-2 space-y-1.5 text-[12px] font-semibold text-[#4B3568]">
               <a

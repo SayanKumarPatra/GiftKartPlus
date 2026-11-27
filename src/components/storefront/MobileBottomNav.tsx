@@ -138,7 +138,7 @@ export function MobileBottomNav() {
                 key={id}
                 to={to}
                 aria-current={isActive ? 'page' : undefined}
-                className="gk-mobile-nav-item relative z-10 flex min-h-[54px] flex-col items-center justify-center gap-[3px] rounded-full px-1 py-1.5 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6A11CB]/45 focus-visible:ring-inset"
+                className="gk-mobile-nav-item relative z-10 flex min-h-[54px] min-w-0 flex-col items-center justify-center gap-[3px] rounded-full px-1 py-1.5 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6A11CB]/45 focus-visible:ring-inset"
               >
                 {id === 'home' && isActive ? (
                   <SolidHomeIcon className="gk-mobile-nav-icon gk-mobile-nav-icon--active h-[22px] w-[22px] shrink-0" />
@@ -154,7 +154,7 @@ export function MobileBottomNav() {
                   />
                 )}
                 <span
-                  className={`gk-mobile-nav-label whitespace-nowrap text-[10.5px] leading-[1.15] tracking-[-0.015em] ${
+                  className={`gk-mobile-nav-label max-w-full truncate text-[9.5px] leading-[1.15] tracking-[-0.015em] min-[360px]:text-[10.5px] ${
                     isActive
                       ? 'gk-mobile-nav-label--active font-bold'
                       : 'font-semibold'

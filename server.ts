@@ -69,7 +69,7 @@ const DEFAULT_CATEGORIES = [
     slug: 'all-gifts',
     name: 'All Gifts',
     description: 'Explore every personalized and curated gift collection across GiftKart.',
-    imageUrl: '/assets/aistudio/Glossy_Purple_Gift_Box_with_Golden_Bow-edited_09de3fec.png',
+    imageUrl: '/assets/aistudio/Glossy_Purple_Gift_Box_with_Golden_Bow-edited_09de3fec.webp',
     sortOrder: 1,
     isActive: true,
     subcategories: [],
@@ -80,7 +80,7 @@ const DEFAULT_CATEGORIES = [
     name: 'Photo Frame',
     description:
       'Memory frames across Normal, LED Lighting, Stone Print, Crystal, Collage, Wooden, and Acrylic finishes.',
-    imageUrl: '/assets/aistudio/Romantic_Framed_Couple_on_Golden_Pedestal_ac3f2968.png',
+    imageUrl: '/assets/aistudio/Romantic_Framed_Couple_on_Golden_Pedestal_ac3f2968.webp',
     sortOrder: 2,
     isActive: true,
     subcategories: [
@@ -98,7 +98,7 @@ const DEFAULT_CATEGORIES = [
     slug: 'coffee-mugs',
     name: 'Coffee Mugs',
     description: 'Custom ceramic, magic heat-reveal, photo, couple, and name-printed coffee mugs.',
-    imageUrl: '/assets/aistudio/Festive_Red_Ribbon_Coffee_Mug_195c9bba.png',
+    imageUrl: '/assets/aistudio/Festive_Red_Ribbon_Coffee_Mug_195c9bba.webp',
     sortOrder: 3,
     isActive: true,
     subcategories: [
@@ -116,7 +116,7 @@ const DEFAULT_CATEGORIES = [
     name: 'T-shirt Prints',
     description:
       'Custom printed T-shirts in Regular, Infinity, Leather Print, Couple, Name, Oversized, and Polo styles.',
-    imageUrl: '/assets/aistudio/Tropical_Sunset_T-Shirt_on_Golden_Display_cf5d3e8e.png',
+    imageUrl: '/assets/aistudio/Tropical_Sunset_T-Shirt_on_Golden_Display_cf5d3e8e.webp',
     sortOrder: 4,
     isActive: true,
     subcategories: [
@@ -134,7 +134,7 @@ const DEFAULT_CATEGORIES = [
     slug: 'home-decor',
     name: 'Home Decor',
     description: 'Custom wall clocks, tabletop nameplates, photo keepsakes, and home decor accents.',
-    imageUrl: '/assets/aistudio/Warm_Buddha_Moonlight_Decor_Display_c24a114f.png',
+    imageUrl: '/assets/aistudio/Warm_Buddha_Moonlight_Decor_Display_c24a114f.webp',
     sortOrder: 5,
     isActive: true,
     subcategories: [],
@@ -144,7 +144,7 @@ const DEFAULT_CATEGORIES = [
     slug: 'hand-made',
     name: 'Hand Made',
     description: 'Artisan explosion boxes, scrapbook albums, and handcrafted personalized keepsakes.',
-    imageUrl: '/src/assets/images/category_handmade_gift_1795289475494.jpg',
+    imageUrl: '/assets/images/category_handmade_gift_1795289475494.webp',
     sortOrder: 6,
     isActive: true,
     subcategories: [],
@@ -154,7 +154,7 @@ const DEFAULT_CATEGORIES = [
     slug: 'keychain',
     name: 'KeyChain',
     description: 'Engraved metal, acrylic photo, and wooden monogram keychains.',
-    imageUrl: '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.png',
+    imageUrl: '/assets/aistudio/Golden_Pedestal_Keychain_Collection_b507d441.webp',
     sortOrder: 7,
     isActive: true,
     subcategories: [],
@@ -164,7 +164,7 @@ const DEFAULT_CATEGORIES = [
     slug: 'gifts-bag-box',
     name: 'Gifts Bag + Box',
     description: 'Signature rigid presentation gift boxes, hampers, and boutique ribbon gift bags.',
-    imageUrl: '/assets/aistudio/Luxury_Purple_Valentine_Gift_Hamper_7db1384e.png',
+    imageUrl: '/assets/aistudio/Luxury_Purple_Valentine_Gift_Hamper_7db1384e.webp',
     sortOrder: 8,
     isActive: true,
     subcategories: [],
@@ -174,7 +174,7 @@ const DEFAULT_CATEGORIES = [
     slug: 'led-lighting',
     name: 'LED Lighting',
     description: 'Custom 3D heart photo lamps, moon lamps, and warm acrylic bedside keepsakes.',
-    imageUrl: '/assets/aistudio/Romantic_Moonlight_Couple_Lamp_Gift_Set_a4d8a6f1.png',
+    imageUrl: '/assets/aistudio/Romantic_Moonlight_Couple_Lamp_Gift_Set_a4d8a6f1.webp',
     sortOrder: 9,
     isActive: true,
     subcategories: [],
@@ -184,7 +184,7 @@ const DEFAULT_CATEGORIES = [
     slug: 'pvc-card',
     name: 'PVC Card',
     description: 'Custom printed glossy PVC photo cards, wallet keepsake cards, and personalized ID cards.',
-    imageUrl: '/src/assets/images/category_pvc_card_1795608982570.jpg',
+    imageUrl: '/assets/images/category_pvc_card_1795608982570.webp',
     sortOrder: 10,
     isActive: true,
     subcategories: [],
@@ -244,6 +244,7 @@ const DEFAULT_STORE_SETTINGS = {
   currencySymbol: '₹',
   supportEmail: 'hello.giftkart@gmail.com',
   supportPhone: '+91 9239505791',
+  contactVersion: 2,
   serviceCitiesSummary: 'Jalchak, West Bengal',
   deliveryZones: [
     {
@@ -353,17 +354,40 @@ function loadStoreFromDisk(): StoreDatabase {
     const raw = fs.readFileSync(STORE_FILE, 'utf8');
     const parsed = JSON.parse(raw) as Partial<StoreDatabase>;
     const defaults = createDefaultStore();
-    return {
+    const mergedSettings: Record<string, unknown> =
+      parsed.storeSettings && typeof parsed.storeSettings === 'object'
+        ? { ...defaults.storeSettings, ...parsed.storeSettings }
+        : { ...defaults.storeSettings };
+
+    const existingContactVersion =
+      typeof mergedSettings.contactVersion === 'number'
+        ? mergedSettings.contactVersion
+        : 0;
+    let migratedOnDisk = false;
+    if (existingContactVersion < 2) {
+      mergedSettings.supportEmail = DEFAULT_STORE_SETTINGS.supportEmail;
+      mergedSettings.supportPhone = DEFAULT_STORE_SETTINGS.supportPhone;
+      mergedSettings.contactVersion = 2;
+      const existingSocial =
+        mergedSettings.socialLinks && typeof mergedSettings.socialLinks === 'object'
+          ? (mergedSettings.socialLinks as Record<string, unknown>)
+          : {};
+      mergedSettings.socialLinks = {
+        ...DEFAULT_STORE_SETTINGS.socialLinks,
+        ...existingSocial,
+        whatsapp: DEFAULT_STORE_SETTINGS.socialLinks.whatsapp,
+      };
+      migratedOnDisk = true;
+    }
+
+    const loaded: StoreDatabase = {
       version: typeof parsed.version === 'number' ? parsed.version : 1,
       updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : defaults.updatedAt,
       categories: Array.isArray(parsed.categories) && parsed.categories.length > 0
         ? parsed.categories
         : defaults.categories,
       products: Array.isArray(parsed.products) ? parsed.products : [],
-      storeSettings:
-        parsed.storeSettings && typeof parsed.storeSettings === 'object'
-          ? { ...defaults.storeSettings, ...parsed.storeSettings }
-          : defaults.storeSettings,
+      storeSettings: mergedSettings,
       giftWrapConfig:
         parsed.giftWrapConfig && typeof parsed.giftWrapConfig === 'object'
           ? { ...defaults.giftWrapConfig, ...parsed.giftWrapConfig }
@@ -379,6 +403,12 @@ function loadStoreFromDisk(): StoreDatabase {
         : [],
       adminActivityLogs: Array.isArray(parsed.adminActivityLogs) ? parsed.adminActivityLogs : [],
     };
+    if (migratedOnDisk) {
+      loaded.version += 1;
+      loaded.updatedAt = new Date().toISOString();
+      atomicWriteJson(STORE_FILE, loaded);
+    }
+    return loaded;
   } catch (err) {
     console.error('[GiftKart Server] Failed to parse store file, initializing clean store:', err);
     const initial = createDefaultStore();
@@ -1749,6 +1779,16 @@ async function startServer(): Promise<void> {
         };
       });
     }
+    if (collection === 'storeSettings' && sanitized && typeof sanitized === 'object' && !Array.isArray(sanitized)) {
+      const settingsObj = sanitized as Record<string, unknown>;
+      settingsObj.contactVersion = 2;
+      if (!String(settingsObj.supportEmail ?? '').trim()) {
+        settingsObj.supportEmail = DEFAULT_STORE_SETTINGS.supportEmail;
+      }
+      if (!String(settingsObj.supportPhone ?? '').trim()) {
+        settingsObj.supportPhone = DEFAULT_STORE_SETTINGS.supportPhone;
+      }
+    }
     (storeDb as unknown as Record<string, unknown>)[collection] = sanitized;
     commitStoreChange([meta.topic]);
 
@@ -1930,10 +1970,60 @@ async function startServer(): Promise<void> {
         : []),
     ];
 
+    const existingReceipt =
+      target.receipt && typeof target.receipt === 'object'
+        ? (target.receipt as Record<string, unknown>)
+        : null;
+    const existingPaymentDetailsForReceipt =
+      target.paymentDetails && typeof target.paymentDetails === 'object'
+        ? (target.paymentDetails as Record<string, unknown>)
+        : {};
+    const canonicalPaymentForReceipt =
+      String(existingPaymentDetailsForReceipt.status || '') ||
+      (target.paymentStatus === 'PAID' || target.paymentStatus === 'SUCCESS'
+        ? 'Paid'
+        : target.paymentStatus === 'PAYMENT_COLLECTED'
+        ? 'Payment Collected'
+        : target.paymentStatus === 'REFUNDED'
+        ? 'Refunded'
+        : 'Unpaid');
+    const orderTotalForReceipt = Math.max(0, Number(target.grandTotalInr) || 0);
+    const paidAmountForReceipt =
+      canonicalPaymentForReceipt === 'Unpaid'
+        ? 0
+        : existingPaymentDetailsForReceipt.collectedAmountInr !== undefined
+        ? Math.max(0, Number(existingPaymentDetailsForReceipt.collectedAmountInr) || 0)
+        : canonicalPaymentForReceipt === 'Paid' || canonicalPaymentForReceipt === 'Payment Collected'
+        ? orderTotalForReceipt
+        : 0;
+
+    if (status === 'Delivered' && !mergedShipping.deliveredAt) {
+      mergedShipping.deliveredAt = effectiveTimestamp;
+    }
+
+    const nextReceipt =
+      status === 'Delivered'
+        ? {
+            receiptNumber:
+              String(existingReceipt?.receiptNumber || '').trim() ||
+              `RCP-${orderNumber.toUpperCase()}`,
+            orderId,
+            orderNumber,
+            issuedAt: String(existingReceipt?.issuedAt || '').trim() || now,
+            deliveredAt: String(mergedShipping.deliveredAt || effectiveTimestamp),
+            deliveryStatus: 'Delivered',
+            paymentMethod: String(target.paymentMethod || 'Cash on Delivery (COD)'),
+            paymentStatus: canonicalPaymentForReceipt,
+            grandTotalInr: orderTotalForReceipt,
+            paidAmountInr: paidAmountForReceipt,
+          }
+        : target.receipt;
+
     const updatedOrder = {
       ...target,
       fulfillmentStatus: status,
       shippingDetails: mergedShipping,
+      receipt: nextReceipt,
       notifications: newNotification
         ? [newNotification, ...existingNotifications]
         : existingNotifications,
@@ -2131,10 +2221,46 @@ async function startServer(): Promise<void> {
         : []),
     ];
 
+    const existingReceiptForPay =
+      target.receipt && typeof target.receipt === 'object'
+        ? (target.receipt as Record<string, unknown>)
+        : null;
+    const isOrderDelivered =
+      String(target.fulfillmentStatus || '') === 'Delivered' ||
+      String(target.fulfillmentStatus || '') === 'Completed';
+    const existingShipForPay =
+      target.shippingDetails && typeof target.shippingDetails === 'object'
+        ? (target.shippingDetails as Record<string, unknown>)
+        : {};
+    const syncedReceipt =
+      existingReceiptForPay || isOrderDelivered
+        ? {
+            receiptNumber:
+              String(existingReceiptForPay?.receiptNumber || '').trim() ||
+              `RCP-${orderNumber.toUpperCase()}`,
+            orderId,
+            orderNumber,
+            issuedAt: String(existingReceiptForPay?.issuedAt || '').trim() || now,
+            deliveredAt:
+              String(
+                existingReceiptForPay?.deliveredAt ||
+                  existingShipForPay.deliveredAt ||
+                  target.updatedAt ||
+                  now
+              ),
+            deliveryStatus: 'Delivered',
+            paymentMethod: String(target.paymentMethod || 'Cash on Delivery (COD)'),
+            paymentStatus: nextPaymentStatus,
+            grandTotalInr: Math.max(0, orderTotal),
+            paidAmountInr: nextPaymentStatus === 'Unpaid' ? 0 : Math.max(0, parsedCollected),
+          }
+        : target.receipt;
+
     const updatedOrder = {
       ...target,
       paymentStatus: legacyPaymentStatus,
       paymentDetails: nextPaymentDetails,
+      receipt: syncedReceipt,
       paymentHistory: [paymentHistoryEntry, ...existingPaymentHistory],
       notifications: paymentNotification
         ? [paymentNotification, ...existingNotifications]

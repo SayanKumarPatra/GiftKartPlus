@@ -62,7 +62,7 @@ export function MobileHeader(_props: MobileHeaderProps) {
   return (
     <>
       <header
-        className={`sticky top-0 z-40 grid h-[56px] grid-cols-[92px_1fr_104px] items-center px-2 backdrop-blur-md lg:hidden ${
+        className={`sticky top-0 z-40 grid h-[56px] w-full grid-cols-[100px_minmax(0,1fr)_100px] items-center px-2 backdrop-blur-md min-[380px]:grid-cols-[108px_minmax(0,1fr)_108px] lg:hidden ${
           isHome
             ? 'border-b border-transparent bg-[#FDE4EC]/95'
             : 'border-b border-[#EFE3FF]/80 bg-white/96'
@@ -74,18 +74,18 @@ export function MobileHeader(_props: MobileHeaderProps) {
             type="button"
             onClick={() => setMenuOpen(true)}
             aria-label={t('menu')}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-[#4B148C] transition-colors active:bg-[#EBD8FF]/50"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-[#4B148C] transition-colors active:bg-[#EBD8FF]/50"
           >
             <Menu className="h-[22px] w-[22px] stroke-[2]" />
           </button>
         </div>
 
         {/* Center: Visually Centered Official GiftKart Logo */}
-        <div className="flex items-center justify-center overflow-hidden">
+        <div className="flex min-w-0 items-center justify-center overflow-hidden">
           <Link
             to="/"
             aria-label="GiftKart Home"
-            className="inline-flex items-center justify-center"
+            className="inline-flex max-w-full items-center justify-center"
           >
             <BrandLogo size="sm" />
           </Link>
@@ -96,11 +96,11 @@ export function MobileHeader(_props: MobileHeaderProps) {
           <Link
             to="/wishlist"
             aria-label={`${t('wishlist')} (${wishlistIds.length})`}
-            className="relative flex h-8 w-8 items-center justify-center rounded-full text-[#4B148C] transition-colors active:bg-[#EBD8FF]/50"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#4B148C] transition-colors active:bg-[#EBD8FF]/50"
           >
             <Heart className="h-[19px] w-[19px] stroke-[1.9]" />
             {wishlistIds.length > 0 && (
-              <span className="absolute right-0 top-0 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[#FF4D8D] px-0.5 text-[8.5px] font-bold tabular-nums text-white">
+              <span className="absolute right-0.5 top-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[#FF4D8D] px-0.5 text-[8.5px] font-bold tabular-nums text-white">
                 {wishlistIds.length}
               </span>
             )}
@@ -111,11 +111,11 @@ export function MobileHeader(_props: MobileHeaderProps) {
           <Link
             to="/cart"
             aria-label={`${t('cart')} (${itemCount})`}
-            className="relative flex h-8 w-8 items-center justify-center rounded-full text-[#4B148C] transition-colors active:bg-[#EBD8FF]/50"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#4B148C] transition-colors active:bg-[#EBD8FF]/50"
           >
             <ShoppingCart className="h-[19px] w-[19px] stroke-[1.9]" />
             {itemCount > 0 && (
-              <span className="absolute right-0 top-0 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[#FF4D8D] px-0.5 text-[8.5px] font-bold tabular-nums text-white">
+              <span className="absolute right-0.5 top-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[#FF4D8D] px-0.5 text-[8.5px] font-bold tabular-nums text-white">
                 {itemCount}
               </span>
             )}
@@ -146,18 +146,20 @@ export function MobileHeader(_props: MobileHeaderProps) {
 
             {/* Tight, Naturally Stacked Drawer Body */}
             <div className="flex-1 overflow-y-auto px-3 py-2.5">
-              <nav aria-label="Mobile menu links" className="space-y-0.5">
+              <nav aria-label={t('menu')} className="space-y-0.5">
                 {MOBILE_DRAWER_MAIN_LINKS.map(({ labelKey, to, Icon }) => {
                   const isActive =
                     to === '/'
                       ? location.pathname === '/'
-                      : location.pathname.startsWith(to);
+                      : to.includes('?')
+                        ? `${location.pathname}${location.search}` === to
+                        : location.pathname.startsWith(to);
 
                   return (
                     <Link
                       key={to}
                       to={to}
-                      className={`flex min-h-[40px] items-center justify-between rounded-xl px-2.5 py-1.5 text-[13px] transition-colors ${
+                      className={`flex min-h-[42px] items-center justify-between rounded-xl px-2.5 py-1.5 text-[13.5px] transition-colors ${
                         isActive
                           ? 'bg-[#F3E7FF] font-bold text-[#6A11CB]'
                           : 'font-semibold text-[#2B0B4E] active:bg-[#F8F2FF]'

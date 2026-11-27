@@ -6,10 +6,13 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useCustomerOrders, useProductReviews } from '../../hooks/useStoreData';
 import { ProductReviewModal, type ReviewModalTarget } from './ProductReviewModal';
 
-function formatReviewDate(iso: string): string {
+import { getDateLocale } from '../../i18n/bengaliAutoTranslate';
+import type { LanguageCode } from '../../i18n/translations';
+
+function formatReviewDate(iso: string, language: LanguageCode): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return new Intl.DateTimeFormat('en-IN', {
+  return new Intl.DateTimeFormat(getDateLocale(language), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -19,6 +22,7 @@ function formatReviewDate(iso: string): string {
 interface ProductReviewsSectionProps {
   product: Product;
   compact?: boolean;
+  hideWhenEmpty?: boolean;
 }
 
 const SAFE_PHOTO_SRC =
@@ -32,9 +36,10 @@ function getSafeReviewPhotos(photos?: string[]): string[] {
 export function ProductReviewsSection({
   product,
   compact = false,
+  hideWhenEmpty = false,
 }: ProductReviewsSectionProps) {
   const { customerAccount } = useAuth();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { data: rawReviews, refresh: refreshReviews } = useProductReviews(product.id);
   const { data: customerOrders } = useCustomerOrders(
     customerAccount?.id,
@@ -47,13 +52,22 @@ export function ProductReviewsSection({
   const liveReviews = useMemo(
     () =>
       rawReviews
-        .filter((r) => r.isApproved !== false && !r.isSampleData)
+        .filter(
+          (r) =>
+            r.productId === product.id &&
+            r.isApproved !== false &&
+            !r.isSampleData &&
+            Boolean(r.authorName?.trim()) &&
+            Boolean(
+              r.comment?.trim() || (Array.isArray(r.photos) && r.photos.length > 0)
+            )
+        )
         .sort(
           (a, b) =>
             new Date(b.updatedAt || b.createdAt).getTime() -
             new Date(a.updatedAt || a.createdAt).getTime()
         ),
-    [rawReviews]
+    [rawReviews, product.id]
   );
 
   const stats = useMemo(() => {
@@ -108,6 +122,10 @@ export function ProductReviewsSection({
     });
   }
 
+  if (hideWhenEmpty && liveReviews.length === 0) {
+    return null;
+  }
+
   return (
     <section
       id="customer-reviews"
@@ -141,7 +159,7 @@ export function ProductReviewsSection({
             className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-gradient-to-r from-[#6A11CB] to-[#FF4D8D] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-xs transition-transform active:scale-95"
           >
             <MessageSquarePlus className="h-3.5 w-3.5" />
-            <span>{myExistingReview ? 'Edit Your Review' : t('writeReview')}</span>
+            <span>{myExistingReview ? t('editYourReview') : t('writeReview')}</span>
           </button>
         )}
       </div>
@@ -176,7 +194,7 @@ export function ProductReviewsSection({
                   ))}
                 </div>
                 <p className="mt-1 text-[11px] font-semibold text-[#6E5B85]">
-                  Based on {stats.count} verified {stats.count === 1 ? 'buyer' : 'buyers'}
+                  {t('basedOnVerifiedBuyers')} ({stats.count})
                 </p>
               </div>
             </div>
@@ -211,8 +229,8 @@ export function ProductReviewsSection({
           <p className="text-[13px] font-bold text-[#2B0B4E]">{t('noReviewsYet')}</p>
           <p className="mt-1 text-[11.5px] text-[#6E5B85]">
             {eligibleDeliveredOrder
-              ? 'Your order has been delivered! Share your rating and photos to help other shoppers.'
-              : 'Verified customers who have received this gift can rate, upload photos, and share feedback after delivery.'}
+              ? t('reviewDeliveredPrompt')
+              : t('reviewVerifiedNote')}
           </p>
         </div>
       )}
@@ -241,11 +259,11 @@ export function ProductReviewsSection({
                         {review.verifiedPurchase !== false && (
                           <span className="inline-flex items-center gap-0.5 font-bold text-emerald-700">
                             <CheckCircle2 className="h-3 w-3 shrink-0" />
-                            <span>Verified Buyer</span>
+                            <span>{t('verifiedBuyer')}</span>
                           </span>
                         )}
                         <span className="text-[#9B8AB4]">·</span>
-                        <span className="text-[#7A6894]">{formatReviewDate(review.createdAt)}</span>
+                        <span className="text-[#7A6894]">{formatReviewDate(review.createdAt, language)}</span>
                       </div>
                     </div>
                   </div>
