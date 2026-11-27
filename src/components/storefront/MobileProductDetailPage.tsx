@@ -298,6 +298,26 @@ export function MobileProductDetailPage({
               <Share2 className="h-4 w-4 stroke-[2.2]" />
             </button>
           </div>
+
+          {galleryImages.length > 1 && (
+            <>
+              <div className="pointer-events-none absolute bottom-2.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-[#1E1035]/45 px-2.5 py-1 backdrop-blur-[2px]">
+                {galleryImages.map((_, idx) => (
+                  <span
+                    key={idx}
+                    className={`h-1.5 rounded-full transition-all ${
+                      idx === safeImageIdx
+                        ? 'w-4 bg-white'
+                        : 'w-1.5 bg-white/55'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="pointer-events-none absolute bottom-2.5 right-2.5 z-10 rounded-full bg-[#1E1035]/65 px-2 py-0.5 text-[10.5px] font-bold tabular-nums text-white backdrop-blur-[2px]">
+                {safeImageIdx + 1} / {galleryImages.length}
+              </span>
+            </>
+          )}
         </div>
 
         {/* 2. PRODUCT THUMBNAIL GALLERY (Only when multiple real images exist) */}

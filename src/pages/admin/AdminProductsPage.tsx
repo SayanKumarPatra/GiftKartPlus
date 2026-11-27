@@ -2,14 +2,20 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   Edit3,
+  ImagePlus,
+  Images,
   Package,
   Plus,
   Save,
   Search,
   SlidersHorizontal,
+  Star,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
 import { useCategories, useProducts } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
@@ -25,6 +31,8 @@ import {
   readImageFileAsDataUrl,
 } from '../../components/admin/AdminSharedUI';
 
+const MAX_PRODUCT_IMAGES = 6;
+
 interface ProductDraft {
   id: string;
   name: string;
@@ -32,7 +40,8 @@ interface ProductDraft {
   priceInr: string;
   compareAtPriceInr: string;
   categoryId: string;
-  imageUrl: string;
+  images: string[];
+  imageUrlInput: string;
   isAvailable: boolean;
   supportsPersonalization: boolean;
   supportsPhotoUpload: boolean;
@@ -46,11 +55,22 @@ function createEmptyProductDraft(defaultCategoryId: string): ProductDraft {
     priceInr: '',
     compareAtPriceInr: '',
     categoryId: defaultCategoryId,
-    imageUrl: '',
+    images: [],
+    imageUrlInput: '',
     isAvailable: true,
     supportsPersonalization: true,
     supportsPhotoUpload: true,
   };
+}
+
+function isValidImageSource(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  return (
+    /^https?:\/\//i.test(trimmed) ||
+    trimmed.startsWith('/') ||
+    /^data:image\/(png|jpeg|jpg|webp|gif|avif);base64,/i.test(trimmed)
+  );
 }
 
 export function AdminProductsPage() {
@@ -128,6 +148,12 @@ export function AdminProductsPage() {
   function openEditProduct(product: Product) {
     const available =
       product.isActive && product.availability !== 'OUT_OF_STOCK';
+    const existingImages = Array.isArray(product.images)
+      ? product.images
+          .map((img) => (typeof img === 'string' ? img.trim() : ''))
+          .filter(Boolean)
+          .slice(0, MAX_PRODUCT_IMAGES)
+      : [];
     setDraft({
       id: product.id,
       name: product.name,
@@ -137,7 +163,8 @@ export function AdminProductsPage() {
         ? String(product.compareAtPriceInr)
         : '',
       categoryId: product.categoryId,
-      imageUrl: product.images[0] || '',
+      images: existingImages,
+      imageUrlInput: '',
       isAvailable: available,
       supportsPersonalization: product.supportsPersonalization,
       supportsPhotoUpload: Boolean(product.supportsPhotoUpload),
@@ -146,22 +173,116 @@ export function AdminProductsPage() {
   }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const selectedFiles = Array.from(e.target.files ?? []);
+    if (selectedFiles.length === 0) return;
+
+    const remainingSlots = MAX_PRODUCT_IMAGES - draft.images.length;
+    if (remainingSlots <= 0) {
+      showNotice(
+        `Maximum ${MAX_PRODUCT_IMAGES} photos allowed per product. Remove one to add more.`,
+        'error'
+      );
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const filesToProcess = selectedFiles.slice(0, remainingSlots);
+    const skippedCount = selectedFiles.length - filesToProcess.length;
+
     setUploading(true);
     try {
-      const dataUrl = await readImageFileAsDataUrl(file, 760, false);
-      setDraft((prev) => ({ ...prev, imageUrl: dataUrl }));
-      showNotice('Product photo uploaded! Fill details & tap Save Product.');
+      const uploadedUrls: string[] = [];
+      for (const file of filesToProcess) {
+        const dataUrl = await readImageFileAsDataUrl(file, 820, false);
+        if (dataUrl) {
+          uploadedUrls.push(dataUrl);
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        setDraft((prev) => {
+          const merged = [...prev.images];
+          for (const url of uploadedUrls) {
+            if (merged.length < MAX_PRODUCT_IMAGES && !merged.includes(url)) {
+              merged.push(url);
+            }
+          }
+          return { ...prev, images: merged };
+        });
+
+        const addedLabel =
+          uploadedUrls.length === 1
+            ? '1 photo added!'
+            : `${uploadedUrls.length} photos added!`;
+        showNotice(
+          skippedCount > 0
+            ? `${addedLabel} (${skippedCount} skipped — max ${MAX_PRODUCT_IMAGES} photos).`
+            : `${addedLabel} Tap Save Product to publish live.`
+        );
+      }
     } catch (err) {
       showNotice(
-        err instanceof Error ? err.message : 'Unable to upload product image.',
+        err instanceof Error ? err.message : 'Unable to upload product photos.',
         'error'
       );
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  }
+
+  function handleAddImageUrl() {
+    const cleanUrl = draft.imageUrlInput.trim();
+    if (!cleanUrl) return;
+    if (!isValidImageSource(cleanUrl)) {
+      showNotice('Please enter a valid image URL (https://... or /assets/...).', 'error');
+      return;
+    }
+    if (draft.images.length >= MAX_PRODUCT_IMAGES) {
+      showNotice(`Maximum ${MAX_PRODUCT_IMAGES} photos allowed per product.`, 'error');
+      return;
+    }
+    if (draft.images.includes(cleanUrl)) {
+      showNotice('This photo is already in the gallery.', 'error');
+      return;
+    }
+    setDraft((prev) => ({
+      ...prev,
+      images: [...prev.images, cleanUrl],
+      imageUrlInput: '',
+    }));
+    showNotice('Photo URL added to gallery.');
+  }
+
+  function handleRemoveImage(index: number) {
+    setDraft((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, idx) => idx !== index),
+    }));
+  }
+
+  function handleSetMainImage(index: number) {
+    if (index <= 0) return;
+    setDraft((prev) => {
+      if (index >= prev.images.length) return prev;
+      const next = [...prev.images];
+      const [chosen] = next.splice(index, 1);
+      next.unshift(chosen);
+      return { ...prev, images: next };
+    });
+    showNotice('Main cover photo updated.');
+  }
+
+  function handleMoveImage(index: number, direction: -1 | 1) {
+    setDraft((prev) => {
+      const target = index + direction;
+      if (target < 0 || target >= prev.images.length) return prev;
+      const next = [...prev.images];
+      const temp = next[index];
+      next[index] = next[target];
+      next[target] = temp;
+      return { ...prev, images: next };
+    });
   }
 
   async function handleQuickAvailabilityToggle(product: Product, nextAvailable: boolean) {
@@ -206,6 +327,17 @@ export function AdminProductsPage() {
       return;
     }
 
+    const finalImages = [...draft.images];
+    const pendingUrl = draft.imageUrlInput.trim();
+    if (
+      pendingUrl &&
+      isValidImageSource(pendingUrl) &&
+      finalImages.length < MAX_PRODUCT_IMAGES &&
+      !finalImages.includes(pendingUrl)
+    ) {
+      finalImages.push(pendingUrl);
+    }
+
     setSaving(true);
     try {
       const existing = draft.id
@@ -238,7 +370,7 @@ export function AdminProductsPage() {
           draft.categoryId || assignableCategories[0]?.id || 'cat-photo-frame',
         subcategoryId: existing?.subcategoryId,
         occasionTags: existing?.occasionTags ?? ['Birthday', 'Special Occasion'],
-        images: draft.imageUrl.trim() ? [draft.imageUrl.trim()] : [],
+        images: finalImages.filter((u) => u.trim().length > 0).slice(0, MAX_PRODUCT_IMAGES),
         variants: existing?.variants ?? [],
         stockCount: draft.isAvailable ? 99 : 0,
         availability: draft.isAvailable ? 'IN_STOCK' : 'OUT_OF_STOCK',
@@ -254,13 +386,15 @@ export function AdminProductsPage() {
       });
 
       await services.adminAuth.logActivity(
-        existing ? `Updated product "${cleanName}"` : `Added product "${cleanName}"`,
+        existing
+          ? `Updated product "${cleanName}" (${finalImages.length} photo${finalImages.length === 1 ? '' : 's'})`
+          : `Added product "${cleanName}" (${finalImages.length} photo${finalImages.length === 1 ? '' : 's'})`,
         'Products Management'
       );
       setEditorOpen(false);
       showNotice(
         existing
-          ? 'Product updated & saved live!'
+          ? 'Product & gallery updated live!'
           : 'Product added & published to store!'
       );
     } catch (err) {
@@ -378,7 +512,7 @@ export function AdminProductsPage() {
                 className="flex items-center justify-between gap-2.5 rounded-2xl border border-[#EBD8FF]/90 bg-white p-2.5 shadow-[0_6px_16px_-12px_rgba(106,17,203,0.18)]"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#EFE3FF] bg-[#FAF6FF]">
+                  <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#EFE3FF] bg-[#FAF6FF]">
                     {product.images[0] ? (
                       <img
                         src={product.images[0]}
@@ -387,6 +521,12 @@ export function AdminProductsPage() {
                       />
                     ) : (
                       <Package className="h-5 w-5 text-[#9B8AB4]" />
+                    )}
+                    {product.images.length > 1 && (
+                      <span className="absolute bottom-0.5 right-0.5 inline-flex items-center gap-0.5 rounded-md bg-[#1E1035]/80 px-1 py-0.5 text-[9px] font-extrabold leading-none tabular-nums text-white">
+                        <Images className="h-2.5 w-2.5" />
+                        {product.images.length}
+                      </span>
                     )}
                   </div>
                   <div className="min-w-0">
@@ -401,7 +541,7 @@ export function AdminProductsPage() {
                         · {categoryMap.get(product.categoryId) || 'Uncategorized'}
                       </span>
                     </div>
-                    <div className="mt-1 flex items-center gap-2">
+                    <div className="mt-1 flex items-center gap-1.5">
                       <span
                         className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
                           isAvailable
@@ -411,6 +551,11 @@ export function AdminProductsPage() {
                       >
                         {isAvailable ? 'Available' : 'Unavailable'}
                       </span>
+                      {product.images.length > 1 && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-[#F5ECFF] px-2 py-0.5 text-[10px] font-bold text-[#6A11CB]">
+                          {product.images.length} photos
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -486,63 +631,188 @@ export function AdminProductsPage() {
         }
       >
         <form onSubmit={handleSaveProduct} noValidate className="space-y-3">
-          {/* Product Image Upload */}
-          <div>
-            <div className="mb-1 flex items-center justify-between">
-              <label className="text-[11.5px] font-bold text-[#4A3860]">
-                Product Image
+          {/* Multi-Photo Product Gallery (Up to 6 Photos) */}
+          <div className="rounded-2xl border border-[#EFE3FF] bg-[#FCF9FF] p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <label className="flex items-center gap-1.5 text-[11.5px] font-extrabold text-[#3B0764]">
+                <Images className="h-3.5 w-3.5 text-[#6A11CB]" />
+                <span>
+                  Product Photos ({draft.images.length}/{MAX_PRODUCT_IMAGES})
+                </span>
               </label>
-              {draft.imageUrl && (
+              {draft.images.length > 0 ? (
                 <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-700">
                   <Check className="h-3 w-3" />
-                  Photo ready
+                  {draft.images.length === 1
+                    ? '1 photo ready'
+                    : `${draft.images.length} photos ready`}
+                </span>
+              ) : (
+                <span className="text-[10.5px] font-semibold text-[#7A6894]">
+                  Add up to {MAX_PRODUCT_IMAGES} photos
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                disabled={uploading}
-                onClick={() => fileInputRef.current?.click()}
-                className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-[#D6C1F5] bg-[#FAF6FF]"
-              >
-                {draft.imageUrl ? (
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+
+            {/* 3-Column Photo Gallery Grid */}
+            <div className="grid grid-cols-3 gap-2">
+              {draft.images.map((imgUrl, idx) => (
+                <div
+                  key={`${imgUrl.slice(0, 48)}-${idx}`}
+                  className={`group relative aspect-square overflow-hidden rounded-xl border-2 bg-white shadow-xs ${
+                    idx === 0
+                      ? 'border-[#6A11CB] ring-2 ring-[#6A11CB]/15'
+                      : 'border-[#E5D5FA]'
+                  }`}
+                >
                   <img
-                    src={draft.imageUrl}
-                    alt="Preview"
+                    src={imgUrl}
+                    alt={`Product photo ${idx + 1}`}
                     className="h-full w-full object-cover"
                   />
-                ) : (
-                  <Upload className="h-5 w-5 text-[#6A11CB]" />
-                )}
-              </button>
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
+
+                  {/* Top-left badge: Main or #N */}
+                  <span
+                    className={`absolute left-1 top-1 rounded-md px-1.5 py-0.5 text-[9.5px] font-extrabold leading-none shadow-xs ${
+                      idx === 0
+                        ? 'bg-[#6A11CB] text-white'
+                        : 'bg-[#1E1035]/75 text-white'
+                    }`}
+                  >
+                    {idx === 0 ? 'Main' : `#${idx + 1}`}
+                  </span>
+
+                  {/* Top-right remove button */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(idx)}
+                    aria-label={`Remove photo ${idx + 1}`}
+                    className="absolute right-1 top-1 flex h-5.5 w-5.5 cursor-pointer items-center justify-center rounded-full bg-rose-600/95 text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
+                  >
+                    <X className="h-3 w-3 stroke-[2.6]" />
+                  </button>
+
+                  {/* Bottom action strip: Set Main & Reorder */}
+                  {draft.images.length > 1 && (
+                    <div className="absolute inset-x-1 bottom-1 flex items-center justify-between gap-0.5 rounded-lg bg-[#1E1035]/72 px-1 py-0.5 backdrop-blur-[2px]">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => handleMoveImage(idx, -1)}
+                        aria-label={`Move photo ${idx + 1} left`}
+                        className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-35"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                      </button>
+
+                      {idx > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => handleSetMainImage(idx)}
+                          title="Set as Main Cover Photo"
+                          aria-label={`Set photo ${idx + 1} as main cover`}
+                          className="flex h-5 cursor-pointer items-center gap-0.5 rounded bg-amber-400/95 px-1.5 text-[9px] font-extrabold text-[#1E1035] hover:bg-amber-300"
+                        >
+                          <Star className="h-2.5 w-2.5 fill-current" />
+                          <span>Cover</span>
+                        </button>
+                      ) : (
+                        <span className="text-[9px] font-bold text-white/90">Cover</span>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={idx === draft.images.length - 1}
+                        onClick={() => handleMoveImage(idx, 1)}
+                        aria-label={`Move photo ${idx + 1} right`}
+                        className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-35"
+                      >
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Add Photo Tile */}
+              {draft.images.length < MAX_PRODUCT_IMAGES && (
                 <button
                   type="button"
                   disabled={uploading}
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex h-8 w-fit cursor-pointer items-center gap-1.5 rounded-lg border border-[#6A11CB]/30 bg-[#F5ECFF] px-3 text-[11.5px] font-bold text-[#6A11CB]"
+                  className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[#CBB0F2] bg-white px-2 text-center text-[#6A11CB] transition-colors hover:border-[#6A11CB] hover:bg-[#F5ECFF]/70 disabled:opacity-60"
+                >
+                  <ImagePlus className="h-5 w-5" />
+                  <span className="text-[10.5px] font-extrabold leading-tight">
+                    {uploading
+                      ? 'Optimizing...'
+                      : draft.images.length === 0
+                        ? 'Add Photos'
+                        : 'Add More'}
+                  </span>
+                </button>
+              )}
+            </div>
+
+            {/* Multi-select upload trigger + Paste URL option */}
+            <div className="mt-2.5 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  disabled={uploading || draft.images.length >= MAX_PRODUCT_IMAGES}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-[#6A11CB]/30 bg-[#F5ECFF] px-3 text-[11.5px] font-bold text-[#6A11CB] transition-colors hover:bg-[#EBDCFF] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Upload className="h-3.5 w-3.5" />
-                  <span>{uploading ? 'Compressing...' : 'Upload Image'}</span>
+                  <span>
+                    {uploading
+                      ? 'Compressing photos...'
+                      : draft.images.length >= MAX_PRODUCT_IMAGES
+                        ? `Max ${MAX_PRODUCT_IMAGES} Photos Added`
+                        : 'Select Multiple Photos'}
+                  </span>
                 </button>
-                <input
-                  type="text"
-                  value={draft.imageUrl.startsWith('data:') ? '' : draft.imageUrl}
-                  onChange={(e) =>
-                    setDraft((prev) => ({ ...prev, imageUrl: e.target.value }))
-                  }
-                  placeholder="Or paste image URL..."
-                  className="h-8 w-full rounded-lg border border-[#DFCEF7] bg-[#FAF8FF] px-2.5 text-[11.5px] text-[#1E1035] focus:border-[#6A11CB] focus:bg-white focus:outline-none"
-                />
+                <span className="text-[10px] font-medium text-[#7A6894]">
+                  1st photo = Cover
+                </span>
               </div>
+
+              {draft.images.length < MAX_PRODUCT_IMAGES && (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={draft.imageUrlInput}
+                    onChange={(e) =>
+                      setDraft((prev) => ({ ...prev, imageUrlInput: e.target.value }))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddImageUrl();
+                      }
+                    }}
+                    placeholder="Or paste photo URL & tap Add..."
+                    className="h-8 min-w-0 flex-1 rounded-lg border border-[#DFCEF7] bg-white px-2.5 text-[11.5px] text-[#1E1035] focus:border-[#6A11CB] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddImageUrl}
+                    disabled={!draft.imageUrlInput.trim()}
+                    className="h-8 shrink-0 cursor-pointer rounded-lg border border-[#D8C2F8] bg-white px-2.5 text-[11px] font-extrabold text-[#6A11CB] hover:bg-[#F5ECFF] disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    + Add
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

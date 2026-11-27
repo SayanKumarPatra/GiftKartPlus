@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   Gift,
   Heart,
   ImagePlus,
@@ -220,6 +222,8 @@ export function ProductDetailPage() {
   }
 
   const galleryImages = product.images.length > 0 ? product.images : [''];
+  const safeActiveImageIdx =
+    activeImageIdx >= 0 && activeImageIdx < galleryImages.length ? activeImageIdx : 0;
 
   return (
     <>
@@ -267,10 +271,39 @@ export function ProductDetailPage() {
             <div className="overflow-hidden rounded-2xl border border-[#EFE3FF] bg-white p-3 shadow-[0_8px_28px_-14px_rgba(106,17,203,0.16)]">
               <div className="relative overflow-hidden rounded-xl bg-[#FAF7FF]">
                 <ProductImage
-                  src={galleryImages[activeImageIdx]}
+                  src={galleryImages[safeActiveImageIdx]}
                   alt={product.name}
                   aspectClass="aspect-square"
                 />
+                {galleryImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveImageIdx(
+                          (prev) => (prev - 1 + galleryImages.length) % galleryImages.length
+                        )
+                      }
+                      aria-label="Previous product photo"
+                      className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-[#EBD8FF] bg-white/92 text-[#2B0B4E] shadow-sm transition-colors hover:bg-[#F5ECFF] hover:text-[#6A11CB]"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveImageIdx((prev) => (prev + 1) % galleryImages.length)
+                      }
+                      aria-label="Next product photo"
+                      className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-[#EBD8FF] bg-white/92 text-[#2B0B4E] shadow-sm transition-colors hover:bg-[#F5ECFF] hover:text-[#6A11CB]"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                    <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-[#1E1035]/70 px-2.5 py-0.5 text-xs font-bold tabular-nums text-white backdrop-blur-[2px]">
+                      {safeActiveImageIdx + 1} / {galleryImages.length}
+                    </span>
+                  </>
+                )}
                 <div className="absolute right-3.5 top-3.5 flex flex-col gap-2">
                   <button
                     type="button"
@@ -315,7 +348,7 @@ export function ProductDetailPage() {
                     type="button"
                     onClick={() => setActiveImageIdx(idx)}
                     className={`h-20 w-20 shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 bg-white transition-all ${
-                      idx === activeImageIdx
+                      idx === safeActiveImageIdx
                         ? 'border-[#6A11CB] shadow-sm'
                         : 'border-[#EBD8FF] opacity-80 hover:opacity-100'
                     }`}

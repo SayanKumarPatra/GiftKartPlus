@@ -1483,7 +1483,25 @@ async function startServer(): Promise<void> {
       return;
     }
 
-    const sanitized = sanitizeDeepStrings(incoming);
+    let sanitized = sanitizeDeepStrings(incoming);
+    if (collection === 'products' && Array.isArray(sanitized)) {
+      sanitized = sanitized.map((entry) => {
+        if (!entry || typeof entry !== 'object') return entry;
+        const item = entry as Record<string, unknown>;
+        const rawImages = Array.isArray(item.images) ? item.images : [];
+        const cleanImages = Array.from(
+          new Set(
+            rawImages
+              .map((u) => (typeof u === 'string' ? u.trim() : ''))
+              .filter((u) => u.length > 0)
+          )
+        ).slice(0, 8);
+        return {
+          ...item,
+          images: cleanImages,
+        };
+      });
+    }
     (storeDb as unknown as Record<string, unknown>)[collection] = sanitized;
     commitStoreChange([meta.topic]);
 
