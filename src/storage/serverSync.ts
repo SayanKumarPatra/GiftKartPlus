@@ -590,11 +590,27 @@ function connectEventStream(): void {
         type?: string;
         topics?: string[];
         version?: number;
+        notification?: {
+          id?: string;
+          title?: string;
+          body?: string;
+          url?: string;
+          tag?: string;
+          sentAt?: string;
+          customerAccountId?: string;
+          customerEmail?: string;
+        };
       };
       if (payload.type === 'connected') {
         if (typeof payload.version === 'number' && payload.version > liveStore.version) {
           void refreshStoreFromServer(['all']);
         }
+        return;
+      }
+      if (payload.type === 'push:notification' && payload.notification) {
+        window.dispatchEvent(
+          new CustomEvent('giftkart:live-push', { detail: payload.notification })
+        );
         return;
       }
       if (payload.type === 'store:updated') {

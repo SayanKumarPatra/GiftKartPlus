@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Package, X } from 'lucide-react';
+import { Bell, BellRing, Package, Volume2, X } from 'lucide-react';
 import {
   useCustomerOrderNotifications,
   useStoreNotifications,
@@ -9,6 +9,15 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { readStorage, STORAGE_KEYS, writeStorage } from '../../storage/localStorageEngine';
 import { formatDateTime } from '../../utils/format';
+import { playGiftKartNotificationChime } from '../../utils/notificationSound';
+import {
+  disablePushNotifications,
+  enablePushNotifications,
+  getActivePushSubscription,
+  getNotificationPermissionState,
+  getPushSupportState,
+  showLocalDeviceNotification,
+} from '../../utils/pushNotifications';
 
 interface NotificationBellProps {
   variant: 'mobile' | 'desktop';
@@ -35,7 +44,27 @@ export function NotificationBell({ variant }: NotificationBellProps) {
   const [lastSeenStamp, setLastSeenStamp] = useState<string>(() =>
     readStorage<string>(STORAGE_KEYS.NOTIF_SEEN_AT, '')
   );
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushStatusNote, setPushStatusNote] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const pushSupport = useMemo(() => getPushSupportState(), []);
+  const permissionState = getNotificationPermissionState();
+
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    void (async () => {
+      const perm = getNotificationPermissionState();
+      const sub = await getActivePushSubscription();
+      if (!active) return;
+      setPushEnabled(perm === 'granted' && Boolean(sub || perm === 'granted'));
+    })();
+    return () => {
+      active = false;
+    };
+  }, [open]);
 
   const combinedNotifications = useMemo<CombinedNotificationItem[]>(() => {
     const orderItems: CombinedNotificationItem[] = orderNotifications.map((n) => ({
@@ -104,6 +133,44 @@ export function NotificationBell({ variant }: NotificationBellProps) {
     });
   }
 
+  async function handleEnableAlerts() {
+    setPushBusy(true);
+    setPushStatusNote(null);
+    try {
+      const res = await enablePushNotifications({
+        customerAccountId: customerAccount?.id,
+        customerEmail: customerAccount?.email,
+      });
+      if (res.enabled) {
+        setPushEnabled(true);
+        playGiftKartNotificationChime(true);
+        void showLocalDeviceNotification({
+          id: `welcome-${Date.now()}`,
+          title: 'GiftKart Alerts Enabled',
+          body: 'You will now receive instant offer & order alerts with sound.',
+          url: '/',
+        });
+        setPushStatusNote('Phone alerts active! You will be notified even when screen is off.');
+      } else if (res.reason) {
+        setPushStatusNote(res.reason);
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function handleDisableAlerts() {
+    setPushBusy(true);
+    setPushStatusNote(null);
+    try {
+      await disablePushNotifications();
+      setPushEnabled(false);
+      setPushStatusNote('Phone push alerts turned off on this device.');
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
   return (
     <div ref={containerRef} className="relative">
       <button
@@ -163,7 +230,73 @@ export function NotificationBell({ variant }: NotificationBellProps) {
             </button>
           </div>
 
-          <div className="max-h-[340px] overflow-y-auto p-3">
+          {/* Lock-Screen Push & Sound Opt-In Bar */}
+          {pushSupport !== 'unsupported' && (
+            <div className="border-b border-[#EFE3FF] bg-[#FCFAFF] px-3.5 py-2.5">
+              {pushSupport === 'ios-needs-install' ? (
+                <p className="text-[11px] font-medium leading-snug text-[#594A6B]">
+                  For iPhone lock-screen alerts, tap <strong>Share → Add to Home Screen</strong> first.
+                </p>
+              ) : permissionState === 'denied' ? (
+                <p className="text-[11px] font-medium leading-snug text-rose-700">
+                  Notifications are blocked in browser site settings. Allow them to get phone alerts.
+                </p>
+              ) : pushEnabled ? (
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-1.5 text-[11.5px] font-bold text-emerald-700">
+                    <BellRing className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Phone &amp; Sound Alerts On</span>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => playGiftKartNotificationChime(true)}
+                      className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg border border-[#E2D1FA] bg-white px-2 text-[11px] font-bold text-[#6A11CB] hover:bg-[#F5ECFF]"
+                    >
+                      <Volume2 className="h-3 w-3" />
+                      <span>Tone</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pushBusy}
+                      onClick={() => void handleDisableAlerts()}
+                      className="h-7 cursor-pointer rounded-lg px-2 text-[11px] font-semibold text-[#75648E] hover:bg-[#F3ECFC] hover:text-[#1E1035]"
+                    >
+                      Off
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2.5">
+                  <div className="min-w-0">
+                    <p className="text-[11.5px] font-extrabold text-[#1E1035]">
+                      Phone Lock-Screen Alerts
+                    </p>
+                    <p className="text-[10.5px] leading-tight text-[#685782]">
+                      Get instant offer &amp; order updates with sound
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={pushBusy}
+                    onClick={() => void handleEnableAlerts()}
+                    className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded-xl bg-gradient-to-r from-[#6A11CB] to-[#9B23EA] px-3 text-[11.5px] font-extrabold text-white shadow-xs transition-transform active:scale-95 disabled:opacity-60"
+                  >
+                    <BellRing className="h-3.5 w-3.5" />
+                    <span>{pushBusy ? 'Turning on...' : 'Enable'}</span>
+                  </button>
+                </div>
+              )}
+
+              {pushStatusNote && (
+                <p className="mt-1.5 text-[10.5px] font-medium leading-snug text-[#594A6B]">
+                  {pushStatusNote}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="max-h-[320px] overflow-y-auto p-3">
             {combinedNotifications.length === 0 ? (
               <p className="py-5 text-center text-xs font-medium text-[#75648E]">
                 {t('notificationsEmpty')}

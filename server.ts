@@ -4,6 +4,7 @@ import path from 'node:path';
 import dotenv from 'dotenv';
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
+import webpush from 'web-push';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ const ADMIN_SECURITY_NOTE =
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const STORE_FILE = path.join(DATA_DIR, 'giftkart-store.json');
 const AUTH_FILE = path.join(DATA_DIR, 'giftkart-auth.json');
+const PUSH_FILE = path.join(DATA_DIR, 'giftkart-push.json');
 
 // Session signing key: uses env secret if set, otherwise a fresh in-memory random 32-byte key
 const SESSION_SIGNING_KEY =
@@ -556,6 +558,247 @@ function broadcastStoreUpdate(topics: string[]): void {
       sseClients.delete(client);
     }
   }
+}
+
+interface StoredPushSubscription {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+  customerAccountId?: string;
+  customerEmail?: string;
+  userAgent?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface PushDatabase {
+  vapidPublicKey: string;
+  vapidPrivateKey: string;
+  subscriptions: StoredPushSubscription[];
+}
+
+function isSafePushEndpoint(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'https:') return false;
+    const host = parsed.hostname.toLowerCase();
+    if (
+      !host ||
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '::1' ||
+      host.endsWith('.local') ||
+      host.endsWith('.internal') ||
+      /^10\./.test(host) ||
+      /^127\./.test(host) ||
+      /^169\.254\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(host)
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function sanitizeSafeRelativePath(rawUrl: unknown): string {
+  const str = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+  if (str.startsWith('/') && !str.startsWith('//') && !/^\/\\/.test(str)) {
+    return str.slice(0, 200);
+  }
+  return '/';
+}
+
+function loadPushDatabase(): PushDatabase {
+  let existing: Partial<PushDatabase> | null = null;
+  try {
+    if (fs.existsSync(PUSH_FILE)) {
+      const raw = fs.readFileSync(PUSH_FILE, 'utf8');
+      const parsed = JSON.parse(raw) as Partial<PushDatabase>;
+      if (parsed && typeof parsed === 'object') {
+        existing = parsed;
+      }
+    }
+  } catch {
+    existing = null;
+  }
+
+  const envPub = (process.env.VAPID_PUBLIC_KEY || '').trim();
+  const envPriv = (process.env.VAPID_PRIVATE_KEY || '').trim();
+
+  let vapidPublicKey = envPub || (typeof existing?.vapidPublicKey === 'string' ? existing.vapidPublicKey : '');
+  let vapidPrivateKey = envPriv || (typeof existing?.vapidPrivateKey === 'string' ? existing.vapidPrivateKey : '');
+  let needsSave = false;
+
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    const generated = webpush.generateVAPIDKeys();
+    vapidPublicKey = generated.publicKey;
+    vapidPrivateKey = generated.privateKey;
+    needsSave = true;
+  }
+
+  const subscriptions = Array.isArray(existing?.subscriptions)
+    ? existing.subscriptions.filter(
+        (sub): sub is StoredPushSubscription =>
+          Boolean(sub) &&
+          typeof sub.endpoint === 'string' &&
+          isSafePushEndpoint(sub.endpoint) &&
+          Boolean(sub.keys?.p256dh) &&
+          Boolean(sub.keys?.auth)
+      )
+    : [];
+
+  const db: PushDatabase = {
+    vapidPublicKey,
+    vapidPrivateKey,
+    subscriptions,
+  };
+
+  if (needsSave || !fs.existsSync(PUSH_FILE)) {
+    atomicWriteJson(PUSH_FILE, db);
+  }
+
+  const vapidSubject = (process.env.VAPID_SUBJECT || 'mailto:hello.giftkart@gmail.com').trim();
+  try {
+    webpush.setVapidDetails(vapidSubject, db.vapidPublicKey, db.vapidPrivateKey);
+  } catch {
+    // Regenerate cleanly if malformed env/disk key exists
+    const fresh = webpush.generateVAPIDKeys();
+    db.vapidPublicKey = fresh.publicKey;
+    db.vapidPrivateKey = fresh.privateKey;
+    atomicWriteJson(PUSH_FILE, db);
+    webpush.setVapidDetails(vapidSubject, db.vapidPublicKey, db.vapidPrivateKey);
+  }
+
+  return db;
+}
+
+const pushDb: PushDatabase = loadPushDatabase();
+
+interface OutgoingPushPayload {
+  id: string;
+  title: string;
+  body: string;
+  url: string;
+  tag: string;
+  sentAt: string;
+  customerAccountId?: string;
+  customerEmail?: string;
+}
+
+function broadcastLivePushSse(payload: OutgoingPushPayload): void {
+  const message = JSON.stringify({
+    type: 'push:notification',
+    notification: payload,
+  });
+  const frame = `data: ${message}\n\n`;
+  for (const client of sseClients) {
+    try {
+      client.write(frame);
+    } catch {
+      sseClients.delete(client);
+    }
+  }
+}
+
+async function dispatchWebPushAlert(
+  input: {
+    id?: string;
+    title: string;
+    body: string;
+    url?: string;
+    tag?: string;
+    customerAccountId?: string;
+    customerEmail?: string;
+  },
+  targetCustomerOnly = false
+): Promise<{ totalDevices: number; delivered: number; removedExpired: number }> {
+  const now = new Date().toISOString();
+  const payload: OutgoingPushPayload = {
+    id: input.id || `push-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    title: input.title.trim().slice(0, 110) || 'GiftKart Update',
+    body: input.body.trim().slice(0, 320) || 'You have a new update from GiftKart.',
+    url: sanitizeSafeRelativePath(input.url),
+    tag: input.tag || `giftkart-${Date.now()}`,
+    sentAt: now,
+    customerAccountId: input.customerAccountId,
+    customerEmail: input.customerEmail?.trim().toLowerCase(),
+  };
+
+  // Always push live frame to connected storefront tabs/PWAs for instant chime + heads-up banner
+  broadcastLivePushSse(payload);
+
+  const normalizedEmail = (input.customerEmail || '').trim().toLowerCase();
+  const targetAccountId = (input.customerAccountId || '').trim();
+
+  const matchingSubs = targetCustomerOnly
+    ? pushDb.subscriptions.filter(
+        (sub) =>
+          (targetAccountId && sub.customerAccountId === targetAccountId) ||
+          (normalizedEmail && (sub.customerEmail || '').toLowerCase() === normalizedEmail)
+      )
+    : pushDb.subscriptions;
+
+  if (matchingSubs.length === 0) {
+    return { totalDevices: 0, delivered: 0, removedExpired: 0 };
+  }
+
+  const wirePayload = JSON.stringify({
+    id: payload.id,
+    title: payload.title,
+    body: payload.body,
+    url: payload.url,
+    tag: payload.tag,
+    icon: '/icons/icon-192x192.png?v=2',
+    badge: '/icons/icon-192x192.png?v=2',
+  });
+
+  const expiredEndpoints = new Set<string>();
+  let delivered = 0;
+
+  await Promise.all(
+    matchingSubs.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: sub.endpoint,
+            keys: {
+              p256dh: sub.keys.p256dh,
+              auth: sub.keys.auth,
+            },
+          },
+          wirePayload,
+          { TTL: 60 * 60 * 12, urgency: 'high' }
+        );
+        delivered += 1;
+      } catch (err: unknown) {
+        const statusCode =
+          err && typeof err === 'object' && 'statusCode' in err
+            ? Number((err as { statusCode?: number }).statusCode)
+            : 0;
+        if (statusCode === 404 || statusCode === 410) {
+          expiredEndpoints.add(sub.endpoint);
+        }
+      }
+    })
+  );
+
+  if (expiredEndpoints.size > 0) {
+    pushDb.subscriptions = pushDb.subscriptions.filter(
+      (sub) => !expiredEndpoints.has(sub.endpoint)
+    );
+    atomicWriteJson(PUSH_FILE, pushDb);
+  }
+
+  return {
+    totalDevices: matchingSubs.length,
+    delivered,
+    removedExpired: expiredEndpoints.size,
+  };
 }
 
 function commitStoreChange(topics: string[]): void {
@@ -1698,6 +1941,24 @@ async function startServer(): Promise<void> {
     appendAdminLog(`Updated Order Status → ${displayStatus}`, orderNumber);
     commitStoreChange(['orders', 'activity']);
 
+    if (newNotification) {
+      void dispatchWebPushAlert(
+        {
+          id: newNotification.id,
+          title: newNotification.title,
+          body: newNotification.message,
+          url: `/order/${encodeURIComponent(orderNumber)}`,
+          tag: `order-status-${orderNumber}-${status}`,
+          customerAccountId:
+            typeof newNotification.customerAccountId === 'string'
+              ? newNotification.customerAccountId
+              : undefined,
+          customerEmail: newNotification.customerEmail,
+        },
+        true
+      );
+    }
+
     res.json({
       order: updatedOrder,
       notificationSent: Boolean(newNotification),
@@ -1882,9 +2143,156 @@ async function startServer(): Promise<void> {
     appendAdminLog(`Payment ${nextPaymentStatus} (₹${Math.round(parsedCollected)})`, orderNumber);
     commitStoreChange(['orders', 'activity']);
 
+    if (paymentNotification) {
+      void dispatchWebPushAlert(
+        {
+          id: paymentNotification.id,
+          title: paymentNotification.title,
+          body: paymentNotification.message,
+          url: `/order/${encodeURIComponent(orderNumber)}`,
+          tag: `order-payment-${orderNumber}`,
+          customerAccountId:
+            typeof paymentNotification.customerAccountId === 'string'
+              ? paymentNotification.customerAccountId
+              : undefined,
+          customerEmail: paymentNotification.customerEmail,
+        },
+        true
+      );
+    }
+
     res.json({
       order: updatedOrder,
       notificationSent: Boolean(paymentNotification),
+    });
+  });
+
+  // =========================================================================
+  // 5B. WEB PUSH NOTIFICATION SUBSCRIPTION & ADMIN BROADCAST ROUTES
+  // =========================================================================
+  app.get('/api/push/public-key', (_req, res) => {
+    res.json({
+      publicKey: pushDb.vapidPublicKey,
+      enabled: true,
+    });
+  });
+
+  app.post('/api/push/subscribe', (req, res) => {
+    const body = req.body as {
+      subscription?: {
+        endpoint?: unknown;
+        keys?: { p256dh?: unknown; auth?: unknown };
+      };
+      customerAccountId?: unknown;
+      customerEmail?: unknown;
+    };
+
+    const endpoint = String(body?.subscription?.endpoint || '').trim();
+    const p256dh = String(body?.subscription?.keys?.p256dh || '').trim();
+    const auth = String(body?.subscription?.keys?.auth || '').trim();
+
+    if (!endpoint || !isSafePushEndpoint(endpoint) || !p256dh || !auth) {
+      res.status(400).json({ error: 'Invalid push subscription payload.' });
+      return;
+    }
+
+    const customerAccountId =
+      typeof body?.customerAccountId === 'string'
+        ? body.customerAccountId.trim().slice(0, 80)
+        : undefined;
+    const customerEmail =
+      typeof body?.customerEmail === 'string'
+        ? body.customerEmail.trim().toLowerCase().slice(0, 120)
+        : undefined;
+    const userAgent = String(req.headers['user-agent'] || '').slice(0, 180);
+    const now = new Date().toISOString();
+
+    const existingIdx = pushDb.subscriptions.findIndex((s) => s.endpoint === endpoint);
+    if (existingIdx >= 0) {
+      const prev = pushDb.subscriptions[existingIdx];
+      pushDb.subscriptions[existingIdx] = {
+        ...prev,
+        keys: { p256dh, auth },
+        customerAccountId: customerAccountId || prev.customerAccountId,
+        customerEmail: customerEmail || prev.customerEmail,
+        userAgent: userAgent || prev.userAgent,
+        updatedAt: now,
+      };
+    } else {
+      pushDb.subscriptions.unshift({
+        endpoint,
+        keys: { p256dh, auth },
+        customerAccountId,
+        customerEmail,
+        userAgent,
+        createdAt: now,
+        updatedAt: now,
+      });
+      if (pushDb.subscriptions.length > 1000) {
+        pushDb.subscriptions = pushDb.subscriptions.slice(0, 1000);
+      }
+    }
+
+    atomicWriteJson(PUSH_FILE, pushDb);
+    res.json({ ok: true, subscribed: true });
+  });
+
+  app.post('/api/push/unsubscribe', (req, res) => {
+    const endpoint = String((req.body as { endpoint?: unknown })?.endpoint || '').trim();
+    if (endpoint) {
+      const before = pushDb.subscriptions.length;
+      pushDb.subscriptions = pushDb.subscriptions.filter((s) => s.endpoint !== endpoint);
+      if (pushDb.subscriptions.length !== before) {
+        atomicWriteJson(PUSH_FILE, pushDb);
+      }
+    }
+    res.json({ ok: true });
+  });
+
+  app.get('/api/admin/push/stats', requireAdminAuth, (_req, res) => {
+    const uniqueEmails = new Set(
+      pushDb.subscriptions
+        .map((s) => (s.customerEmail || '').trim().toLowerCase())
+        .filter(Boolean)
+    );
+    res.json({
+      totalDevices: pushDb.subscriptions.length,
+      uniqueCustomers: uniqueEmails.size,
+      vapidReady: Boolean(pushDb.vapidPublicKey),
+    });
+  });
+
+  app.post('/api/admin/push/broadcast', requireAdminAuth, async (req: AuthedRequest, res) => {
+    const body = sanitizeDeepStrings(req.body) as Record<string, unknown>;
+    const title = String(body?.title || '').trim().slice(0, 110);
+    const message = String(body?.message || '').trim().slice(0, 320);
+    const url = sanitizeSafeRelativePath(body?.url);
+    const id = String(body?.id || '').trim() || `push-${Date.now()}`;
+
+    if (!title || !message) {
+      res.status(400).json({ error: 'Notification title and message are required.' });
+      return;
+    }
+
+    const result = await dispatchWebPushAlert(
+      {
+        id,
+        title,
+        body: message,
+        url,
+        tag: `giftkart-broadcast-${id}`,
+      },
+      false
+    );
+
+    appendAdminLog(
+      `Sent Phone Push Alert "${title}" (${result.delivered}/${result.totalDevices} devices)`,
+      'Notification Management'
+    );
+
+    res.json({
+      ok: true,
+      ...result,
     });
   });
 

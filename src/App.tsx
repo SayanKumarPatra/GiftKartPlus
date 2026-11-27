@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { CartProvider } from './context/CartContext';
 import { AppRouter } from './routes/AppRouter';
+import { LiveNotificationHost } from './components/storefront/LiveNotificationHost';
 import { startLiveStoreSync } from './storage/serverSync';
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
       <AuthProvider>
         <LanguageProvider>
           <CartProvider>
+            <LiveNotificationHost />
             <AppRouter />
           </CartProvider>
         </LanguageProvider>
