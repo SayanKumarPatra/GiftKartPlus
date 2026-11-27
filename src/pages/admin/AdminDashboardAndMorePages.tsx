@@ -27,6 +27,7 @@ import {
   useStoreSettings,
 } from '../../hooks/useStoreData';
 import { useAuth } from '../../context/AuthContext';
+import { AdminSalesOverviewCard } from '../../components/admin/AdminSalesOverviewCard';
 
 export function AdminDashboardPage() {
   const { data: categories } = useCategories(true);
@@ -142,6 +143,9 @@ export function AdminDashboardPage() {
           )}
         </Link>
       </div>
+
+      {/* Top Live Sales Overview Card with Date / Period Switcher */}
+      <AdminSalesOverviewCard orders={orders} />
 
       {/* Pending Action Row — Only Rendered When Real Pending Orders Exist */}
       {pendingOrdersCount > 0 && (
