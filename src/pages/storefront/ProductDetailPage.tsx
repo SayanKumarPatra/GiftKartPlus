@@ -9,6 +9,7 @@ import {
   MessageCircle,
   Minus,
   Plus,
+  Share2,
   ShieldCheck,
   ShoppingBag,
   ShoppingCart,
@@ -29,6 +30,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { ProductImage } from '../../components/ui/ProductImage';
 import { ProductCard } from '../../components/storefront/ProductCard';
 import { MobileProductDetailPage } from '../../components/storefront/MobileProductDetailPage';
+import { openProductShare } from '../../components/storefront/ProductShareModal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { formatInr } from '../../utils/format';
@@ -255,29 +257,39 @@ export function ProductDetailPage() {
                   alt={product.name}
                   aspectClass="aspect-square"
                 />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!customerAccount) {
-                      navigate('/account', {
-                        state: {
-                          from: `${location.pathname}${location.search}`,
-                          reason: 'wishlist',
-                        },
-                      });
-                      return;
-                    }
-                    toggleWishlist(product.id);
-                  }}
-                  aria-label="Toggle wishlist"
-                  className={`absolute right-3.5 top-3.5 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border shadow-sm transition-colors ${
-                    saved
-                      ? 'border-[#FF4D8D] bg-[#FFF0F6] text-[#FF4D8D]'
-                      : 'border-[#EBD8FF] bg-white/95 text-[#6A11CB] hover:bg-[#F8F2FF]'
-                  }`}
-                >
-                  <Heart className={`h-5 w-5 ${saved ? 'fill-[#FF4D8D]' : ''}`} />
-                </button>
+                <div className="absolute right-3.5 top-3.5 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!customerAccount) {
+                        navigate('/account', {
+                          state: {
+                            from: `${location.pathname}${location.search}`,
+                            reason: 'wishlist',
+                          },
+                        });
+                        return;
+                      }
+                      toggleWishlist(product.id);
+                    }}
+                    aria-label="Toggle wishlist"
+                    className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border shadow-sm transition-colors ${
+                      saved
+                        ? 'border-[#FF4D8D] bg-[#FFF0F6] text-[#FF4D8D]'
+                        : 'border-[#EBD8FF] bg-white/95 text-[#6A11CB] hover:bg-[#F8F2FF]'
+                    }`}
+                  >
+                    <Heart className={`h-5 w-5 ${saved ? 'fill-[#FF4D8D]' : ''}`} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openProductShare(product)}
+                    aria-label={`${t('share')} ${displayProductName}`}
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[#EBD8FF] bg-white/95 text-[#6A11CB] shadow-sm transition-colors hover:border-[#FF4D8D] hover:bg-[#FFF0F6] hover:text-[#FF4D8D]"
+                  >
+                    <Share2 className="h-4 w-4 stroke-[2.2]" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -308,9 +320,19 @@ export function ProductDetailPage() {
           {/* Right: Purchase & Personalization Column */}
           <div className="space-y-5 rounded-2xl border border-[#EFE3FF] bg-white p-6 shadow-[0_8px_28px_-14px_rgba(106,17,203,0.12)] lg:col-span-6">
             <div>
-              <p className="font-mono text-xs font-semibold text-[#7A6894]">
-                {displayCategoryName} · {t('sku')}: {product.sku}
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-mono text-xs font-semibold text-[#7A6894]">
+                  {displayCategoryName} · {t('sku')}: {product.sku}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => openProductShare(product)}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#EBD8FF] bg-[#FAF6FF] px-3 py-1 text-xs font-bold text-[#6A11CB] whitespace-nowrap transition-colors hover:border-[#6A11CB] hover:bg-[#F3E8FF]"
+                >
+                  <Share2 className="h-3.5 w-3.5 stroke-[2.2]" />
+                  <span>{t('share')}</span>
+                </button>
+              </div>
               <h1 className="mt-1.5 font-display text-2xl font-bold leading-snug text-[#1E1035] xl:text-[28px]">
                 {displayProductName}
               </h1>

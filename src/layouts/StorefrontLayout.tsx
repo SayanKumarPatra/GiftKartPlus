@@ -7,6 +7,7 @@ import { MobileHeader } from '../components/storefront/MobileHeader';
 import { MobileBottomNav } from '../components/storefront/MobileBottomNav';
 import { SearchOverlay } from '../components/storefront/SearchOverlay';
 import { CartDrawer } from '../components/storefront/CartDrawer';
+import { ProductShareHost } from '../components/storefront/ProductShareModal';
 import { StorefrontFooter } from '../components/storefront/StorefrontFooter';
 import { BrandLogo } from '../components/ui/BrandLogo';
 import { useStoreSettings } from '../hooks/useStoreData';
@@ -74,6 +75,7 @@ export function StorefrontLayout() {
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <CartDrawer />
+      <ProductShareHost />
     </div>
   );
 }

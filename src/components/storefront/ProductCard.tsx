@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Heart, ShoppingCart } from 'lucide-react';
+import { Heart, Share2, ShoppingCart } from 'lucide-react';
 import type { Product } from '../../types';
 import { ProductImage } from '../ui/ProductImage';
 import { useCart } from '../../context/CartContext';
@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { formatInr } from '../../utils/format';
+import { openProductShare } from './ProductShareModal';
 
 interface ProductCardProps {
   product: Product;
@@ -76,18 +77,32 @@ export function ProductCard({
           />
         </Link>
 
-        <button
-          type="button"
-          onClick={handleWishlistClick}
-          aria-label={saved ? t('removeFromWishlist') : t('saveToWishlist')}
-          className="absolute right-2.5 top-2.5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-[#2B0B4E] shadow-xs transition-transform duration-150 hover:scale-105"
-        >
-          <Heart
-            className={`h-4 w-4 ${
-              saved ? 'fill-[#FF4D8D] text-[#FF4D8D]' : 'text-[#2B0B4E]'
-            }`}
-          />
-        </button>
+        <div className="absolute right-2.5 top-2.5 flex flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={handleWishlistClick}
+            aria-label={saved ? t('removeFromWishlist') : t('saveToWishlist')}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-[#2B0B4E] shadow-xs transition-transform duration-150 hover:scale-105"
+          >
+            <Heart
+              className={`h-4 w-4 ${
+                saved ? 'fill-[#FF4D8D] text-[#FF4D8D]' : 'text-[#2B0B4E]'
+              }`}
+            />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openProductShare(product);
+            }}
+            aria-label={`${t('share')} ${displayName}`}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-[#6A11CB] shadow-xs transition-transform duration-150 hover:scale-105 hover:text-[#FF4D8D]"
+          >
+            <Share2 className="h-3.5 w-3.5 stroke-[2.2]" />
+          </button>
+        </div>
       </div>
 
       {/* Clean Modern E-Commerce Card Body */}

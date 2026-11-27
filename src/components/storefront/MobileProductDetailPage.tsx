@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Gift, Heart, ShoppingCart, Zap } from 'lucide-react';
+import { ArrowRight, Gift, Heart, Share2, ShoppingCart, Zap } from 'lucide-react';
 import type { Category, Product } from '../../types';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +9,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
 import { getCategoryPresentation } from '../../utils/storefrontHelpers';
+import { openProductShare } from './ProductShareModal';
 
 interface MobileProductDetailPageProps {
   product: Product;
@@ -240,9 +241,11 @@ export function MobileProductDetailPage({
     toggleWishlist(targetProductId);
   }
 
+  const productWishlisted = isWishlisted(product.id);
+
   return (
-    <div className="min-h-screen w-full bg-white pb-[86px] text-[#2B0B4E]">
-      {/* 1. MAIN PRODUCT IMAGE GALLERY (Sharp Square-Corner Box, No Arrows, No Zoom) */}
+    <div className="min-h-screen w-full bg-white pb-[146px] text-[#2B0B4E]">
+      {/* 1. MAIN PRODUCT IMAGE GALLERY (Sharp Square-Corner Box + Floating Wishlist & Share) */}
       <section aria-label="Product photos">
         <div
           onTouchStart={handleGalleryTouchStart}
@@ -254,6 +257,33 @@ export function MobileProductDetailPage({
             alt={product.name}
             aspectClass="aspect-[4/3]"
           />
+
+          <div className="absolute right-2.5 top-2.5 z-10 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => handleWishlistAction(product.id)}
+              aria-label={
+                productWishlisted ? t('removeFromWishlist') : t('saveToWishlist')
+              }
+              className={`flex h-9 w-9 items-center justify-center rounded-full bg-white/92 shadow-[0_4px_12px_rgba(43,11,78,0.14)] ring-1 ring-[#EBD8FF]/90 transition-transform active:scale-90 ${
+                productWishlisted ? 'text-[#FF4D8D]' : 'text-[#4C1D95]'
+              }`}
+            >
+              <Heart
+                className={`h-4 w-4 stroke-[2.2] ${
+                  productWishlisted ? 'fill-[#FF4D8D]' : ''
+                }`}
+              />
+            </button>
+            <button
+              type="button"
+              onClick={() => openProductShare(product)}
+              aria-label={`${t('share')} ${displayName}`}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/92 text-[#6A11CB] shadow-[0_4px_12px_rgba(43,11,78,0.14)] ring-1 ring-[#EBD8FF]/90 transition-transform active:scale-90"
+            >
+              <Share2 className="h-4 w-4 stroke-[2.2]" />
+            </button>
+          </div>
         </div>
 
         {/* 2. PRODUCT THUMBNAIL GALLERY (Only when multiple real images exist) */}
@@ -427,24 +457,38 @@ export function MobileProductDetailPage({
                       />
                     </Link>
 
-                    <button
-                      type="button"
-                      onClick={() => handleWishlistAction(rel.id)}
-                      aria-label={
-                        relWishlisted
-                          ? `Remove ${rel.name} from wishlist`
-                          : `Save ${rel.name} to wishlist`
-                      }
-                      className={`absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white/95 shadow-xs transition-transform active:scale-90 ${
-                        relWishlisted ? 'text-[#FF4D8D]' : 'text-[#4C1D95]'
-                      }`}
-                    >
-                      <Heart
-                        className={`h-3.5 w-3.5 stroke-[2.2] ${
-                          relWishlisted ? 'fill-[#FF4D8D]' : ''
+                    <div className="absolute right-1 top-1 flex flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleWishlistAction(rel.id)}
+                        aria-label={
+                          relWishlisted
+                            ? `Remove ${rel.name} from wishlist`
+                            : `Save ${rel.name} to wishlist`
+                        }
+                        className={`flex h-6 w-6 items-center justify-center rounded-full bg-white/95 shadow-xs transition-transform active:scale-90 ${
+                          relWishlisted ? 'text-[#FF4D8D]' : 'text-[#4C1D95]'
                         }`}
-                      />
-                    </button>
+                      >
+                        <Heart
+                          className={`h-3 w-3 stroke-[2.2] ${
+                            relWishlisted ? 'fill-[#FF4D8D]' : ''
+                          }`}
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openProductShare(rel);
+                        }}
+                        aria-label={`${t('share')} ${rel.name}`}
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/95 text-[#6A11CB] shadow-xs transition-transform active:scale-90"
+                      >
+                        <Share2 className="h-3 w-3 stroke-[2.2]" />
+                      </button>
+                    </div>
                   </div>
 
                   <Link
@@ -475,26 +519,26 @@ export function MobileProductDetailPage({
         </section>
       )}
 
-      {/* 7. FIXED BOTTOM PURCHASE BAR (Clean 2-Button Add to Cart + Buy Now, Zero Quantity Clutter) */}
+      {/* 7. COMPACT FLOATING BOTTOM PURCHASE BAR (Clear Gap Above MobileBottomNav + Sleek Buttons & Icons) */}
       <div
         role="region"
         aria-label="Purchase actions"
-        className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-30 border-t border-[#EBD8FF]/90 bg-white/96 px-3 py-2 shadow-[0_-6px_18px_rgba(106,17,203,0.08)] backdrop-blur-md lg:hidden"
+        className="pointer-events-none fixed inset-x-3 bottom-[calc(86px+env(safe-area-inset-bottom,0px))] z-30 mx-auto max-w-[436px] lg:hidden"
       >
-        <div className="mx-auto grid max-w-[480px] grid-cols-2 gap-2.5">
-          {/* Add to Cart / Go to Cart Button */}
+        <div className="pointer-events-auto grid grid-cols-2 gap-2 rounded-full border border-[#EBD8FF] bg-white/95 p-1.5 shadow-[0_8px_22px_-6px_rgba(106,17,203,0.22)] backdrop-blur-md">
+          {/* Compact Add to Cart / Go to Cart Button */}
           <button
             type="button"
             onClick={handleAddToCart}
             disabled={!isInCart && isOutOfStock}
-            className={`inline-flex h-[43px] items-center justify-center gap-2 rounded-full border-[1.5px] px-3 text-[13.5px] font-extrabold whitespace-nowrap transition-all active:scale-[0.98] disabled:opacity-45 ${
+            className={`inline-flex h-[35px] items-center justify-center gap-1.5 rounded-full border px-2.5 text-[11.5px] font-bold whitespace-nowrap transition-all active:scale-[0.98] disabled:opacity-45 min-[380px]:text-[12px] ${
               isInCart
                 ? 'border-[#6A11CB] bg-[#F5ECFF] text-[#6A11CB]'
                 : 'border-[#6A11CB] bg-white text-[#2B0B4E]'
             }`}
           >
-            <ShoppingCart className="h-4 w-4 shrink-0 text-[#6A11CB] stroke-[2.2]" />
-            <span>
+            <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-[#6A11CB] stroke-[2.2]" />
+            <span className="truncate">
               {isInCart
                 ? t('goToCart')
                 : isOutOfStock
@@ -502,19 +546,19 @@ export function MobileProductDetailPage({
                   : t('addToCart')}
             </span>
             {isInCart && (
-              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#6A11CB] stroke-[2.5]" />
+              <ArrowRight className="h-3 w-3 shrink-0 text-[#6A11CB] stroke-[2.5]" />
             )}
           </button>
 
-          {/* Buy Now Gradient Button */}
+          {/* Compact Buy Now Gradient Button */}
           <button
             type="button"
             onClick={handleBuyNow}
             disabled={isOutOfStock}
-            className="inline-flex h-[43px] items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-3 text-[14px] font-extrabold text-white shadow-[0_6px_16px_-4px_rgba(255,77,141,0.52)] whitespace-nowrap transition-transform active:scale-[0.98] disabled:opacity-45"
+            className="inline-flex h-[35px] items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] px-2.5 text-[11.5px] font-bold text-white shadow-[0_4px_12px_-3px_rgba(255,77,141,0.48)] whitespace-nowrap transition-transform active:scale-[0.98] disabled:opacity-45 min-[380px]:text-[12px]"
           >
-            <Zap className="h-4 w-4 shrink-0 fill-white text-white" />
-            <span>{t('buyNow')}</span>
+            <Zap className="h-3.5 w-3.5 shrink-0 fill-white text-white" />
+            <span className="truncate">{t('buyNow')}</span>
           </button>
         </div>
       </div>

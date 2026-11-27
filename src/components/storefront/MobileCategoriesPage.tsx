@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Heart, Search, ShoppingCart } from 'lucide-react';
+import { Heart, Search, Share2, ShoppingCart } from 'lucide-react';
 import { useCategories, useProducts } from '../../hooks/useStoreData';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
@@ -12,6 +12,7 @@ import {
   buildStorefrontCategoryGroups,
   resolveCategoryBySlug,
 } from '../../utils/storefrontHelpers';
+import { openProductShare } from './ProductShareModal';
 
 export function MobileCategoriesPage() {
   const { data: categories } = useCategories();
@@ -265,22 +266,36 @@ export function MobileCategoriesPage() {
                         </span>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={(e) => handleWishlistToggle(e, product.id)}
-                        aria-label={
-                          wishlisted ? t('removeFromWishlist') : t('saveToWishlist')
-                        }
-                        className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/92 text-[#6A11CB] shadow-xs active:scale-90"
-                      >
-                        <Heart
-                          className={`h-3.5 w-3.5 ${
-                            wishlisted
-                              ? 'fill-[#FF4D8D] text-[#FF4D8D]'
-                              : 'text-[#4B148C] stroke-[2]'
-                          }`}
-                        />
-                      </button>
+                      <div className="absolute right-1.5 top-1.5 flex flex-col gap-1.5">
+                        <button
+                          type="button"
+                          onClick={(e) => handleWishlistToggle(e, product.id)}
+                          aria-label={
+                            wishlisted ? t('removeFromWishlist') : t('saveToWishlist')
+                          }
+                          className="flex h-7 w-7 items-center justify-center rounded-full bg-white/92 text-[#6A11CB] shadow-xs active:scale-90"
+                        >
+                          <Heart
+                            className={`h-3.5 w-3.5 ${
+                              wishlisted
+                                ? 'fill-[#FF4D8D] text-[#FF4D8D]'
+                                : 'text-[#4B148C] stroke-[2]'
+                            }`}
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openProductShare(product);
+                          }}
+                          aria-label={`${t('share')} ${displayName}`}
+                          className="flex h-7 w-7 items-center justify-center rounded-full bg-white/92 text-[#6A11CB] shadow-xs active:scale-90"
+                        >
+                          <Share2 className="h-3.5 w-3.5 stroke-[2.1]" />
+                        </button>
+                      </div>
                     </Link>
 
                     {/* Product Info + Price + Add to Cart */}

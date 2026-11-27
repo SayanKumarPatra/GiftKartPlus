@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Flame, Heart, Search } from 'lucide-react';
+import { ArrowRight, Flame, Heart, Search, Share2 } from 'lucide-react';
 import {
   useCategories,
   useProducts,
@@ -12,6 +12,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
 import { buildStorefrontCategoryGroups } from '../../utils/storefrontHelpers';
+import { openProductShare } from './ProductShareModal';
 
 interface MobileHeroSlide {
   id: string;
@@ -350,22 +351,36 @@ export function MobileHomePage() {
                         />
                       </Link>
 
-                      <button
-                        type="button"
-                        onClick={() => handleWishlistToggle(product.id)}
-                        aria-label={
-                          saved ? t('removeFromWishlist') : t('saveToWishlist')
-                        }
-                        className="absolute right-1.5 top-1.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-white/95 shadow-xs ring-1 ring-[#EBD8FF]/80 transition-transform active:scale-90"
-                      >
-                        <Heart
-                          className={`h-3.5 w-3.5 ${
-                            saved
-                              ? 'fill-[#FF4D8D] text-[#FF4D8D]'
-                              : 'stroke-[2.1] text-[#4B148C]'
-                          }`}
-                        />
-                      </button>
+                      <div className="absolute right-1.5 top-1.5 flex flex-col gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleWishlistToggle(product.id)}
+                          aria-label={
+                            saved ? t('removeFromWishlist') : t('saveToWishlist')
+                          }
+                          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-white/95 shadow-xs ring-1 ring-[#EBD8FF]/80 transition-transform active:scale-90"
+                        >
+                          <Heart
+                            className={`h-3.5 w-3.5 ${
+                              saved
+                                ? 'fill-[#FF4D8D] text-[#FF4D8D]'
+                                : 'stroke-[2.1] text-[#4B148C]'
+                            }`}
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openProductShare(product);
+                          }}
+                          aria-label={`${t('share')} ${displayName}`}
+                          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-white/95 text-[#6A11CB] shadow-xs ring-1 ring-[#EBD8FF]/80 transition-transform active:scale-90"
+                        >
+                          <Share2 className="h-3.5 w-3.5 stroke-[2.1]" />
+                        </button>
+                      </div>
                     </div>
 
                     <Link
