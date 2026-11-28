@@ -1,0 +1,9 @@
+# GiftKart Supabase Edge Functions Configuration
+# Target Project: ozopjebyoakjjvdsawzl
+#
+# verify_jwt is set to false ONLY for giftkart-telegram-notify because
+# Supabase Database Webhooks authenticate using the custom
+# x-giftkart-webhook-secret header verified in constant time inside the function.
+
+[functions.giftkart-telegram-notify]
+verify_jwt = false
