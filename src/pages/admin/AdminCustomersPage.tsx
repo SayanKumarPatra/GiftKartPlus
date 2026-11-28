@@ -28,9 +28,14 @@ export function AdminCustomersPage() {
   const { data: orders } = useOrders();
 
   const [search, setSearch] = useState('');
+  const [visibleCount, setVisibleCount] = useState(25);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [blockTarget, setBlockTarget] = useState<RegisteredCustomer | null>(null);
   const [toast, setToast] = useState<{ message: string; tone?: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    setVisibleCount(25);
+  }, [search]);
 
   useEffect(() => {
     const paramId = searchParams.get('customerId')?.trim();
@@ -49,6 +54,34 @@ export function AdminCustomersPage() {
   function showNotice(message: string, tone: 'success' | 'error' = 'success') {
     setToast({ message, tone });
     window.setTimeout(() => setToast(null), 3200);
+  }
+
+  const orderCountIndex = useMemo(() => {
+    const byId = new Map<string, Set<string>>();
+    const byEmail = new Map<string, Set<string>>();
+    for (const o of orders) {
+      if (o.customerAccountId) {
+        const s = byId.get(o.customerAccountId) ?? new Set<string>();
+        s.add(o.id);
+        byId.set(o.customerAccountId, s);
+      }
+      const em = (o.customer.email || '').trim().toLowerCase();
+      if (em) {
+        const s = byEmail.get(em) ?? new Set<string>();
+        s.add(o.id);
+        byEmail.set(em, s);
+      }
+    }
+    return { byId, byEmail };
+  }, [orders]);
+
+  function getOrderCountForCustomer(customer: RegisteredCustomer): number {
+    const ids = new Set<string>();
+    const idMatches = orderCountIndex.byId.get(customer.id);
+    if (idMatches) idMatches.forEach((id) => ids.add(id));
+    const emMatches = orderCountIndex.byEmail.get(customer.email.toLowerCase());
+    if (emMatches) emMatches.forEach((id) => ids.add(id));
+    return ids.size;
   }
 
   function getOrdersForCustomer(customer: RegisteredCustomer): DemoOrder[] {
@@ -286,8 +319,8 @@ export function AdminCustomersPage() {
         />
       ) : (
         <div className="space-y-2">
-          {filteredCustomers.map((customer) => {
-            const orderCount = getOrdersForCustomer(customer).length;
+          {filteredCustomers.slice(0, visibleCount).map((customer) => {
+            const orderCount = getOrderCountForCustomer(customer);
             const isBlocked = customer.status === 'BLOCKED';
             return (
               <button
@@ -327,6 +360,15 @@ export function AdminCustomersPage() {
               </button>
             );
           })}
+          {filteredCustomers.length > visibleCount && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((prev) => prev + 25)}
+              className="flex h-10 w-full cursor-pointer items-center justify-center rounded-2xl border border-[#E5D5FA] bg-white text-xs font-extrabold text-[#6A11CB] transition-colors hover:bg-[#FAF6FF]"
+            >
+              Load More Customers ({filteredCustomers.length - visibleCount} remaining)
+            </button>
+          )}
         </div>
       )}
     </div>

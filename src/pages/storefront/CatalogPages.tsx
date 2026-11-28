@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Heart, Package } from 'lucide-react';
 import { useCategories, useProducts } from '../../hooks/useStoreData';
+import { useIsDesktop } from '../../hooks/useMediaQuery';
 import type { OccasionTag } from '../../types';
 import { ProductCard } from '../../components/storefront/ProductCard';
 import { MobileCategoriesPage } from '../../components/storefront/MobileCategoriesPage';
@@ -55,7 +56,15 @@ export function ShopPage({
     customizableOnly,
   });
 
-  const catNameById = new Map(categories.map((c) => [c.id, c.name]));
+  const [visibleCount, setVisibleCount] = useState(16);
+  useEffect(() => {
+    setVisibleCount(16);
+  }, [categorySlug, subcategorySlug, occasionParam, searchQuery, bestSellersOnly, customizableOnly]);
+
+  const catNameById = useMemo(
+    () => new Map(categories.map((c) => [c.id, c.name])),
+    [categories]
+  );
   const hasActiveFilter = Boolean(
     categorySlug || subcategorySlug || occasionParam || searchQuery
   );
@@ -147,26 +156,44 @@ export function ShopPage({
           }
         />
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-4">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              categoryLabel={catNameById.get(product.categoryId)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-4">
+            {products.slice(0, visibleCount).map((product, idx) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                categoryLabel={catNameById.get(product.categoryId)}
+                priority={idx < 4}
+              />
+            ))}
+          </div>
+          {products.length > visibleCount && (
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((prev) => prev + 16)}
+                className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-[#DFC4FF] bg-[#FCFAFF] px-6 text-xs font-bold text-[#6A11CB] transition-colors hover:border-[#6A11CB] hover:bg-white"
+              >
+                <span>
+                  {t('viewAll')} ({products.length - visibleCount}+)
+                </span>
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
 
 export function AllCategoriesPage() {
+  const isDesktop = useIsDesktop();
   const { data: categories } = useCategories();
   const { data: products, isLoading } = useProducts();
   const { t, translateCategory } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>('featured');
+  const [visibleCount, setVisibleCount] = useState(16);
 
   const categoryGroups = useMemo(
     () => buildStorefrontCategoryGroups(categories, products),
@@ -174,6 +201,10 @@ export function AllCategoriesPage() {
   );
 
   const rawCatParam = searchParams.get('cat') ?? 'all-gifts';
+  useEffect(() => {
+    setVisibleCount(16);
+  }, [rawCatParam, sortBy]);
+
   const resolvedCat = useMemo(
     () => resolveCategoryBySlug(rawCatParam, categories),
     [rawCatParam, categories]
@@ -198,15 +229,16 @@ export function AllCategoriesPage() {
     [categories]
   );
 
-  return (
-    <>
-      {/* Normal Mobile (< 900px): Flipkart-inspired Left Sidebar + Right Category Grid */}
-      <div className="-mx-3.5 -my-4 sm:-mx-6 sm:-my-5 lg:hidden">
+  if (!isDesktop) {
+    return (
+      <div className="-mx-3.5 -my-4 sm:-mx-6 sm:-my-5">
         <MobileCategoriesPage />
       </div>
+    );
+  }
 
-      {/* Desktop & Laptop (>= 900px): Curated Non-Empty Categories with Left Sidebar + Product Grid */}
-      <div className="hidden lg:block">
+  return (
+    <div>
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-[#EFE3FF] pb-4">
           <div>
             <nav
@@ -338,20 +370,35 @@ export function AllCategoriesPage() {
                 }
               />
             ) : (
-              <div className="grid grid-cols-3 gap-4 xl:grid-cols-4">
-                {sortedProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    categoryLabel={catNameById.get(product.categoryId)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-3 gap-4 xl:grid-cols-4">
+                  {sortedProducts.slice(0, visibleCount).map((product, idx) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      categoryLabel={catNameById.get(product.categoryId)}
+                      priority={idx < 4}
+                    />
+                  ))}
+                </div>
+                {sortedProducts.length > visibleCount && (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setVisibleCount((prev) => prev + 16)}
+                      className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-[#DFC4FF] bg-[#FCFAFF] px-6 text-xs font-bold text-[#6A11CB] transition-colors hover:border-[#6A11CB] hover:bg-white"
+                    >
+                      <span>
+                        {t('viewAll')} ({sortedProducts.length - visibleCount}+)
+                      </span>
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
       </div>
-    </>
   );
 }
 
@@ -371,6 +418,11 @@ export function CategoryDetailPage() {
         : category.id
       : '__no_matching_category__',
   });
+
+  const [visibleCount, setVisibleCount] = useState(16);
+  useEffect(() => {
+    setVisibleCount(16);
+  }, [slug]);
 
   const products = category ? fetchedProducts : [];
   const categoryTitle = category
@@ -449,15 +501,31 @@ export function CategoryDetailPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              categoryLabel={category?.name}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
+            {products.slice(0, visibleCount).map((product, idx) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                categoryLabel={category?.name}
+                priority={idx < 4}
+              />
+            ))}
+          </div>
+          {products.length > visibleCount && (
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((prev) => prev + 16)}
+                className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-[#DFC4FF] bg-[#FCFAFF] px-6 text-xs font-bold text-[#6A11CB] transition-colors hover:border-[#6A11CB] hover:bg-white"
+              >
+                <span>
+                  {t('viewAll')} ({products.length - visibleCount}+)
+                </span>
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

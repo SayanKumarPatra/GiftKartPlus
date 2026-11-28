@@ -172,8 +172,13 @@ export function AdminOrdersPage() {
 
   const [activeTab, setActiveTab] = useState<OrderFilterTab>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(20);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; tone?: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [activeTab, searchQuery]);
 
   // Order Status Update Form State
   const [nextStatus, setNextStatus] = useState<CanonicalOrderStatus>('New Order');
@@ -243,6 +248,33 @@ export function AdminOrdersPage() {
     setPaymentNoteDraft(existingPay?.note || '');
     setPaymentEditorOpen(false);
   }, [selectedOrder?.id, selectedOrder?.updatedAt]);
+
+  const tabCounts = useMemo(() => {
+    const counts: Record<OrderFilterTab, number> = {
+      All: orders.length,
+      'New Order': 0,
+      Processing: 0,
+      Packed: 0,
+      Shipped: 0,
+      'In Transit': 0,
+      'Out for Delivery': 0,
+      Delivered: 0,
+      Exceptions: 0,
+    };
+    for (const order of orders) {
+      const canonical = normalizeOrderStatus(order.fulfillmentStatus);
+      if (
+        canonical === 'Cancelled' ||
+        canonical === 'Delivery Failed' ||
+        canonical === 'Returned'
+      ) {
+        counts.Exceptions += 1;
+      } else if (canonical in counts) {
+        counts[canonical as OrderFilterTab] += 1;
+      }
+    }
+    return counts;
+  }, [orders]);
 
   const filteredOrders = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -1532,7 +1564,7 @@ export function AdminOrdersPage() {
       <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
         {FILTER_TABS.map((tab) => {
           const active = activeTab === tab.key;
-          const count = orders.filter((o) => matchesFilter(o, tab.key)).length;
+          const count = tabCounts[tab.key] ?? 0;
           return (
             <button
               key={tab.key}
@@ -1563,7 +1595,7 @@ export function AdminOrdersPage() {
         />
       ) : (
         <div className="space-y-2.5">
-          {filteredOrders.map((order) => {
+          {filteredOrders.slice(0, visibleCount).map((order) => {
             const canonicalStatus = normalizeOrderStatus(order.fulfillmentStatus);
             const canonicalPayment = normalizePaymentStatus(order);
             return (
@@ -1624,6 +1656,15 @@ export function AdminOrdersPage() {
               </button>
             );
           })}
+          {filteredOrders.length > visibleCount && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((prev) => prev + 20)}
+              className="flex h-10 w-full cursor-pointer items-center justify-center rounded-2xl border border-[#E5D5FA] bg-white text-xs font-extrabold text-[#6A11CB] transition-colors hover:bg-[#FAF6FF]"
+            >
+              Load More Orders ({filteredOrders.length - visibleCount} remaining)
+            </button>
+          )}
         </div>
       )}
     </div>

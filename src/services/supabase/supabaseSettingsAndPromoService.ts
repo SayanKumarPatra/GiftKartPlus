@@ -25,6 +25,7 @@ import {
 } from '../local/localSettingsAndPromoService';
 import { LocalGiftWrapService } from '../local/localGiftWrapService';
 import { LocalNotificationService } from '../local/localNotificationService';
+import { SEED_STORE_SETTINGS } from '../../config/seedData';
 import {
   SCHEMA_MIGRATION_HINT,
   mapCouponRow,
@@ -32,6 +33,19 @@ import {
   mapStoreNotificationRow,
   mapStoreSettingsRows,
 } from './supabaseMappers';
+
+const STORE_SETTINGS_COLS =
+  'id,store_name,tagline,logo_url,maintenance_mode,currency_code,currency_symbol,support_email,support_phone,service_cities_summary,banner,announcement,newsletter,page_content,social_links,seo,policies,footer_content,contact_version';
+const DELIVERY_ZONE_COLS =
+  'id,name,state,charge_inr,free_delivery_above_inr,estimated_days,is_active,sort_order';
+const HERO_BANNER_COLS =
+  'id,title_prefix,title_highlight,subtitle,cta_label,cta_href,image_url,occasion_tag,is_active,sort_order';
+const NOTIFICATION_COLS =
+  'id,title,message,target_audience,is_active,created_at,updated_at';
+const COUPON_COLS =
+  'id,code,title,description,discount_type,value,min_order_inr,max_discount_inr,valid_from,valid_until,linked_banner_id,is_active,created_at';
+const GIFT_WRAP_STYLE_COLS =
+  'id,name,description,charge_inr,accent_color_hex,is_active,sort_order';
 
 export class SupabaseStoreSettingsService implements IStoreSettingsService {
   private readonly fallback = new LocalStoreSettingsService();
@@ -44,12 +58,22 @@ export class SupabaseStoreSettingsService implements IStoreSettingsService {
       { data: heroRows, error: hErr },
       { data: notifRows, error: nErr },
     ] = await Promise.all([
-      client.from('store_settings').select('*').eq('id', 'primary').maybeSingle(),
-      client.from('delivery_zones').select('*').order('sort_order', { ascending: true }),
-      client.from('hero_banners').select('*').order('sort_order', { ascending: true }),
+      client
+        .from('store_settings')
+        .select(STORE_SETTINGS_COLS)
+        .eq('id', 'primary')
+        .maybeSingle(),
+      client
+        .from('delivery_zones')
+        .select(DELIVERY_ZONE_COLS)
+        .order('sort_order', { ascending: true }),
+      client
+        .from('hero_banners')
+        .select(HERO_BANNER_COLS)
+        .order('sort_order', { ascending: true }),
       client
         .from('store_notifications')
-        .select('*')
+        .select(NOTIFICATION_COLS)
         .order('created_at', { ascending: false }),
     ]);
 
@@ -62,13 +86,12 @@ export class SupabaseStoreSettingsService implements IStoreSettingsService {
       throw new Error(firstErr.message || 'Failed to load store settings.');
     }
 
-    const fallbackDefaults = await this.fallback.getSettings();
     return mapStoreSettingsRows(
       (settingsRow as Record<string, unknown> | null) ?? null,
       (zoneRows ?? []) as Record<string, unknown>[],
       (heroRows ?? []) as Record<string, unknown>[],
       (notifRows ?? []) as Record<string, unknown>[],
-      fallbackDefaults
+      SEED_STORE_SETTINGS
     );
   }
 
@@ -223,7 +246,7 @@ export class SupabasePromotionService implements IPromotionService {
     const client = getSupabaseClient();
     const { data, error } = await client
       .from('coupons')
-      .select('*')
+      .select(COUPON_COLS)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -353,10 +376,14 @@ export class SupabaseGiftWrapService implements IGiftWrapService {
     const client = getSupabaseClient();
     const [{ data: cfg, error: cErr }, { data: styles, error: sErr }] =
       await Promise.all([
-        client.from('gift_wrap_config').select('*').eq('id', 'primary').maybeSingle(),
+        client
+          .from('gift_wrap_config')
+          .select('id,globally_enabled,default_charge_inr,max_message_length')
+          .eq('id', 'primary')
+          .maybeSingle(),
         client
           .from('gift_wrap_styles')
-          .select('*')
+          .select(GIFT_WRAP_STYLE_COLS)
           .order('sort_order', { ascending: true }),
       ]);
 
@@ -446,7 +473,7 @@ export class SupabaseNotificationService implements INotificationService {
     const client = getSupabaseClient();
     let query = client
       .from('store_notifications')
-      .select('*')
+      .select(NOTIFICATION_COLS)
       .order('created_at', { ascending: false });
 
     if (!includeInactive) {

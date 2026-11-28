@@ -13,6 +13,12 @@ import {
   mapProductRow,
 } from './supabaseMappers';
 
+const CATEGORY_COLS =
+  'id,slug,name,description,image_url,sort_order,is_active,translations';
+const SUBCATEGORY_COLS = 'id,category_id,slug,name,is_active,sort_order';
+const PRODUCT_COLS =
+  'id,slug,sku,name,short_description,description,price_inr,compare_at_price_inr,category_id,subcategory_id,occasion_tags,images,variants,availability,stock_count,is_best_seller,is_featured,is_active,is_archived,supports_personalization,supports_photo_upload,personalization_prompt,translations,created_at,updated_at';
+
 export class SupabaseCatalogService implements ICatalogService {
   private readonly fallback = new LocalCatalogService();
 
@@ -20,8 +26,14 @@ export class SupabaseCatalogService implements ICatalogService {
     const client = getSupabaseClient();
     const [{ data: catRows, error: catErr }, { data: subRows, error: subErr }] =
       await Promise.all([
-        client.from('categories').select('*').order('sort_order', { ascending: true }),
-        client.from('subcategories').select('*').order('sort_order', { ascending: true }),
+        client
+          .from('categories')
+          .select(CATEGORY_COLS)
+          .order('sort_order', { ascending: true }),
+        client
+          .from('subcategories')
+          .select(SUBCATEGORY_COLS)
+          .order('sort_order', { ascending: true }),
       ]);
 
     if (catErr || subErr) {
@@ -214,7 +226,7 @@ export class SupabaseCatalogService implements ICatalogService {
 
   async getProducts(filters?: ProductFilterParams): Promise<Product[]> {
     const client = getSupabaseClient();
-    let query = client.from('products').select('*');
+    let query = client.from('products').select(PRODUCT_COLS);
 
     if (!filters?.includeInactive) {
       query = query.eq('is_active', true).eq('is_archived', false);
@@ -289,7 +301,7 @@ export class SupabaseCatalogService implements ICatalogService {
     const client = getSupabaseClient();
     const { data, error } = await client
       .from('products')
-      .select('*')
+      .select(PRODUCT_COLS)
       .eq('slug', slug)
       .maybeSingle();
 
@@ -308,7 +320,7 @@ export class SupabaseCatalogService implements ICatalogService {
     const client = getSupabaseClient();
     const { data, error } = await client
       .from('products')
-      .select('*')
+      .select(PRODUCT_COLS)
       .eq('id', id)
       .maybeSingle();
 

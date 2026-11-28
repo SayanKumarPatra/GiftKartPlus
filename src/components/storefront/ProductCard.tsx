@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Heart, Share2, ShoppingCart } from 'lucide-react';
 import type { Product } from '../../types';
@@ -13,12 +14,14 @@ interface ProductCardProps {
   product: Product;
   categoryLabel?: string;
   compact?: boolean;
+  priority?: boolean;
 }
 
-export function ProductCard({
+export const ProductCard = memo(function ProductCard({
   product,
   categoryLabel,
   compact = false,
+  priority = false,
 }: ProductCardProps) {
   const { items, addToCart, toggleWishlist, isWishlisted } = useCart();
   const { customerAccount } = useAuth();
@@ -74,6 +77,7 @@ export function ProductCard({
             alt={displayName}
             aspectClass="aspect-square"
             zoomOnHover
+            priority={priority}
           />
         </Link>
 
@@ -164,4 +168,4 @@ export function ProductCard({
       </div>
     </article>
   );
-}
+});

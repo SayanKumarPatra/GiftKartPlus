@@ -1,4 +1,11 @@
-// GiftKart PWA Service Worker v7 — supports background Web Push lock-screen alerts, vibration, click routing & fresh HTML
+// GiftKart PWA Service Worker v8 — fast Cache-First static bundles/icons,
+// Stale-While-Revalidate for public Supabase product media, Network-Only for live APIs & HTML,
+// plus background Web Push notifications.
+const STATIC_CACHE = 'giftkart-static-v8';
+const MEDIA_CACHE = 'giftkart-media-v8';
+const ACTIVE_CACHES = new Set([STATIC_CACHE, MEDIA_CACHE]);
+const MAX_MEDIA_ENTRIES = 120;
+
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
@@ -8,20 +15,66 @@ self.addEventListener('activate', (event) => {
     (async () => {
       if ('caches' in self) {
         const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
+        await Promise.all(
+          keys
+            .filter((key) => !ACTIVE_CACHES.has(key))
+            .map((key) => caches.delete(key))
+        );
       }
       await self.clients.claim();
     })()
   );
 });
 
+async function trimCache(cacheName, maxEntries) {
+  try {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    if (keys.length > maxEntries) {
+      const toDelete = keys.slice(0, keys.length - maxEntries);
+      await Promise.all(toDelete.map((req) => cache.delete(req)));
+    }
+  } catch {
+    // Ignore cache trim errors
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
+
+  // 1. Public Supabase Storage media images -> Stale-While-Revalidate (fast repeat loads)
+  const isSupabasePublicMedia =
+    url.hostname.endsWith('.supabase.co') &&
+    url.pathname.startsWith('/storage/v1/object/public/');
+
+  if (isSupabasePublicMedia) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(MEDIA_CACHE);
+        const cached = await cache.match(event.request);
+        const networkPromise = fetch(event.request)
+          .then((response) => {
+            if (response && (response.ok || response.type === 'opaque')) {
+              cache.put(event.request, response.clone()).then(() => {
+                void trimCache(MEDIA_CACHE, MAX_MEDIA_ENTRIES);
+              });
+            }
+            return response;
+          })
+          .catch(() => cached);
+
+        return cached || networkPromise;
+      })()
+    );
+    return;
+  }
+
+  // Never intercept cross-origin APIs (Supabase REST/Auth/Realtime, Google Fonts, etc.)
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
-  // Never serve stale cached HTML documents when deploying new live builds
+  // 2. HTML navigations -> Always Network-First (no-store) so new Vercel deploys load fresh
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(new Request(event.request.url, { cache: 'no-store' })).catch(() =>
@@ -31,6 +84,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // 3. Immutable static bundles & local assets (/assets/*, /icons/*) -> Cache-First
+  const isStaticAsset =
+    url.pathname.startsWith('/assets/') || url.pathname.startsWith('/icons/');
+
+  if (isStaticAsset) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(STATIC_CACHE);
+        const cached = await cache.match(event.request);
+        if (cached) return cached;
+
+        const response = await fetch(event.request);
+        if (response && response.ok) {
+          cache.put(event.request, response.clone());
+        }
+        return response;
+      })()
+    );
+    return;
+  }
+
+  // 4. Everything else -> pass through to network
   event.respondWith(fetch(event.request));
 });
 
@@ -85,7 +160,6 @@ self.addEventListener('push', (event) => {
     (async () => {
       await self.registration.showNotification(payload.title, options);
 
-      // Notify any open GiftKart windows so they immediately play the custom GiftKart chime & refresh
       const clientList = await self.clients.matchAll({
         type: 'window',
         includeUncontrolled: true,
@@ -115,7 +189,6 @@ self.addEventListener('notificationclick', (event) => {
       ? event.notification.data.url
       : '/') || '/';
 
-  // Only allow safe same-origin relative URLs
   const safePath = rawUrl.startsWith('/') && !rawUrl.startsWith('//') ? rawUrl : '/';
   const targetUrl = new URL(safePath, self.location.origin).href;
 

@@ -86,6 +86,7 @@ export function AdminProductsPage() {
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+  const [visibleCount, setVisibleCount] = useState(20);
   const [filterOpen, setFilterOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [draft, setDraft] = useState<ProductDraft>(() =>
@@ -95,6 +96,10 @@ export function AdminProductsPage() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [toast, setToast] = useState<{ message: string; tone?: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [search, categoryFilter]);
 
   useEffect(() => {
     if (searchParams.get('new') === '1') {
@@ -503,7 +508,7 @@ export function AdminProductsPage() {
         />
       ) : (
         <div className="space-y-2.5">
-          {filteredProducts.map((product) => {
+          {filteredProducts.slice(0, visibleCount).map((product) => {
             const isAvailable =
               product.isActive && product.availability !== 'OUT_OF_STOCK';
             return (
@@ -517,6 +522,8 @@ export function AdminProductsPage() {
                       <img
                         src={product.images[0]}
                         alt={product.name}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -590,6 +597,15 @@ export function AdminProductsPage() {
               </div>
             );
           })}
+          {filteredProducts.length > visibleCount && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((prev) => prev + 20)}
+              className="flex h-10 w-full cursor-pointer items-center justify-center rounded-2xl border border-[#E5D5FA] bg-white text-xs font-extrabold text-[#6A11CB] transition-colors hover:bg-[#FAF6FF]"
+            >
+              Load More Products ({filteredProducts.length - visibleCount} remaining)
+            </button>
+          )}
         </div>
       )}
 

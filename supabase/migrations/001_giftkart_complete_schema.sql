@@ -1218,5 +1218,61 @@ INSERT INTO public.store_settings (
 )
 ON CONFLICT (id) DO NOTHING;
 
+-- ----------------------------------------------------------------------------
+-- 13. LEAST-PRIVILEGE ROLE GRANTS (REQUIRED FOR SUPABASE PUBLISHABLE KEYS + RLS)
+-- ----------------------------------------------------------------------------
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+
+GRANT SELECT ON
+  public.categories,
+  public.subcategories,
+  public.products,
+  public.gift_wrap_config,
+  public.gift_wrap_styles,
+  public.delivery_zones,
+  public.hero_banners,
+  public.coupons,
+  public.store_settings,
+  public.store_notifications,
+  public.product_reviews
+TO anon, authenticated;
+
+GRANT INSERT ON public.newsletter_subscribers TO anon, authenticated;
+
+GRANT INSERT, UPDATE, DELETE ON
+  public.categories,
+  public.subcategories,
+  public.products,
+  public.gift_wrap_config,
+  public.gift_wrap_styles,
+  public.delivery_zones,
+  public.hero_banners,
+  public.coupons,
+  public.store_settings,
+  public.store_notifications,
+  public.product_reviews
+TO authenticated;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON
+  public.admin_users,
+  public.customers,
+  public.customer_addresses,
+  public.customer_wishlists,
+  public.customer_carts,
+  public.orders,
+  public.order_items,
+  public.order_status_history,
+  public.order_payments,
+  public.order_notifications,
+  public.newsletter_subscribers,
+  public.admin_activity_logs
+TO authenticated;
+
+GRANT USAGE, SELECT ON SEQUENCE public.giftkart_order_seq TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_giftkart_admin() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.place_giftkart_order(JSONB) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.cancel_my_order(TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.track_order_by_number(TEXT) TO anon, authenticated;
+
 -- Refresh PostgREST schema cache automatically
 NOTIFY pgrst, 'reload schema';

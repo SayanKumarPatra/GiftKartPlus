@@ -1,17 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCircle2, X } from 'lucide-react';
+import {
+  isSupabaseConfigured,
+  uploadImageToSupabaseStorage,
+} from '../../lib/supabase';
+
+function dataUrlToWebpFile(dataUrl: string, originalName: string): File | null {
+  try {
+    const [header, base64] = dataUrl.split(',');
+    if (!header || !base64) return null;
+    const mimeMatch = header.match(/data:([^;]+);/);
+    const mime = mimeMatch?.[1] || 'image/webp';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const ext = mime.includes('jpeg') ? 'jpg' : mime.includes('png') ? 'png' : 'webp';
+    const baseName = originalName.replace(/\.[^.]+$/, '') || 'giftkart-image';
+    return new File([bytes], `${baseName}.${ext}`, { type: mime });
+  } catch {
+    return null;
+  }
+}
 
 /**
- * Compresses any phone/desktop image (including large PNG/JPG screenshots & photos)
- * into a crisp lightweight WebP/JPEG data URL so LocalStorage never overflows.
+ * Compresses any phone/desktop image into a crisp lightweight WebP image.
+ * When Supabase Storage is connected, uploads the compressed image to the
+ * CDN-backed `giftkart-media` bucket (returns a fast HTTPS URL) and falls back
+ * seamlessly to the compressed WebP data URL if storage upload is unavailable.
  */
-export function readImageFileAsDataUrl(
+export async function readImageFileAsDataUrl(
   file: File,
-  maxDimension = 960,
-  preserveTransparency = false
+  maxDimension = 860,
+  preserveTransparency = false,
+  folder: 'products' | 'categories' | 'banners' | 'branding' = 'products'
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
+  const compressedDataUrl = await new Promise<string>((resolve, reject) => {
     if (!file.type.startsWith('image/')) {
       reject(new Error('Please select a valid image file (PNG, JPG, or WEBP).'));
       return;
@@ -35,15 +61,11 @@ export function readImageFileAsDataUrl(
             return;
           }
 
-          // For opaque formats (JPEG), fill white background so transparent PNGs never turn black
-          const preferWebp = true;
-          let output = '';
-
           if (preserveTransparency) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            const webpUrl = canvas.toDataURL('image/webp', 0.8);
-            if (webpUrl.startsWith('data:image/webp') && webpUrl.length < 220_000) {
+            const webpUrl = canvas.toDataURL('image/webp', 0.78);
+            if (webpUrl.startsWith('data:image/webp') && webpUrl.length < 150_000) {
               resolve(webpUrl);
               return;
             }
@@ -53,15 +75,14 @@ export function readImageFileAsDataUrl(
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-          const qualities = [0.76, 0.62, 0.48, 0.36];
+          let output = '';
+          const qualities = [0.74, 0.6, 0.46, 0.34];
           for (const q of qualities) {
-            const candidate = preferWebp
-              ? canvas.toDataURL('image/webp', q)
-              : canvas.toDataURL('image/jpeg', q);
+            const candidate = canvas.toDataURL('image/webp', q);
             output = candidate.startsWith('data:image/webp')
               ? candidate
               : canvas.toDataURL('image/jpeg', q);
-            if (output.length <= 180_000) {
+            if (output.length <= 120_000) {
               break;
             }
           }
@@ -75,6 +96,22 @@ export function readImageFileAsDataUrl(
     };
     reader.readAsDataURL(file);
   });
+
+  if (isSupabaseConfigured()) {
+    const compressedFile = dataUrlToWebpFile(compressedDataUrl, file.name);
+    if (compressedFile) {
+      try {
+        const publicUrl = await uploadImageToSupabaseStorage(folder, compressedFile);
+        if (publicUrl) {
+          return publicUrl;
+        }
+      } catch {
+        // Fallback seamlessly to compressed WebP data URL if storage policy blocks upload
+      }
+    }
+  }
+
+  return compressedDataUrl;
 }
 
 /**

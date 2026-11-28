@@ -55,6 +55,7 @@ export function HeroSliderSection() {
                 alt={`${activeSlide.titlePrefix} ${activeSlide.titleHighlight}`.trim()}
                 aspectClass="h-full w-full"
                 eager
+                priority
               />
             </div>
           </Link>
@@ -257,11 +258,12 @@ export function TrendingGiftsSection() {
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-4 xl:grid-cols-5">
-            {trendingProducts.map((product) => (
+            {trendingProducts.map((product, idx) => (
               <ProductCard
                 key={product.id}
                 product={product}
                 categoryLabel={categoryNameById.get(product.categoryId)}
+                priority={idx < 4}
               />
             ))}
           </div>
@@ -282,6 +284,11 @@ export function ProductListingSection() {
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>(
     'featured'
   );
+  const [visibleCount, setVisibleCount] = useState(15);
+
+  useEffect(() => {
+    setVisibleCount(15);
+  }, [selectedGroupId, sortBy]);
 
   const categoryGroups = useMemo(
     () => buildPopulatedCategoryGroups(categories, products),
@@ -392,15 +399,30 @@ export function ProductListingSection() {
             </p>
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-4 gap-4 xl:grid-cols-5">
-            {displayedProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                categoryLabel={categoryNameById.get(product.categoryId)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="mt-6 grid grid-cols-4 gap-4 xl:grid-cols-5">
+              {displayedProducts.slice(0, visibleCount).map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  categoryLabel={categoryNameById.get(product.categoryId)}
+                />
+              ))}
+            </div>
+            {displayedProducts.length > visibleCount && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + 15)}
+                  className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-[#DFC4FF] bg-[#FCFAFF] px-6 text-xs font-bold text-[#6A11CB] transition-colors hover:border-[#6A11CB] hover:bg-white"
+                >
+                  <span>
+                    {t('viewAll')} ({displayedProducts.length - visibleCount}+)
+                  </span>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>

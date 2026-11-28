@@ -34,6 +34,7 @@ export function MobileHomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSlide, setActiveSlide] = useState(0);
   const [resetTick, setResetTick] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(12);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -199,6 +200,7 @@ export function MobileHomePage() {
                       src={entry.imageUrl}
                       alt={entry.alt}
                       loading={idx === 0 ? 'eager' : 'lazy'}
+                      fetchPriority={idx === 0 ? 'high' : 'low'}
                       decoding="async"
                       draggable={false}
                       referrerPolicy="no-referrer"
@@ -236,7 +238,7 @@ export function MobileHomePage() {
         {/* STEP 04 – CARDLESS 2-ROW CATEGORY GRID (4 Per Row Visible, Slightly Larger Natural Size, Swipe for More) */}
         <section aria-label="Gift categories" className="w-full">
           <div className="no-scrollbar grid grid-flow-col grid-rows-2 auto-cols-[calc((100%-24px)/4)] gap-x-2 gap-y-2 overflow-x-auto px-2.5 py-0.5">
-            {allMobileCategories.map((cat) => (
+            {allMobileCategories.map((cat, idx) => (
               <Link
                 key={cat.id}
                 to={cat.to}
@@ -247,7 +249,7 @@ export function MobileHomePage() {
                     <img
                       src={cat.imageUrl}
                       alt={cat.label}
-                      loading="lazy"
+                      loading={idx < 8 ? 'eager' : 'lazy'}
                       decoding="async"
                       referrerPolicy="no-referrer"
                       className="h-full w-auto max-w-[66px] object-contain drop-shadow-[0_4px_8px_rgba(43,11,78,0.14)] min-[400px]:max-w-[70px]"
@@ -257,7 +259,7 @@ export function MobileHomePage() {
                       <img
                         src={cat.imageUrl}
                         alt={cat.label}
-                        loading="lazy"
+                        loading={idx < 8 ? 'eager' : 'lazy'}
                         decoding="async"
                         referrerPolicy="no-referrer"
                         className="h-full w-full object-cover"
@@ -325,8 +327,9 @@ export function MobileHomePage() {
               </p>
             </div>
           ) : (
+            <>
             <div className="mt-2 grid grid-cols-2 gap-2">
-              {trendingProducts.map((product) => {
+              {trendingProducts.slice(0, visibleCount).map((product, idx) => {
                 const saved = isWishlisted(product.id);
                 const compareAt = product.compareAtPriceInr ?? 0;
                 const hasDiscount = compareAt > product.priceInr;
@@ -350,6 +353,7 @@ export function MobileHomePage() {
                           src={product.images[0]}
                           alt={displayName}
                           aspectClass="aspect-square"
+                          priority={idx < 2}
                         />
                       </Link>
 
@@ -416,6 +420,20 @@ export function MobileHomePage() {
                 );
               })}
             </div>
+            {trendingProducts.length > visibleCount && (
+              <div className="mt-3 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + 12)}
+                  className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-[#DFC4FF] bg-white px-5 text-xs font-extrabold text-[#6A11CB] shadow-xs transition-colors hover:bg-[#FAF5FF] active:scale-95"
+                >
+                  <span>
+                    {t('viewAll')} ({trendingProducts.length - visibleCount}+)
+                  </span>
+                </button>
+              </div>
+            )}
+            </>
           )}
         </section>
       </div>

@@ -7,11 +7,15 @@ import { AppRouter } from './routes/AppRouter';
 import { LiveNotificationHost } from './components/storefront/LiveNotificationHost';
 import { startLiveStoreSync } from './storage/serverSync';
 import { startSupabaseRealtimeSync } from './services/supabase/supabaseRealtime';
+import { isSupabaseConfigured } from './lib/supabase';
 
 export default function App() {
   useEffect(() => {
-    startLiveStoreSync();
-    startSupabaseRealtimeSync();
+    if (isSupabaseConfigured()) {
+      startSupabaseRealtimeSync();
+    } else {
+      startLiveStoreSync();
+    }
   }, []);
 
   return (
