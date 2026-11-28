@@ -771,14 +771,6 @@ function MobileOrderDetailsView({
                 {formatInr(order.subtotalInr)}
               </span>
             </div>
-            {order.giftWrapChargeInr > 0 && (
-              <div className="flex items-center justify-between text-[#5E4A77]">
-                <span>{t('giftWrapCharge')}</span>
-                <span className="font-semibold tabular-nums text-[#2B0B4E]">
-                  + {formatInr(order.giftWrapChargeInr)}
-                </span>
-              </div>
-            )}
             {order.discountInr > 0 && (
               <div className="flex items-center justify-between text-[#15803D]">
                 <span>{t('couponDiscount')}</span>

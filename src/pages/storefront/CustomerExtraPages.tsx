@@ -334,7 +334,7 @@ export function OrderDetailsPage() {
                 <ProductImage
                   src={item.imageSnapshot}
                   alt={item.productNameSnapshot}
-                  className="h-full w-full object-cover"
+                  aspectClass="h-full w-full"
                 />
               </div>
               <div className="min-w-0 flex-1">
@@ -420,8 +420,8 @@ export function OrderDetailsPage() {
         </div>
       </div>
 
-      {/* Delivery, Gift Wrap & Price Summary */}
-      <div className="grid gap-5 md:grid-cols-3">
+      {/* Delivery & Price Summary */}
+      <div className="grid gap-5 md:grid-cols-2">
         <div className="space-y-1.5 rounded-2xl border border-[#EFE3FF] bg-white p-5 text-xs">
           <p className="flex items-center gap-1.5 font-extrabold text-[#1E1035]">
             <MapPin className="h-4 w-4 text-[#FF4D8D]" />
@@ -442,51 +442,11 @@ export function OrderDetailsPage() {
         </div>
 
         <div className="space-y-1.5 rounded-2xl border border-[#EFE3FF] bg-white p-5 text-xs">
-          <p className="flex items-center gap-1.5 font-extrabold text-[#1E1035]">
-            <Gift className="h-4 w-4 text-[#FF4D8D]" />
-            <span>{t('giftWrapCharge')}</span>
-          </p>
-          {order.giftWrap.enabled ? (
-            <>
-              <p className="font-bold text-[#6A11CB]">
-                {order.giftWrap.styleNameSnapshot} (
-                {formatInr(order.giftWrap.chargeInrSnapshot)})
-              </p>
-              {order.giftWrap.recipientName && (
-                <p className="text-[#594A6B]">
-                  {t('fullName')}:{' '}
-                  <strong className="text-[#1E1035]">
-                    {order.giftWrap.recipientName}
-                  </strong>
-                </p>
-              )}
-              {order.giftWrap.giftMessage && (
-                <p className="italic text-[#594A6B]">
-                  &ldquo;{order.giftWrap.giftMessage}&rdquo;
-                </p>
-              )}
-            </>
-          ) : (
-            <p className="text-[#594A6B]">
-              {language === 'bn'
-                ? 'স্ট্যান্ডার্ড সুরক্ষিত প্যাকেজিং।'
-                : 'Standard protective packaging.'}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-1.5 rounded-2xl border border-[#EFE3FF] bg-white p-5 text-xs">
           <p className="font-extrabold text-[#1E1035]">{t('orderSummary')}</p>
           <div className="flex justify-between text-[#594A6B]">
             <span>{t('subtotal')}</span>
             <span className="font-mono">{formatInr(order.subtotalInr)}</span>
           </div>
-          {order.giftWrapChargeInr > 0 && (
-            <div className="flex justify-between text-[#594A6B]">
-              <span>{t('giftWrapCharge')}</span>
-              <span className="font-mono">{formatInr(order.giftWrapChargeInr)}</span>
-            </div>
-          )}
           {order.discountInr > 0 && (
             <div className="flex justify-between text-emerald-700">
               <span>{t('discount')} {order.couponCode ? `(${order.couponCode})` : ''}</span>
@@ -1192,8 +1152,8 @@ export function CustomizationGuidePage() {
         },
         {
           step: '০৪',
-          title: 'ঐচ্ছিক গিফট র‍্যাপিং ও অর্ডার নিশ্চিতকরণ',
-          body: 'প্রয়োজনে প্রিমিয়াম গিফট র‍্যাপিং ও নোট কার্ড যোগ করুন, ডেলিভারি ঠিকানা যাচাই করুন এবং অর্ডার নিশ্চিত করুন।',
+          title: 'ডেলিভারি ঠিকানা যাচাই ও অর্ডার নিশ্চিতকরণ',
+          body: 'কার্টে আপনার প্রোডাক্টের বিবরণ ও ডেলিভারি ঠিকানা যাচাই করুন এবং সহজেই অর্ডার নিশ্চিত করুন।',
           img: STUDIO_MEDIA.giftBox,
         },
       ]
@@ -1218,8 +1178,8 @@ export function CustomizationGuidePage() {
         },
         {
           step: '04',
-          title: 'Optional Gift Wrapping & Order Review',
-          body: 'Add curated gift wrapping and a note card if desired, verify your delivery address, and confirm your order.',
+          title: 'Final Review & Order Confirmation',
+          body: 'Double-check your customization note, verify your delivery address, and confirm your order.',
           img: STUDIO_MEDIA.giftBox,
         },
       ];
@@ -1248,9 +1208,9 @@ export function CustomizationGuidePage() {
         </h1>
         <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-neutral-600 sm:text-[14px]">
           {isBn
-            ? 'চমৎকার প্রিন্ট মানের জন্য ছবি, পার্সোনালাইজড লেখা এবং গিফট র‍্যাপিং প্রস্তুত করার ধাপে ধাপে নির্দেশিকা।'
+            ? 'চমৎকার প্রিন্ট মানের জন্য ছবি এবং পার্সোনালাইজড লেখা প্রস্তুত করার ধাপে ধাপে নির্দেশিকা।'
             : settings?.pageContent?.customizationNote ??
-              'Step-by-step instructions for preparing photos, personalized text, and gift wrapping for crisp print results.'}
+              'Step-by-step instructions for preparing photos and personalized text for crisp print results.'}
         </p>
       </header>
 
@@ -1270,7 +1230,7 @@ export function CustomizationGuidePage() {
               <ProductImage
                 src={img}
                 alt={title}
-                className="h-full w-full object-cover"
+                aspectClass="h-full w-full"
               />
             </div>
             <div className="min-w-0">

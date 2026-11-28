@@ -31,6 +31,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { isSupabaseConfigured, uploadImageToSupabaseStorage } from '../../lib/supabase';
 import { BrandLogo } from '../ui/BrandLogo';
 import { LanguageSelector } from './LanguageSelector';
+import { canNavigateBackInApp } from '../../utils/storefrontHelpers';
 
 const SIGNUP_ILLUSTRATION =
   '/assets/aistudio/3D_Purple_Clipboard_Registration_Icon_30307bae.webp';
@@ -239,7 +240,7 @@ export function MobileAccountAuthPages() {
       setAuthMode('login');
       return;
     }
-    if (window.history.length > 1) {
+    if (canNavigateBackInApp()) {
       navigate(-1);
     } else {
       navigate('/');
@@ -564,7 +565,7 @@ export function MobileAccountAuthPages() {
       <div className="fixed inset-0 z-50 overflow-y-auto overflow-x-clip bg-gradient-to-b from-[#FDF6FF] via-[#FAF1FF] to-[#F6EEFF] lg:hidden">
         <CompactAuthHeader
           onBack={() => {
-            if (window.history.length > 1) {
+            if (canNavigateBackInApp()) {
               navigate(-1);
             } else {
               navigate('/');
@@ -1294,7 +1295,7 @@ export function MobileAccountAuthPages() {
                     {t('defaultDeliveryCity')}
                   </p>
                   <p className="text-[11.5px] text-[#6A5684]">
-                    {translatePlace('Jalchak, West Bengal')}
+                    Jalchak, West Bengal, India
                   </p>
                 </div>
                 <span className="rounded-full bg-[#F3E8FF] px-2.5 py-1 text-[11px] font-bold text-[#6A11CB]">

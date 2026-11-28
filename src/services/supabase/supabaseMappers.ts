@@ -249,7 +249,7 @@ export function mapStoreSettingsRows(
     serviceCitiesSummary: String(
       s.service_cities_summary ??
         fallback.serviceCitiesSummary ??
-        'Jalchak, Pingla, Paschim Medinipur, West Bengal - 721155'
+        'Jalchak, West Bengal, India'
     ),
     deliveryZones:
       zonesRows.length > 0

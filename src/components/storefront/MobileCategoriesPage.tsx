@@ -69,8 +69,9 @@ export function MobileCategoriesPage() {
   }
 
   function handleSelectCategory(id: string) {
+    if (id === activeCategoryId) return;
     setActiveCategoryId(id);
-    setSearchParams(id === 'all-gifts' ? {} : { cat: id }, { replace: true });
+    setSearchParams(id === 'all-gifts' ? {} : { cat: id });
     if (rightPanelRef.current) {
       const rect = rightPanelRef.current.getBoundingClientRect();
       if (rect.top < 110) {
@@ -257,7 +258,9 @@ export function MobileCategoriesPage() {
                         src={product.images[0]}
                         alt={displayName}
                         loading="lazy"
-                        className="h-full w-full object-cover"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                        className="h-full w-full max-h-full max-w-full object-contain object-center"
                       />
 
                       {discountPercent > 0 && (

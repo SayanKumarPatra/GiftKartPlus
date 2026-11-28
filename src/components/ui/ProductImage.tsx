@@ -6,6 +6,7 @@ interface ProductImageProps {
   alt: string;
   className?: string;
   aspectClass?: string;
+  fit?: 'contain' | 'cover';
   zoomOnHover?: boolean;
   eager?: boolean;
   priority?: boolean;
@@ -16,6 +17,7 @@ export const ProductImage = memo(function ProductImage({
   alt,
   className = '',
   aspectClass = 'aspect-[4/3]',
+  fit = 'contain',
   zoomOnHover = false,
   eager = false,
   priority = false,
@@ -50,8 +52,20 @@ export const ProductImage = memo(function ProductImage({
     );
   }
 
+  const fitClass =
+    fit === 'cover'
+      ? 'h-full w-full object-cover object-center'
+      : 'h-full w-full max-h-full max-w-full object-contain object-center';
+
+  const hoverClass =
+    fit === 'cover' && zoomOnHover
+      ? 'transition-transform duration-300 group-hover:scale-105'
+      : '';
+
   return (
-    <div className={`relative ${aspectClass} w-full overflow-hidden bg-[#FDF5FA] ${className}`}>
+    <div
+      className={`relative flex items-center justify-center ${aspectClass} w-full overflow-hidden bg-[#FAF7FD] ${className}`}
+    >
       {!loaded && (
         <div
           aria-hidden="true"
@@ -68,11 +82,9 @@ export const ProductImage = memo(function ProductImage({
         referrerPolicy="no-referrer"
         onLoad={() => setLoaded(true)}
         onError={() => setFailed(true)}
-        className={`h-full w-full object-cover transition-opacity duration-200 ${
+        className={`${fitClass} transition-opacity duration-200 ${
           loaded ? 'opacity-100' : 'opacity-0'
-        } ${
-          zoomOnHover ? 'transition-transform duration-300 group-hover:scale-105' : ''
-        }`}
+        } ${hoverClass}`}
       />
     </div>
   );

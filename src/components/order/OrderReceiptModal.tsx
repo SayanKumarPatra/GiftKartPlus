@@ -232,7 +232,7 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
                       <img
                         src={item.imageSnapshot}
                         alt={item.productNameSnapshot}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full max-h-full max-w-full object-contain object-center"
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center text-[#A78BFA]">
@@ -279,14 +279,6 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
                 {formatInr(order.subtotalInr)}
               </span>
             </div>
-            {order.giftWrapChargeInr > 0 && (
-              <div className="flex items-center justify-between text-[#5A4473]">
-                <span>Gift Wrap</span>
-                <span className="font-semibold text-[#2B0B4E]">
-                  {formatInr(order.giftWrapChargeInr)}
-                </span>
-              </div>
-            )}
             <div className="flex items-center justify-between text-[#5A4473]">
               <span>Delivery Charge</span>
               <span className="font-semibold text-[#2B0B4E]">

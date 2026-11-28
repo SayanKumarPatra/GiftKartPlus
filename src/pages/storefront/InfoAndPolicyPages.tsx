@@ -25,11 +25,12 @@ import {
   cleanWhatsAppDigits,
   normalizeOfficialContactFields,
 } from '../../utils/storefrontHelpers';
+import { OFFICIAL_STORE_DELIVERY_ADDRESS } from '../../config/seedData';
 import { MobileHelpSupportPage } from '../../components/storefront/MobileHelpSupportPage';
 
 export function AboutUsPage() {
   const { data: settings } = useStoreSettings();
-  const { language, t, translatePlace } = useLanguage();
+  const { language, t } = useLanguage();
   const isBn = language === 'bn';
   const resolvedContact = normalizeOfficialContactFields({
     supportEmail: settings?.supportEmail,
@@ -37,14 +38,7 @@ export function AboutUsPage() {
     contactVersion: settings?.contactVersion,
     socialLinks: settings?.socialLinks,
   });
-  const activeZonesText =
-    settings?.deliveryZones
-      .filter((z) => z.isActive)
-      .map((z) => translatePlace(z.name))
-      .join(', ') ||
-    (isBn
-      ? 'জলচক, পশ্চিম মেদিনীপুর, পশ্চিমবঙ্গ'
-      : 'Jalchak, Paschim Medinipur, West Bengal');
+  const activeZonesText = OFFICIAL_STORE_DELIVERY_ADDRESS;
 
   return (
     <div className="mx-auto max-w-4xl pb-2">
@@ -69,7 +63,7 @@ export function AboutUsPage() {
               'GiftKart — Har Gift Mein Ek Kahani.'}
         </h1>
         <p className="mt-1.5 text-[12.5px] text-neutral-500">
-          {t('storeLocationText')}
+          {OFFICIAL_STORE_DELIVERY_ADDRESS}
           <span className="mx-1.5" aria-hidden="true">
             ·
           </span>
@@ -80,8 +74,7 @@ export function AboutUsPage() {
         <p className="mt-3 max-w-3xl text-[13.5px] leading-relaxed text-neutral-700 sm:text-[14.5px]">
           {isBn
             ? 'পশ্চিমবঙ্গের জলচক-এ প্রতিষ্ঠিত GiftKart একটি বিশ্বস্ত অনলাইন গিফট স্টোর, যেখানে পার্সোনালাইজড ফটো ফ্রেম, কফি মগ, কাস্টম টি-শার্ট প্রিন্ট, হোম ডেকোর, হাতে তৈরি উপহার, কী-চেইন, এলইডি লাইটিং, পিভিসি কার্ড এবং বিশেষ গিফট ব্যাগ ও বক্স পাওয়া যায়। প্রতিটি অর্ডার নিখুঁত প্রিন্ট, নিরাপদ প্যাকেজিং এবং স্বচ্ছ মূল্যে প্রস্তুত করা হয়।'
-            : settings?.pageContent?.aboutStory ||
-              'Founded in Jalchak, West Bengal, GiftKart is a dedicated gifting storefront offering personalized photo frames, coffee mugs, custom T-shirt prints, home decor, hand made gifts, keychains, LED lighting, PVC cards, and curated gift bags & boxes. Every order is prepared with attention to print clarity, safe packaging, and transparent INR pricing.'}
+            : 'Founded in Jalchak, West Bengal, India, GiftKart is a dedicated gifting storefront offering personalized photo frames, coffee mugs, custom T-shirt prints, home decor, hand made gifts, keychains, LED lighting, PVC cards, and curated gift bags & boxes. Every order is prepared with attention to print clarity, safe packaging, and transparent INR pricing.'}
         </p>
       </header>
 
@@ -162,7 +155,7 @@ export function AboutUsPage() {
               {isBn ? 'নিবন্ধিত এলাকা' : 'Registered Area'}
             </dt>
             <dd className="mt-0.5 text-[13px] font-medium text-neutral-900">
-              {t('storeLocationText')}
+              {OFFICIAL_STORE_DELIVERY_ADDRESS}
             </dd>
           </div>
           <div>
@@ -383,7 +376,7 @@ export function ContactUsPage() {
                   </a>
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5 text-[#FF4D8D]" />
-                    {t('storeLocationText')}
+                    {OFFICIAL_STORE_DELIVERY_ADDRESS}
                   </span>
                 </div>
               </div>
@@ -570,15 +563,11 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Where does GiftKart currently deliver?',
-    a: 'GiftKart currently delivers across Jalchak, Paschim Medinipur, West Bengal and nearby serviceable PIN codes. Standard delivery usually takes 1–3 business days after dispatch.',
+    a: 'GiftKart currently delivers across Jalchak, West Bengal, India and nearby serviceable PIN codes. Standard delivery usually takes 1–3 business days after dispatch.',
   },
   {
     q: 'How do I check my order status?',
     a: 'Open the My Orders section from the bottom navigation or My Account menu to see your complete order history, live progress stages (Order Placed, Processing, Shipped, Delivered), and full order details.',
-  },
-  {
-    q: 'How does Gift Wrapping work?',
-    a: 'You can add curated Gift Wrapping and a personal message note on eligible items or in your cart with transparent INR pricing before placing your order.',
   },
 ];
 
@@ -597,15 +586,11 @@ const FAQ_ITEMS_BN = [
   },
   {
     q: 'GiftKart বর্তমানে কোথায় কোথায় ডেলিভারি দেয়?',
-    a: 'GiftKart বর্তমানে পশ্চিম মেদিনীপুরের জলচক এবং পার্শ্ববর্তী পিন কোডগুলোতে ডেলিভারি দেয়। ডিসপ্যাচের পর সাধারণত ১–৩ কার্যদিবসের মধ্যে ডেলিভারি সম্পন্ন হয়।',
+    a: 'GiftKart বর্তমানে Jalchak, West Bengal, India এবং পার্শ্ববর্তী পিন কোডগুলোতে ডেলিভারি দেয়। ডিসপ্যাচের পর সাধারণত ১–৩ কার্যদিবসের মধ্যে ডেলিভারি সম্পন্ন হয়।',
   },
   {
     q: 'আমার অর্ডারের স্ট্যাটাস কীভাবে দেখব?',
     a: 'নিচের নেভিগেশন বার বা আমার অ্যাকাউন্ট মেনু থেকে "আমার অর্ডার" বিভাগে গিয়ে আপনার সম্পূর্ণ অর্ডার ইতিহাস এবং লাইভ স্ট্যাটাস (অর্ডার গৃহীত, প্রসেসিং, শিপড, ডেলিভার্ড) দেখতে পারবেন।',
-  },
-  {
-    q: 'গিফট র‍্যাপিং কীভাবে কাজ করে?',
-    a: 'অর্ডার করার আগে প্রোডাক্ট পেজ বা কার্ট থেকে সহজেই প্রিমিয়াম গিফট র‍্যাপিং এবং ব্যক্তিগত বার্তা যুক্ত করতে পারবেন, যার মূল্য স্পষ্টভাবে টাকা (₹)-তে দেখানো হয়।',
   },
 ];
 
@@ -773,7 +758,7 @@ const POLICY_CONTENT: Record<PolicyType, PolicyDocument> = {
         bullets: [
           'Cash on Delivery (COD) Orders: Approved refunds are transferred directly to your verified bank account or UPI ID after confirmation.',
           'Prepaid Orders (when enabled): Approved refunds are credited back to the original payment source.',
-          'Gift wrapping charges or delivery fees (if any) are non-refundable unless the return is due to an error on GiftKart’s part.',
+          'Delivery fees (if any) are non-refundable unless the return is due to an error on GiftKart’s part.',
         ],
       },
       {
@@ -808,7 +793,7 @@ const POLICY_CONTENT: Record<PolicyType, PolicyDocument> = {
       },
       {
         heading: '2. Strictly No Cancellation After Processing Begins',
-        body: 'As soon as our team moves your order status from "Order Placed" to "Processing" (or later stages such as "Shipped" and "Delivered"), the order cannot be cancelled under any circumstances. This applies to both standard and customized gifts because inventory allocation, printing, and gift-wrapping preparation begin immediately.',
+        body: 'As soon as our team moves your order status from "Order Placed" to "Processing" (or later stages such as "Shipped" and "Delivered"), the order cannot be cancelled under any circumstances. This applies to both standard and customized gifts because inventory allocation, printing, and packaging preparation begin immediately.',
       },
       {
         heading: '3. How to Cancel an Eligible Order',
@@ -827,20 +812,20 @@ const POLICY_CONTENT: Record<PolicyType, PolicyDocument> = {
 
   shipping: {
     title: 'Shipping & Delivery Policy',
-    subtitle: 'Dispatch timelines, local Jalchak coverage, and safe packaging.',
+    subtitle: 'Dispatch timelines, Jalchak, West Bengal, India coverage, and safe packaging.',
     lastUpdated: 'November 2026',
     highlights: [
       {
         tone: 'info',
         title: 'Serviceable Area & Transparent INR Pricing',
         detail:
-          'Active local delivery across Jalchak, Paschim Medinipur, West Bengal and serviceable PIN codes with clear delivery timelines.',
+          'Active local delivery across Jalchak, West Bengal, India and serviceable PIN codes with clear delivery timelines.',
       },
     ],
     sections: [
       {
         heading: '1. Serviceable Delivery Locations',
-        body: 'GiftKart currently delivers across Jalchak, Paschim Medinipur, West Bengal, and nearby serviceable PIN codes. Please enter an accurate house/street address, landmark, and 6-digit PIN code during checkout to ensure timely delivery.',
+        body: 'GiftKart currently delivers across Jalchak, West Bengal, India, and nearby serviceable PIN codes. Please enter an accurate house/street address, landmark, and 6-digit PIN code during checkout to ensure timely delivery.',
       },
       {
         heading: '2. Order Processing & Crafting Time',
@@ -1048,13 +1033,13 @@ const POLICY_CONTENT_BN: Record<PolicyType, PolicyDocument> = {
         tone: 'info',
         title: 'সেবা এলাকা ও স্বচ্ছ মূল্য',
         detail:
-          'জলচক, পশ্চিম মেদিনীপুর, পশ্চিমবঙ্গ এবং পার্শ্ববর্তী পিন কোডগুলোতে নির্ভরযোগ্য স্থানীয় ডেলিভারি।',
+          'Jalchak, West Bengal, India এবং পার্শ্ববর্তী পিন কোডগুলোতে নির্ভরযোগ্য স্থানীয় ডেলিভারি।',
       },
     ],
     sections: [
       {
         heading: '১. ডেলিভারি এলাকা',
-        body: 'GiftKart বর্তমানে জলচক, পশ্চিম মেদিনীপুর, পশ্চিমবঙ্গ এবং নিকটবর্তী পিন কোডগুলোতে ডেলিভারি প্রদান করে। দ্রুত ডেলিভারির জন্য সঠিক ঠিকানা, ল্যান্ডমার্ক ও ৬-অঙ্কের পিন কোড লিখুন।',
+        body: 'GiftKart বর্তমানে Jalchak, West Bengal, India এবং নিকটবর্তী পিন কোডগুলোতে ডেলিভারি প্রদান করে। দ্রুত ডেলিভারির জন্য সঠিক ঠিকানা, ল্যান্ডমার্ক ও ৬-অঙ্কের পিন কোড লিখুন।',
       },
       {
         heading: '২. প্রসেসিং ও প্রস্তুতির সময়',

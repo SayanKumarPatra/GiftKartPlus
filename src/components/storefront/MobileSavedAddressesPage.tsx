@@ -30,6 +30,7 @@ import {
   validateIndianPincode,
   validateRequired,
 } from '../../utils/validation';
+import { canNavigateBackInApp } from '../../utils/storefrontHelpers';
 
 type AddressTypeOption = 'Home' | 'Work' | 'Other';
 
@@ -230,7 +231,11 @@ export function MobileSavedAddressesPage() {
       setSearchParams(next, { replace: true });
     }
     if (addresses.length === 0) {
-      navigate(-1);
+      if (canNavigateBackInApp()) {
+        navigate(-1);
+      } else {
+        navigate('/account');
+      }
       return;
     }
     setEditingAddress(null);
@@ -856,7 +861,13 @@ export function MobileSavedAddressesPage() {
       <div className="mb-3 flex items-center gap-2">
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() => {
+            if (canNavigateBackInApp()) {
+              navigate(-1);
+            } else {
+              navigate('/account');
+            }
+          }}
           aria-label="Go back"
           className="flex h-8 w-8 items-center justify-center rounded-full text-[#3B0764] transition-colors active:bg-[#EBD8FF]/70"
         >

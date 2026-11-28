@@ -38,6 +38,7 @@ import {
 import { services } from '../../services/registry';
 import { ProductImage } from '../ui/ProductImage';
 import { formatInr } from '../../utils/format';
+import { canNavigateBackInApp } from '../../utils/storefrontHelpers';
 
 function getCategoryTagIcon(categoryName?: string): LucideIcon {
   if (!categoryName) return Tag;
@@ -178,7 +179,7 @@ export function MobileCartPage() {
   }, [items, productById, couponDiscount, subtotalInr, giftWrapChargeInr]);
 
   function handleBack() {
-    if (window.history.length > 1) {
+    if (canNavigateBackInApp()) {
       navigate(-1);
     } else {
       navigate('/');
@@ -641,16 +642,6 @@ export function MobileCartPage() {
               </div>
             )}
 
-            {giftWrap.enabled && giftWrapChargeInr > 0 && (
-              <div className="flex items-center justify-between gap-2">
-                <dt className="text-[14px] font-medium text-[#5A4575]">
-                  {t('giftWrapCharge')}
-                </dt>
-                <dd className="text-[14.5px] font-bold tabular-nums text-[#2B0B4E]">
-                  + {formatInr(giftWrapChargeInr)}
-                </dd>
-              </div>
-            )}
           </dl>
 
           {/* Divider */}

@@ -29,7 +29,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import {
   useCoupons,
-  useGiftWrapConfig,
   useProducts,
   useSavedAddresses,
   useStoreSettings,
@@ -67,17 +66,11 @@ function normalizePhoneDigits(raw?: string): string {
 export function CartPage() {
   const {
     items,
-    giftWrap,
     subtotalInr,
-    giftWrapChargeInr,
     updateQuantity,
     removeItem,
-    setGiftWrapEnabled,
-    selectGiftWrapStyle,
-    updateGiftWrapDetails,
   } = useCart();
   const { language, t, localizeEntity, translateVariant } = useLanguage();
-  const { data: giftWrapConfig } = useGiftWrapConfig();
   const { data: products } = useProducts();
   const { data: coupons } = useCoupons();
 
@@ -89,7 +82,6 @@ export function CartPage() {
     message: string;
   } | null>(null);
 
-  const activeStyles = giftWrapConfig?.styles.filter((s) => s.isActive) ?? [];
   const activeCoupons = useMemo(
     () => coupons.filter((c) => c.isActive),
     [coupons]
@@ -111,14 +103,14 @@ export function CartPage() {
       totalMrp += mrp * item.quantity;
     }
     const productSavings = Math.max(0, totalMrp - subtotalInr);
-    const totalPayable = Math.max(0, subtotalInr + giftWrapChargeInr - couponDiscount);
+    const totalPayable = Math.max(0, subtotalInr - couponDiscount);
     return {
       totalMrp,
       productSavings,
       totalSavings: productSavings + couponDiscount,
       totalPayable,
     };
-  }, [items, productById, subtotalInr, giftWrapChargeInr, couponDiscount]);
+  }, [items, productById, subtotalInr, couponDiscount]);
 
   async function applyCouponCode(codeToApply: string) {
     const trimmed = codeToApply.trim().toUpperCase();
@@ -192,7 +184,7 @@ export function CartPage() {
             </div>
 
             <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
-              {/* Left: Cart Items + Boutique Gift Wrapping */}
+              {/* Left: Cart Items */}
               <div className="space-y-5 lg:col-span-7">
                 <div className="divide-y divide-[#EFE3FF] rounded-2xl border border-[#EFE3FF] bg-white p-5 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.12)]">
                   {items.map((item) => {
@@ -299,118 +291,6 @@ export function CartPage() {
                     );
                   })}
                 </div>
-
-                {/* Configurable Boutique Gift Wrapping */}
-                {giftWrapConfig?.globallyEnabled && (
-                  <div className="space-y-4 rounded-2xl border border-[#EFE3FF] bg-white p-5 shadow-[0_8px_24px_-14px_rgba(106,17,203,0.1)]">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF0F6] text-[#FF4D8D]">
-                          <Gift className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <h2 className="text-sm font-extrabold text-[#1E1035]">
-                            {t('giftWrapAvailable')}
-                          </h2>
-                          <p className="text-xs text-[#685782]">
-                            {t('giftWrapAvailableDesc')}
-                          </p>
-                        </div>
-                      </div>
-                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#DFD2F2] bg-[#FAF6FF] px-3.5 py-2 text-xs font-bold text-[#6A11CB]">
-                        <input
-                          type="checkbox"
-                          checked={giftWrap.enabled}
-                          onChange={(e) =>
-                            setGiftWrapEnabled(e.target.checked, activeStyles[0])
-                          }
-                          className="h-4 w-4 accent-[#6A11CB]"
-                        />
-                        <span>{giftWrap.enabled ? t('giftWrap') : t('addGiftWrap')}</span>
-                      </label>
-                    </div>
-
-                    {giftWrap.enabled && (
-                      <div className="space-y-4 border-t border-[#EFE3FF] pt-4">
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {activeStyles.map((style) => {
-                            const active = giftWrap.styleId === style.id;
-                            return (
-                              <button
-                                key={style.id}
-                                type="button"
-                                onClick={() => selectGiftWrapStyle(style)}
-                                className={`cursor-pointer rounded-xl border p-3.5 text-left transition-all ${
-                                  active
-                                    ? 'border-[#6A11CB] bg-[#FAF6FF] shadow-xs'
-                                    : 'border-[#EFE3FF] bg-white hover:border-[#6A11CB]/40'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="flex items-center gap-2 text-xs font-bold text-[#2B0B4E]">
-                                    <span
-                                      className="h-3 w-3 rounded-full"
-                                      style={{ backgroundColor: style.accentColorHex }}
-                                    />
-                                    {style.name}
-                                  </span>
-                                  <span className="font-mono text-xs font-extrabold tabular-nums text-[#6A11CB]">
-                                    +{formatInr(style.chargeInr)}
-                                  </span>
-                                </div>
-                                <p className="mt-1.5 text-[11px] leading-snug text-[#594A6B]">
-                                  {style.description}
-                                </p>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        <div className="grid gap-3.5 sm:grid-cols-2">
-                          <div>
-                            <label className="block text-xs font-bold text-[#2B0B4E]">
-                              {language === 'bn' ? 'প্রাপকের নাম' : 'Recipient Name'}
-                            </label>
-                            <input
-                              type="text"
-                              value={giftWrap.recipientName}
-                              onChange={(e) =>
-                                updateGiftWrapDetails({ recipientName: e.target.value })
-                              }
-                              placeholder={
-                                language === 'bn'
-                                  ? 'এই উপহারটি কে পাচ্ছেন?'
-                                  : 'Who is receiving this gift?'
-                              }
-                              className="mt-1 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 py-2 text-sm text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <div className="flex items-center justify-between">
-                              <label className="block text-xs font-bold text-[#2B0B4E]">
-                                {language === 'bn' ? 'গিফট মেসেজ কার্ড' : 'Gift Message Card'}
-                              </label>
-                              <span className="font-mono text-[10px] text-[#7A6894]">
-                                {giftWrap.giftMessage.length}/
-                                {giftWrapConfig.maxMessageLength}
-                              </span>
-                            </div>
-                            <textarea
-                              rows={2}
-                              maxLength={giftWrapConfig.maxMessageLength}
-                              value={giftWrap.giftMessage}
-                              onChange={(e) =>
-                                updateGiftWrapDetails({ giftMessage: e.target.value })
-                              }
-                              placeholder={t('giftNotePlaceholder')}
-                              className="mt-1 w-full rounded-xl border border-[#DFD2F2] bg-white px-3.5 py-2 text-sm text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* Right: Order Summary & Coupons */}
@@ -502,14 +382,6 @@ export function CartPage() {
                       {formatInr(subtotalInr)}
                     </span>
                   </div>
-                  {giftWrap.enabled && (
-                    <div className="flex justify-between text-[#594A6B]">
-                      <span>{t('giftWrapCharge')} ({giftWrap.styleNameSnapshot})</span>
-                      <span className="font-mono font-bold tabular-nums text-[#2B0B4E]">
-                        {formatInr(giftWrapChargeInr)}
-                      </span>
-                    </div>
-                  )}
                   {couponDiscount > 0 && (
                     <div className="flex justify-between text-emerald-700">
                       <span>{t('couponDiscount')} ({appliedCouponCode})</span>
@@ -1347,25 +1219,6 @@ export function CheckoutPage() {
                           </div>
                         ))}
                       </div>
-
-                      {giftWrap.enabled && (
-                        <div className="mt-4 rounded-xl border border-[#EFE3FF] bg-[#FFF5FA] p-3.5 text-xs">
-                          <p className="font-bold text-[#6A11CB]">
-                            {t('giftWrapAvailable')} · {giftWrap.styleNameSnapshot} (
-                            {formatInr(giftWrapChargeInr)})
-                          </p>
-                          {giftWrap.recipientName && (
-                            <p className="mt-0.5 text-[#2B0B4E]">
-                              {language === 'bn' ? 'প্রাপক' : 'Recipient'}: {giftWrap.recipientName}
-                            </p>
-                          )}
-                          {giftWrap.giftMessage && (
-                            <p className="mt-0.5 italic text-[#594A6B]">
-                              &ldquo;{giftWrap.giftMessage}&rdquo;
-                            </p>
-                          )}
-                        </div>
-                      )}
                     </div>
 
                     {/* Apply Coupon Card */}
@@ -1591,14 +1444,6 @@ export function CheckoutPage() {
                       {formatInr(subtotalInr)}
                     </span>
                   </div>
-                  {giftWrap.enabled && (
-                    <div className="flex justify-between text-[#594A6B]">
-                      <span>{t('giftWrapCharge')}</span>
-                      <span className="font-mono font-bold tabular-nums text-[#1E1035]">
-                        {formatInr(giftWrapChargeInr)}
-                      </span>
-                    </div>
-                  )}
                   {couponDiscount > 0 && (
                     <div className="flex justify-between text-emerald-700">
                       <span>{t('couponDiscount')} ({appliedCouponCode})</span>

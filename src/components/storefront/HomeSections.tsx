@@ -54,6 +54,7 @@ export function HeroSliderSection() {
                 src={activeSlide.imageUrl}
                 alt={`${activeSlide.titlePrefix} ${activeSlide.titleHighlight}`.trim()}
                 aspectClass="h-full w-full"
+                fit="cover"
                 eager
                 priority
               />

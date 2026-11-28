@@ -1,4 +1,12 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase';
 import { services } from '../services/registry';
 import { storeEvents } from '../storage/storeEvents';
 import type {
@@ -46,42 +54,133 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [adminSession, setAdminSession] = useState<AdminDemoSession | null>(null);
   const [isAdminPasscodeConfigured, setIsAdminPasscodeConfigured] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const hydrateSeqRef = useRef(0);
 
   const hydrate = useCallback(async () => {
+    const seq = ++hydrateSeqRef.current;
     try {
-      const [cust, admin, configured] = await Promise.all([
+      const [custResult, adminResult, configuredResult] = await Promise.allSettled([
         services.customerAuth.getCurrentAccount(),
         services.adminAuth.getSession(),
         services.adminAuth.isPasscodeConfigured(),
       ]);
-      setCustomerAccount(cust);
-      setAdminSession(admin);
-      setIsAdminPasscodeConfigured(configured);
+
+      // Ignore stale responses if a newer auth update already happened
+      if (seq !== hydrateSeqRef.current) return;
+
+      if (custResult.status === 'fulfilled') {
+        setCustomerAccount(custResult.value);
+      }
+      if (adminResult.status === 'fulfilled') {
+        setAdminSession(adminResult.value);
+      }
+      if (configuredResult.status === 'fulfilled') {
+        setIsAdminPasscodeConfigured(configuredResult.value);
+      }
     } finally {
-      setIsAuthReady(true);
+      if (seq === hydrateSeqRef.current) {
+        setIsAuthReady(true);
+      }
     }
   }, []);
 
   useEffect(() => {
     void hydrate();
-    return storeEvents.subscribe((topic) => {
+
+    // Subscribe to internal store event bus
+    const unsubscribeEvents = storeEvents.subscribe((topic) => {
       if (topic === 'auth' || topic === 'customers' || topic === 'all') {
         void hydrate();
       }
     });
+
+    // Subscribe directly to Supabase Auth session lifecycle events so login state
+    // survives reloads, token refreshes, OAuth callbacks, Back/Forward, and multi-tab sync
+    let unsubscribeSupabaseAuth: (() => void) | undefined;
+    if (isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseClient();
+        const {
+          data: { subscription },
+        } = client.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_OUT') {
+            hydrateSeqRef.current += 1;
+            setCustomerAccount(null);
+            setAdminSession(null);
+            setIsAuthReady(true);
+            return;
+          }
+
+          if (
+            event === 'INITIAL_SESSION' ||
+            event === 'SIGNED_IN' ||
+            event === 'TOKEN_REFRESHED' ||
+            event === 'USER_UPDATED'
+          ) {
+            if (!session) {
+              hydrateSeqRef.current += 1;
+              setCustomerAccount(null);
+              setAdminSession(null);
+              setIsAuthReady(true);
+              return;
+            }
+            // Defer Supabase DB queries outside the auth lock callback to prevent deadlocks
+            window.setTimeout(() => {
+              void hydrate();
+            }, 0);
+          }
+        });
+        unsubscribeSupabaseAuth = () => subscription.unsubscribe();
+      } catch {
+        // Ignore if client cannot initialize
+      }
+    }
+
+    // Re-sync session cleanly when returning via browser Back/Forward cache (bfcache) or tab focus
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        void hydrate();
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void hydrate();
+      }
+    };
+    const handleStorageSync = (event: StorageEvent) => {
+      if (event.key === 'giftkart-supabase-auth' || event.key === null) {
+        void hydrate();
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('storage', handleStorageSync);
+
+    return () => {
+      unsubscribeEvents();
+      unsubscribeSupabaseAuth?.();
+      window.removeEventListener('pageshow', handlePageShow);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('storage', handleStorageSync);
+    };
   }, [hydrate]);
 
   const signUpCustomer = useCallback(async (input: CustomerSignUpInput) => {
     const result = await services.customerAuth.signUp(input);
     if (result.account) {
+      hydrateSeqRef.current += 1;
       setCustomerAccount(result.account);
+      setIsAuthReady(true);
     }
     return result;
   }, []);
 
   const signInCustomer = useCallback(async (input: CustomerPasswordSignInInput) => {
     const account = await services.customerAuth.signInWithPassword(input);
+    hydrateSeqRef.current += 1;
     setCustomerAccount(account);
+    setIsAuthReady(true);
     return account;
   }, []);
 
@@ -96,6 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateCustomerProfile = useCallback(
     async (input: CustomerProfileUpdateInput) => {
       const updated = await services.customerAuth.updateProfile(input);
+      hydrateSeqRef.current += 1;
       setCustomerAccount(updated);
       return updated;
     },
@@ -104,18 +204,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInCustomerDemo = useCallback(async (input: CustomerSignInInput) => {
     const account = await services.customerAuth.signInDemo(input);
+    hydrateSeqRef.current += 1;
     setCustomerAccount(account);
     return account;
   }, []);
 
   const signOutCustomer = useCallback(async () => {
     await services.customerAuth.signOut();
+    hydrateSeqRef.current += 1;
     setCustomerAccount(null);
   }, []);
 
   const setupAdminPasscode = useCallback(
     async (input: AdminSignInInput & { displayName?: string }) => {
       const session = await services.adminAuth.setupPasscode(input);
+      hydrateSeqRef.current += 1;
       setAdminSession(session);
       setIsAdminPasscodeConfigured(true);
       return session;
@@ -125,6 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInAdminDemo = useCallback(async (input: AdminSignInInput) => {
     const session = await services.adminAuth.signIn(input);
+    hydrateSeqRef.current += 1;
     setAdminSession(session);
     return session;
   }, []);
@@ -138,12 +242,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateAdminProfile = useCallback(async (displayName: string) => {
     const updated = await services.adminAuth.updateProfile(displayName);
+    hydrateSeqRef.current += 1;
     setAdminSession(updated);
     return updated;
   }, []);
 
   const signOutAdmin = useCallback(async () => {
     await services.adminAuth.signOut();
+    hydrateSeqRef.current += 1;
     setAdminSession(null);
   }, []);
 

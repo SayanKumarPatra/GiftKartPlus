@@ -657,3 +657,18 @@ export function saveCustomerStatusMap(
     // Ignore storage quota errors cleanly
   }
 }
+
+/**
+ * Checks whether React Router has at least one previous in-app history entry
+ * before calling navigate(-1), preventing Back buttons from exiting the website
+ * when a page is opened directly in a fresh browser tab.
+ */
+export function canNavigateBackInApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  const state = window.history.state as { idx?: number } | null;
+  if (typeof state?.idx === 'number') {
+    return state.idx > 0;
+  }
+  return window.history.length > 2;
+}
+

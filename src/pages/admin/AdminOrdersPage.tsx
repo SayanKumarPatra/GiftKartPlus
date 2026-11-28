@@ -685,7 +685,7 @@ export function AdminOrdersPage() {
                       type="text"
                       value={shippingForm.packingNote || ''}
                       onChange={(e) => updateShippingField('packingNote', e.target.value)}
-                      placeholder="e.g. Gift wrapped with protective box"
+                      placeholder="e.g. Packed safely with protective box"
                       className="h-10 w-full rounded-xl border border-[#EBD8FF] bg-white px-3 text-xs font-medium text-[#2B0B4E] focus:border-[#6A11CB] focus:outline-none"
                     />
                   </div>
@@ -1236,7 +1236,7 @@ export function AdminOrdersPage() {
                           <img
                             src={item.imageSnapshot}
                             alt={item.productNameSnapshot}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full max-h-full max-w-full object-contain object-center"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-[#6A11CB]">
@@ -1274,25 +1274,6 @@ export function AdminOrdersPage() {
                 ))}
               </div>
 
-              {selectedOrder.giftWrap?.enabled && (
-                <div className="mt-2.5 rounded-2xl border border-[#EBD8FF] bg-[#F8F2FF] px-3.5 py-2.5 text-xs">
-                  <p className="font-extrabold text-[#6A11CB]">
-                    Gift Wrap: {selectedOrder.giftWrap.styleNameSnapshot || 'Signature Wrap'} (
-                    {formatInr(selectedOrder.giftWrapChargeInr)})
-                  </p>
-                  {selectedOrder.giftWrap.recipientName && (
-                    <p className="mt-0.5 text-[#3E2A56]">
-                      Recipient: <strong>{selectedOrder.giftWrap.recipientName}</strong>
-                    </p>
-                  )}
-                  {selectedOrder.giftWrap.giftMessage && (
-                    <p className="mt-0.5 italic text-[#6E5B85]">
-                      &ldquo;{selectedOrder.giftWrap.giftMessage}&rdquo;
-                    </p>
-                  )}
-                </div>
-              )}
-
               {/* Compact Pricing Breakdown */}
               <div className="mt-3 space-y-1.5 border-t border-[#F2E9FF] pt-3 text-xs">
                 <div className="flex justify-between text-[#6E5B85]">
@@ -1301,14 +1282,6 @@ export function AdminOrdersPage() {
                     {formatInr(selectedOrder.subtotalInr)}
                   </span>
                 </div>
-                {selectedOrder.giftWrapChargeInr > 0 && (
-                  <div className="flex justify-between text-[#6E5B85]">
-                    <span>Gift Wrap</span>
-                    <span className="font-bold tabular-nums text-[#2B0B4E]">
-                      {formatInr(selectedOrder.giftWrapChargeInr)}
-                    </span>
-                  </div>
-                )}
                 <div className="flex justify-between text-[#6E5B85]">
                   <span>Delivery Charge</span>
                   <span className="font-bold tabular-nums text-[#2B0B4E]">

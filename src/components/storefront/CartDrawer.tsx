@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Gift, Image as ImageIcon, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
+import { Image as ImageIcon, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { formatInr } from '../../utils/format';
@@ -10,10 +10,8 @@ export function CartDrawer() {
   const { language, t, localizeEntity, translateVariant } = useLanguage();
   const {
     items,
-    giftWrap,
     isCartDrawerOpen,
     subtotalInr,
-    giftWrapChargeInr,
     estimatedTotalInr,
     closeCartDrawer,
     updateQuantity,
@@ -95,7 +93,7 @@ export function CartDrawer() {
                       <ProductImage
                         src={item.image}
                         alt={item.productName}
-                        className="h-full w-full object-cover"
+                        aspectClass="h-full w-full"
                       />
                     </Link>
 
@@ -174,58 +172,6 @@ export function CartDrawer() {
                   </div>
                 </div>
               ))}
-
-              {/* Gift Wrapping Summary in Cart Drawer */}
-              <div className="rounded-2xl border border-[#EBD8FF] bg-gradient-to-br from-[#F8F2FF] to-[#FFF5FA] p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold text-[#6A11CB]">
-                    <Gift className="h-4 w-4 text-[#FF4D8D]" />
-                    <span>
-                      {language === 'bn' ? 'গিফট র‍্যাপিং সারসংক্ষেপ' : 'Gift Wrapping Summary'}
-                    </span>
-                  </div>
-                  <Link
-                    to="/cart"
-                    onClick={closeCartDrawer}
-                    className="text-xs font-semibold text-[#FF4D8D] hover:underline"
-                  >
-                    {language === 'bn' ? 'পরিবর্তন করুন' : 'Configure'}
-                  </Link>
-                </div>
-                {giftWrap.enabled ? (
-                  <div className="mt-2 space-y-1 text-xs text-[#5F4B78]">
-                    <p>
-                      {language === 'bn' ? 'স্টাইল' : 'Style'}:{' '}
-                      <span className="font-semibold text-[#2A0E4D]">
-                        {giftWrap.styleNameSnapshot || (language === 'bn' ? 'নির্বাচিত' : 'Selected')}
-                      </span>{' '}
-                      ·{' '}
-                      <span className="font-mono font-semibold tabular-nums text-[#6A11CB]">
-                        {formatInr(giftWrap.chargeInrSnapshot)}
-                      </span>
-                    </p>
-                    {giftWrap.recipientName && (
-                      <p>
-                        {language === 'bn' ? 'প্রাপক' : 'Recipient'}:{' '}
-                        <span className="font-medium text-[#2A0E4D]">
-                          {giftWrap.recipientName}
-                        </span>
-                      </p>
-                    )}
-                    {giftWrap.giftMessage && (
-                      <p className="line-clamp-2 italic text-[#4A3862]">
-                        &ldquo;{giftWrap.giftMessage}&rdquo;
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="mt-1.5 text-xs text-[#5F4B78]">
-                    {language === 'bn'
-                      ? 'এখনও যুক্ত করা হয়নি। কার্টে গিয়ে প্রিমিয়াম র‍্যাপিং, প্রাপকের নাম ও ব্যক্তিগত বার্তা যোগ করুন।'
-                      : 'Not enabled yet. Add boutique wrapping, recipient name & a personal note in Cart.'}
-                  </p>
-                )}
-              </div>
             </div>
           )}
         </div>
@@ -239,14 +185,6 @@ export function CartDrawer() {
                   {formatInr(subtotalInr)}
                 </span>
               </div>
-              {giftWrap.enabled && (
-                <div className="flex justify-between text-[#5F4B78]">
-                  <span>{t('giftWrapCharge')} ({giftWrap.styleNameSnapshot})</span>
-                  <span className="font-mono tabular-nums text-[#2A0E4D]">
-                    {formatInr(giftWrapChargeInr)}
-                  </span>
-                </div>
-              )}
               <div className="flex justify-between border-t border-[#EBD8FF] pt-2 text-base font-bold text-[#2A0E4D]">
                 <span>{t('total')}</span>
                 <span className="font-mono tabular-nums text-[#6A11CB]">

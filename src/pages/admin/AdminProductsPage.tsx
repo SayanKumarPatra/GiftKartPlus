@@ -524,7 +524,7 @@ export function AdminProductsPage() {
                         alt={product.name}
                         loading="lazy"
                         decoding="async"
-                        className="h-full w-full object-cover"
+                        className="h-full w-full max-h-full max-w-full object-contain object-center"
                       />
                     ) : (
                       <Package className="h-5 w-5 text-[#9B8AB4]" />
@@ -693,7 +693,7 @@ export function AdminProductsPage() {
                   <img
                     src={imgUrl}
                     alt={`Product photo ${idx + 1}`}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full max-h-full max-w-full object-contain object-center"
                   />
 
                   {/* Top-left badge: Main or #N */}

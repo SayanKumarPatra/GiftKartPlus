@@ -14,6 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import {
   buildStorefrontCategoryGroups,
+  canNavigateBackInApp,
   isAllGiftsCategory,
   resolveCategoryBySlug,
 } from '../../utils/storefrontHelpers';
@@ -95,7 +96,7 @@ export function ShopPage({
           <button
             type="button"
             onClick={() => {
-              if (window.history.length > 1) {
+              if (canNavigateBackInApp()) {
                 navigate(-1);
               } else {
                 navigate('/');
@@ -451,7 +452,7 @@ export function CategoryDetailPage() {
           <button
             type="button"
             onClick={() => {
-              if (window.history.length > 1) {
+              if (canNavigateBackInApp()) {
                 navigate(-1);
               } else {
                 navigate('/');
@@ -533,11 +534,19 @@ export function CategoryDetailPage() {
 
 export function WishlistPage() {
   const { wishlistIds } = useCart();
-  const { customerAccount } = useAuth();
+  const { customerAccount, isAuthReady } = useAuth();
   const { data: products } = useProducts();
   const { data: categories } = useCategories();
   const { t } = useLanguage();
   const catMap = new Map(categories.map((c) => [c.id, c.name]));
+
+  if (!isAuthReady) {
+    return (
+      <div className="mx-auto max-w-2xl py-6">
+        <div className="h-56 animate-pulse rounded-2xl border border-[#EFE3FF] bg-[#FAF5FF]" />
+      </div>
+    );
+  }
 
   if (!customerAccount) {
     return (

@@ -374,7 +374,7 @@ export const TRANSLATIONS = {
     reviewingAs: 'Reviewing as',
     howWasGiftExperience: 'How was your gift quality & experience?',
     yourFeedbackLabel: 'Your Feedback',
-    feedbackPlaceholder: 'Share what you loved about the print quality, packaging, gift wrap, or delivery...',
+    feedbackPlaceholder: 'Share what you loved about the print quality, packaging, or delivery...',
     addProductPhotosOptional: 'Add Product Photos (Optional)',
     realPhotosHelp: 'Real photos help other GiftKart shoppers',
     addPhotoBtn: 'Add Photo',
@@ -426,7 +426,7 @@ export const TRANSLATIONS = {
     defaultDeliveryCity: 'Default Delivery City',
     activeBadge: 'Active',
     whatsappOrderAlerts: 'WhatsApp Order Alerts',
-    whatsappOrderAlertsDesc: 'Receive dispatch & gift wrap updates',
+    whatsappOrderAlertsDesc: 'Receive dispatch & delivery updates',
     notificationsSubtitle: 'Control order tracking alerts and festive gift offers.',
     orderDeliveryUpdates: 'Order & Delivery Updates',
     orderDeliveryUpdatesDesc: 'Processing, shipped, and delivered alerts',
@@ -474,8 +474,8 @@ export const TRANSLATIONS = {
     // Footer
     madeInIndia: 'Made in India',
     madeInBengal: 'Made with ♥ in Bengal',
-    storeLocationText: 'Jalchak, Paschim Medinipur, West Bengal',
-    footerDefaultDesc: 'Thoughtful personalized gifts crafted with care in Jalchak, West Bengal — custom mugs, photo frames, T-shirts & festive hampers.',
+    storeLocationText: 'Jalchak, West Bengal, India',
+    footerDefaultDesc: 'Thoughtful personalized gifts crafted with care in Jalchak, West Bengal, India — custom mugs, photo frames, T-shirts & festive hampers.',
     footerDefaultCopyright: '© GiftKart. All rights reserved.',
 
     // Order Receipt
@@ -946,7 +946,7 @@ export const TRANSLATIONS = {
     // Footer
     madeInIndia: 'ভারতে তৈরি',
     madeInBengal: 'ভালোবাসায় বাংলায় তৈরি ♥',
-    storeLocationText: 'জলচক, পশ্চিম মেদিনীপুর, পশ্চিমবঙ্গ',
+    storeLocationText: 'Jalchak, West Bengal, India',
     footerDefaultDesc: 'জলচক, পশ্চিমবঙ্গে ভালোবাসা ও যত্নে তৈরি পার্সোনালাইজড উপহার — কাস্টম মগ, ফটো ফ্রেম, টি-শার্ট ও উৎসবের গিফট হ্যাম্পার।',
     footerDefaultCopyright: '© GiftKart। সর্বস্বত্ব সংরক্ষিত।',
 
@@ -1418,7 +1418,7 @@ export const TRANSLATIONS = {
     // Footer
     madeInIndia: 'भारत में निर्मित',
     madeInBengal: 'बंगाल में प्यार से निर्मित ♥',
-    storeLocationText: 'जलचक, पश्चिम मेदिनीपुर, पश्चिम बंगाल',
+    storeLocationText: 'Jalchak, West Bengal, India',
     footerDefaultDesc: 'जलचक, पश्चिम बंगाल में प्यार से तैयार पर्सनलाइज़्ड गिफ्ट्स — कस्टम मग, फोटो फ्रेम, टी-शर्ट और हैम्पर।',
     footerDefaultCopyright: '© GiftKart। सर्वाधिकार सुरक्षित।',
 

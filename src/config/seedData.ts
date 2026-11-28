@@ -197,6 +197,7 @@ export const OFFICIAL_SUPPORT_EMAIL = 'hello.giftkart@gmail.com';
 export const OFFICIAL_SUPPORT_PHONE = '+91 9239505791';
 export const OFFICIAL_WHATSAPP_DIGITS = '919239505791';
 export const OFFICIAL_WHATSAPP_URL = 'https://wa.me/919239505791';
+export const OFFICIAL_STORE_DELIVERY_ADDRESS = 'Jalchak, West Bengal, India';
 export const CONTACT_MIGRATION_VERSION = 2;
 
 export const SEED_STORE_SETTINGS: StoreSettings = {
@@ -209,7 +210,7 @@ export const SEED_STORE_SETTINGS: StoreSettings = {
   supportEmail: OFFICIAL_SUPPORT_EMAIL,
   supportPhone: OFFICIAL_SUPPORT_PHONE,
   contactVersion: CONTACT_MIGRATION_VERSION,
-  serviceCitiesSummary: 'Jalchak, West Bengal',
+  serviceCitiesSummary: OFFICIAL_STORE_DELIVERY_ADDRESS,
   deliveryZones: [
     {
       id: 'zone-jalchak',
@@ -224,15 +225,15 @@ export const SEED_STORE_SETTINGS: StoreSettings = {
   banner: {
     enabled: true,
     headline: 'Har Gift Mein Ek Kahani.',
-    subheadline: 'Personalized gifts crafted with love for Jalchak.',
+    subheadline: 'Personalized gifts crafted with love for Jalchak, West Bengal, India.',
     ctaLabel: 'Shop Now',
     ctaHref: '/shop',
   },
   heroSlides: [],
   announcement: {
     enabled: true,
-    desktopText: 'Delivery in Jalchak • Custom Photo & Name Gifts Available',
-    mobileText: 'Serving Jalchak • Personalized Gifts',
+    desktopText: 'Delivery in Jalchak, West Bengal, India • Custom Photo & Name Gifts Available',
+    mobileText: 'Serving Jalchak, West Bengal, India • Personalized Gifts',
     showSupportLink: true,
     showTrackOrderLink: true,
   },
@@ -240,16 +241,16 @@ export const SEED_STORE_SETTINGS: StoreSettings = {
     enabled: true,
     heading: 'Stay Connected with GiftKart',
     description:
-      'Get new personalized gift ideas, seasonal collections, and launch announcements for Jalchak.',
+      'Get new personalized gift ideas, seasonal collections, and launch announcements for Jalchak, West Bengal, India.',
     buttonLabel: 'Subscribe',
   },
   pageContent: {
     aboutHeadline: 'Har Gift Mein Ek Kahani.',
     aboutStory:
-      'GiftKart is an online personalized gift and accessories storefront crafted for Jalchak, West Bengal. Every mug, T-shirt print, illuminated photo frame, and boutique gift hamper is prepared with attention to personal memories.',
+      'GiftKart is an online personalized gift and accessories storefront crafted for Jalchak, West Bengal, India. Every mug, T-shirt print, illuminated photo frame, and curated gift box is prepared with attention to personal memories.',
     customizationHeadline: 'How GiftKart Customization Works',
     customizationNote:
-      'Select your preferred product variant, add your custom name, date, or dedication note, and attach a clear photo preview. Optional boutique gift wrapping and personal message cards can be configured directly in your Gift Bag.',
+      'Select your preferred product variant, add your custom name, date, or dedication note, and attach a clear photo preview before placing your order.',
   },
   socialLinks: {
     instagram: 'https://www.instagram.com/giftkart.online',

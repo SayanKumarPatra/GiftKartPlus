@@ -118,7 +118,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                           <ProductImage
                             src={product.images[0]}
                             alt={productName}
-                            className="h-full w-full object-cover"
+                            aspectClass="h-full w-full"
                           />
                         </div>
                         <div className="min-w-0">

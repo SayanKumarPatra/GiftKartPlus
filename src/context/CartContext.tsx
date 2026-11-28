@@ -75,9 +75,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     readStorage<CartItem[]>(STORAGE_KEYS.CART_ITEMS, [])
   );
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
-  const [giftWrap, setGiftWrap] = useState<GiftWrapSelection>(() =>
-    readStorage<GiftWrapSelection>(STORAGE_KEYS.CART_GIFT_WRAP, DEFAULT_GIFT_WRAP)
-  );
+  const [giftWrap, setGiftWrap] = useState<GiftWrapSelection>(DEFAULT_GIFT_WRAP);
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
 
   const hydratedRemoteCartForRef = useRef<string | null>(null);
@@ -297,37 +295,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [wishlistIds, wishlistStorageKey]
   );
 
-  const setGiftWrapEnabled = useCallback((enabled: boolean, defaultStyle?: GiftWrapStyle) => {
-    setGiftWrap((prev) => {
-      if (!enabled) {
-        return { ...prev, enabled: false };
-      }
-      if (!prev.styleId && defaultStyle) {
-        return {
-          ...prev,
-          enabled: true,
-          styleId: defaultStyle.id,
-          styleNameSnapshot: defaultStyle.name,
-          chargeInrSnapshot: defaultStyle.chargeInr,
-        };
-      }
-      return { ...prev, enabled: true };
-    });
+  const setGiftWrapEnabled = useCallback((_enabled: boolean, _defaultStyle?: GiftWrapStyle) => {
+    setGiftWrap(DEFAULT_GIFT_WRAP);
   }, []);
 
-  const selectGiftWrapStyle = useCallback((style: GiftWrapStyle) => {
-    setGiftWrap((prev) => ({
-      ...prev,
-      enabled: true,
-      styleId: style.id,
-      styleNameSnapshot: style.name,
-      chargeInrSnapshot: style.chargeInr,
-    }));
+  const selectGiftWrapStyle = useCallback((_style: GiftWrapStyle) => {
+    setGiftWrap(DEFAULT_GIFT_WRAP);
   }, []);
 
   const updateGiftWrapDetails = useCallback(
-    (details: Partial<Pick<GiftWrapSelection, 'recipientName' | 'giftMessage'>>) => {
-      setGiftWrap((prev) => ({ ...prev, ...details }));
+    (_details: Partial<Pick<GiftWrapSelection, 'recipientName' | 'giftMessage'>>) => {
+      setGiftWrap(DEFAULT_GIFT_WRAP);
     },
     []
   );
@@ -342,11 +320,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       (sum, item) => sum + item.unitPriceInr * item.quantity,
       0
     );
-    const giftWrapChargeInr =
-      items.length > 0 && giftWrap.enabled ? giftWrap.chargeInrSnapshot : 0;
-    const estimatedTotalInr = subtotalInr + giftWrapChargeInr;
+    const giftWrapChargeInr = 0;
+    const estimatedTotalInr = subtotalInr;
     return { itemCount, subtotalInr, giftWrapChargeInr, estimatedTotalInr };
-  }, [items, giftWrap]);
+  }, [items]);
 
   return (
     <CartContext.Provider

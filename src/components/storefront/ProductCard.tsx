@@ -76,7 +76,6 @@ export const ProductCard = memo(function ProductCard({
             src={product.images[0]}
             alt={displayName}
             aspectClass="aspect-square"
-            zoomOnHover
             priority={priority}
           />
         </Link>

@@ -53,6 +53,7 @@ import {
   validateIndianPincode,
   validateRequired,
 } from '../../utils/validation';
+import { canNavigateBackInApp } from '../../utils/storefrontHelpers';
 import { pickSavedAddress } from '../../utils/storefrontHelpers';
 
 function normalizeIndianPhoneInput(raw?: string): string {
@@ -314,7 +315,7 @@ export function MobileCheckoutPage() {
     }
     if (step === 2) {
       if (startedAtConfirmStep) {
-        if (window.history.length > 1) {
+        if (canNavigateBackInApp()) {
           navigate(-1);
         } else {
           navigate('/cart');
@@ -328,7 +329,7 @@ export function MobileCheckoutPage() {
       setStep(2);
       return;
     }
-    if (window.history.length > 1) {
+    if (canNavigateBackInApp()) {
       navigate(-1);
     } else {
       navigate('/cart');
@@ -1238,15 +1239,6 @@ export function MobileCheckoutPage() {
                   </dt>
                   <dd className="font-bold tabular-nums text-[#16A34A]">
                     - {formatInr(couponDiscount)}
-                  </dd>
-                </div>
-              )}
-
-              {giftWrap.enabled && giftWrapChargeInr > 0 && (
-                <div className="flex items-center justify-between gap-2">
-                  <dt className="font-medium text-[#5A4575]">{t('giftWrapCharge')}</dt>
-                  <dd className="font-bold tabular-nums text-[#2B0B4E]">
-                    + {formatInr(giftWrapChargeInr)}
                   </dd>
                 </div>
               )}

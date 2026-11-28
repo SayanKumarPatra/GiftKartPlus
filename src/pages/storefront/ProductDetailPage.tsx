@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  Check,
   ChevronLeft,
   ChevronRight,
-  Gift,
   Heart,
   ImagePlus,
   MapPin,
@@ -22,11 +20,11 @@ import {
 } from 'lucide-react';
 import {
   useCategories,
-  useGiftWrapConfig,
   useProductReviews,
   useProducts,
   useStoreSettings,
 } from '../../hooks/useStoreData';
+import { OFFICIAL_STORE_DELIVERY_ADDRESS } from '../../config/seedData';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -53,16 +51,8 @@ export function ProductDetailPage() {
   const { customerAccount } = useAuth();
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
-  const { data: giftWrapConfig } = useGiftWrapConfig();
   const { data: settings } = useStoreSettings();
-  const {
-    items,
-    addToCart,
-    toggleWishlist,
-    isWishlisted,
-    giftWrap,
-    setGiftWrapEnabled,
-  } = useCart();
+  const { items, addToCart, toggleWishlist, isWishlisted } = useCart();
   const { pushToast } = useToast();
   const {
     language,
@@ -70,7 +60,6 @@ export function ProductDetailPage() {
     translateCategory,
     localizeEntity,
     translateVariant,
-    translatePlace,
   } = useLanguage();
 
   const product = products.find((p) => p.slug === slug);
@@ -149,8 +138,6 @@ export function ProductDetailPage() {
       item.productId === product.id &&
       JSON.stringify(item.selectedVariants) === JSON.stringify(selectedVariants)
   );
-  const activeStyles = giftWrapConfig?.styles.filter((s) => s.isActive) ?? [];
-  const activeZones = settings?.deliveryZones.filter((z) => z.isActive) ?? [];
 
   const discountPct =
     product.compareAtPriceInr && product.compareAtPriceInr > product.priceInr
@@ -538,7 +525,7 @@ export function ProductDetailPage() {
                           <img
                             src={photoPreviewUrl}
                             alt="Uploaded custom preview"
-                            className="h-10 w-10 rounded-lg object-cover"
+                            className="h-10 w-10 rounded-lg bg-[#FAF7FD] object-contain object-center"
                           />
                           <span className="max-w-[160px] truncate text-xs font-semibold text-[#2B0B4E]">
                             {photoFileName}
@@ -589,47 +576,6 @@ export function ProductDetailPage() {
                     <span>{language === 'bn' ? 'হোয়াটসঅ্যাপ স্টুডিও' : 'WhatsApp Studio'}</span>
                   </a>
                 </div>
-              </div>
-            )}
-
-            {/* Boutique Gift Wrapping Toggle */}
-            {giftWrapConfig?.globallyEnabled && activeStyles.length > 0 && (
-              <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#EFE3FF] bg-[#FFF5FA]/80 p-3.5">
-                <div className="flex items-start gap-2.5">
-                  <Gift className="mt-0.5 h-5 w-5 shrink-0 text-[#FF4D8D]" />
-                  <div>
-                    <p className="text-xs font-bold text-[#2B0B4E]">
-                      {language === 'bn'
-                        ? 'প্রিমিয়াম গিফট র‍্যাপিং ও মেসেজ কার্ড যোগ করুন'
-                        : 'Add Boutique Gift Wrapping & Message Card'}
-                    </p>
-                    <p className="text-[11px] text-[#594A6B]">
-                      {language === 'bn'
-                        ? `${formatInr(Math.min(...activeStyles.map((s) => s.chargeInr)))} থেকে শুরু · কার্টে স্টাইল ও বার্তা বেছে নিন।`
-                        : `Starts from ${formatInr(Math.min(...activeStyles.map((s) => s.chargeInr)))} · Customize style & note in Cart.`}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setGiftWrapEnabled(!giftWrap.enabled, activeStyles[0])}
-                  className={`inline-flex min-h-[34px] cursor-pointer items-center gap-1.5 rounded-lg px-3.5 text-xs font-bold whitespace-nowrap transition-colors ${
-                    giftWrap.enabled
-                      ? 'bg-[#6A11CB] text-white'
-                      : 'border border-[#EBD8FF] bg-white text-[#6A11CB] hover:bg-[#FAF5FF]'
-                  }`}
-                >
-                  {giftWrap.enabled && <Check className="h-3.5 w-3.5" />}
-                  <span>
-                    {giftWrap.enabled
-                      ? language === 'bn'
-                        ? 'র‍্যাপ যুক্ত হয়েছে'
-                        : 'Wrap Added'
-                      : language === 'bn'
-                        ? 'র‍্যাপ যোগ করুন'
-                        : 'Add Wrap'}
-                  </span>
-                </button>
               </div>
             )}
 
@@ -707,8 +653,7 @@ export function ProductDetailPage() {
                 <span>
                   {t('deliveryZone')}:{' '}
                   <strong className="text-[#2B0B4E]">
-                    {activeZones.map((z) => translatePlace(z.name)).join(' & ') ||
-                      translatePlace('Jalchak')}
+                    {OFFICIAL_STORE_DELIVERY_ADDRESS}
                   </strong>
                 </span>
               </div>

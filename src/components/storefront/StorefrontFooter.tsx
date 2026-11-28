@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { BrandLogo } from '../ui/BrandLogo';
 import { BRAND_ASSETS } from '../../config/appConfig';
+import { OFFICIAL_STORE_DELIVERY_ADDRESS } from '../../config/seedData';
 import { useStoreSettings } from '../../hooks/useStoreData';
 import { useLanguage } from '../../context/LanguageContext';
 import {
@@ -25,7 +26,7 @@ import {
 
 export function StorefrontFooter() {
   const { data: settings } = useStoreSettings();
-  const { language, t, translateCategory, translatePlace } = useLanguage();
+  const { language, t, translateCategory } = useLanguage();
   const { pathname } = useLocation();
   const [openMobileGroup, setOpenMobileGroup] = useState<string | null>(null);
   const isHome = pathname === '/';
@@ -54,10 +55,7 @@ export function StorefrontFooter() {
     { label: t('contactSupport'), to: '/contact' },
   ];
 
-  const activeZones =
-    settings?.deliveryZones.filter((z) => z.isActive).map((z) => z.name) ?? [
-      'Jalchak',
-    ];
+  const officialDeliveryAddress = OFFICIAL_STORE_DELIVERY_ADDRESS;
 
   const socialLinks = settings?.socialLinks;
   const resolvedContact = normalizeOfficialContactFields({
@@ -210,12 +208,10 @@ export function StorefrontFooter() {
               {t('deliveryInfo')}
             </h3>
             <ul className="mt-2.5 space-y-1.5 text-xs font-semibold text-[#2B0B4E]">
-              {activeZones.map((zone) => (
-                <li key={zone} className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 shrink-0 text-[#FF4D8D]" />
-                  <span>{translatePlace(zone)}, {translatePlace('West Bengal')}</span>
-                </li>
-              ))}
+              <li className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-[#FF4D8D]" />
+                <span>{officialDeliveryAddress}</span>
+              </li>
             </ul>
             <div className="mt-3 space-y-1.5 text-xs text-[#594A6B]">
               <a
@@ -372,15 +368,10 @@ export function StorefrontFooter() {
               </button>
               {openMobileGroup === 'deliver' && (
                 <div className="space-y-1 border-t border-[#EFE3FF] px-3 py-2 text-[11px] text-[#4A3860]">
-                  {activeZones.map((zone) => (
-                    <p
-                      key={zone}
-                      className="flex items-center gap-1.5 font-semibold text-[#2B0B4E]"
-                    >
-                      <MapPin className="h-3 w-3 shrink-0 text-[#FF4D8D]" />
-                      <span>{translatePlace(zone)}, {translatePlace('West Bengal')}</span>
-                    </p>
-                  ))}
+                  <p className="flex items-center gap-1.5 font-semibold text-[#2B0B4E]">
+                    <MapPin className="h-3 w-3 shrink-0 text-[#FF4D8D]" />
+                    <span>{officialDeliveryAddress}</span>
+                  </p>
                   <a
                     href={`mailto:${supportEmail}`}
                     className="block break-all text-[10.5px] leading-snug text-[#594A6B] hover:text-[#6A11CB]"
@@ -418,7 +409,7 @@ export function StorefrontFooter() {
           <span className="hidden text-white/40 sm:inline">|</span>
           <span>{t('madeInBengal')}</span>
           <span className="hidden text-white/40 sm:inline">|</span>
-          <span className="text-white/85">{t('storeLocationText')}</span>
+          <span className="text-white/85">{officialDeliveryAddress}</span>
         </div>
       </div>
       </footer>

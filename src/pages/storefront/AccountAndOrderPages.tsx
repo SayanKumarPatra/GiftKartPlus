@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useCustomerOrders, useProducts } from '../../hooks/useStoreData';
 import { services } from '../../services/registry';
@@ -98,9 +99,18 @@ function getInitials(name: string): string {
 }
 
 export function CustomerAccountPage() {
-  const { customerAccount, isAuthReady, signInCustomerDemo, signOutCustomer } =
-    useAuth();
+  const {
+    customerAccount,
+    isAuthReady,
+    signUpCustomer,
+    signInCustomer,
+    signInCustomerWithGoogle,
+    sendCustomerPasswordReset,
+    updateCustomerProfile,
+    signOutCustomer,
+  } = useAuth();
   const { wishlistIds } = useCart();
+  const { pushToast } = useToast();
   const { language, languages, t } = useLanguage();
   const { data: orders } = useCustomerOrders(
     customerAccount?.id,
@@ -157,10 +167,11 @@ export function CustomerAccountPage() {
     password?: string;
   }>({});
 
-  // Forgot Password & Backend Auth Ready notice state
+  // Forgot Password & Live Auth notice state
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotError, setForgotError] = useState('');
   const [authStatusNotice, setAuthStatusNotice] = useState<string | null>(null);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
 
   // Edit Profile & Preferences state
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
@@ -204,122 +215,225 @@ export function CustomerAccountPage() {
     ).length;
   }, [orders, customerAccount]);
 
-  function showBackendAuthNotice(context: 'login' | 'signup' | 'google' | 'forgot') {
-    const isBn = language === 'bn';
-    const messages: Record<typeof context, string> = {
-      login: isBn
-        ? 'রিয়েল কাস্টমার লগইন ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে। কোনো ডেমো লগইন সক্রিয় নেই।'
-        : 'Customer sign-in is structured for backend authentication and will activate once the backend is connected. Demo login has been removed.',
-      signup: isBn
-        ? 'নতুন অ্যাকাউন্ট রেজিস্ট্রেশন ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে।'
-        : 'Account registration is ready for backend authentication and will activate once the backend is connected.',
-      google: isBn
-        ? 'ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর আসল গুগল সাইন-ইন (OAuth) চালু হবে।'
-        : 'Real Google Sign-In (OAuth) will be enabled once backend authentication is connected.',
-      forgot: isBn
-        ? 'পাসওয়ার্ড রিসেট ইমেইল সেবা ব্যাকএন্ড অথেনটিকেশন যুক্ত হওয়ার পর চালু হবে।'
-        : 'Password reset emails will be enabled once backend authentication is connected.',
-    };
-    setAuthStatusNotice(messages[context]);
-  }
-
   async function handleLoginSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const isBn = language === 'bn';
     const errs: { email?: string; password?: string } = {};
     if (!loginEmail.trim()) {
-      errs.email =
-        language === 'bn'
-          ? 'অনুগ্রহ করে আপনার ইমেইল ঠিকানা লিখুন।'
-          : 'Please enter your email address.';
+      errs.email = isBn
+        ? 'অনুগ্রহ করে আপনার ইমেইল ঠিকানা লিখুন।'
+        : 'Please enter your email address.';
     } else if (!EMAIL_PATTERN.test(loginEmail.trim())) {
-      errs.email =
-        language === 'bn'
-          ? 'অনুগ্রহ করে একটি সঠিক ইমেইল ঠিকানা লিখুন।'
-          : 'Please enter a valid email address.';
+      errs.email = isBn
+        ? 'অনুগ্রহ করে একটি সঠিক ইমেইল ঠিকানা লিখুন।'
+        : 'Please enter a valid email address.';
     }
     if (!loginPassword.trim()) {
-      errs.password =
-        language === 'bn'
-          ? 'অনুগ্রহ করে আপনার পাসওয়ার্ড লিখুন।'
-          : 'Please enter your password.';
+      errs.password = isBn
+        ? 'অনুগ্রহ করে আপনার পাসওয়ার্ড লিখুন।'
+        : 'Please enter your password.';
     } else if (loginPassword.trim().length < 6) {
-      errs.password =
-        language === 'bn'
-          ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'
-          : 'Password must be at least 6 characters.';
+      errs.password = isBn
+        ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'
+        : 'Password must be at least 6 characters.';
     }
     setLoginErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
-    showBackendAuthNotice('login');
+    setAuthStatusNotice(null);
+    setAuthSubmitting(true);
+    try {
+      await signInCustomer({
+        email: loginEmail.trim(),
+        password: loginPassword.trim(),
+      });
+      pushToast({
+        title: isBn ? 'লগইন সফল হয়েছে' : 'Signed In Successfully',
+        description: isBn ? 'GiftKart-এ আবার স্বাগতম।' : 'Welcome back to GiftKart.',
+        variant: 'success',
+      });
+      if (navState?.from && navState.from !== '/account') {
+        navigate(navState.from, { replace: true });
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : isBn
+            ? 'ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।'
+            : 'Invalid email or password.';
+      setAuthStatusNotice(message);
+      pushToast({
+        title: isBn ? 'লগইন ব্যর্থ' : 'Sign In Failed',
+        description: message,
+        variant: 'error',
+      });
+    } finally {
+      setAuthSubmitting(false);
+    }
   }
 
   async function handleSignUpSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const isBn = language === 'bn';
     const errs: { name?: string; email?: string; password?: string } = {};
     if (!signupName.trim()) {
-      errs.name =
-        language === 'bn'
-          ? 'অনুগ্রহ করে আপনার সম্পূর্ণ নাম লিখুন।'
-          : 'Please enter your full name.';
+      errs.name = isBn
+        ? 'অনুগ্রহ করে আপনার সম্পূর্ণ নাম লিখুন।'
+        : 'Please enter your full name.';
     }
     if (!signupEmail.trim()) {
-      errs.email =
-        language === 'bn'
-          ? 'ইমেইল ঠিকানা আবশ্যক।'
-          : 'Email address is required.';
+      errs.email = isBn ? 'ইমেইল ঠিকানা আবশ্যক।' : 'Email address is required.';
     } else if (!EMAIL_PATTERN.test(signupEmail.trim())) {
-      errs.email =
-        language === 'bn'
-          ? 'অনুগ্রহ করে একটি সঠিক ইমেইল ঠিকানা লিখুন।'
-          : 'Please enter a valid email address.';
+      errs.email = isBn
+        ? 'অনুগ্রহ করে একটি সঠিক ইমেইল ঠিকানা লিখুন।'
+        : 'Please enter a valid email address.';
     }
     if (!signupPassword.trim()) {
-      errs.password =
-        language === 'bn'
-          ? 'অনুগ্রহ করে একটি পাসওয়ার্ড তৈরি করুন।'
-          : 'Please create a password.';
+      errs.password = isBn
+        ? 'অনুগ্রহ করে একটি পাসওয়ার্ড তৈরি করুন।'
+        : 'Please create a password.';
     } else if (signupPassword.trim().length < 6) {
-      errs.password =
-        language === 'bn'
-          ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'
-          : 'Password must be at least 6 characters.';
+      errs.password = isBn
+        ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'
+        : 'Password must be at least 6 characters.';
     }
     setSignupErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
-    showBackendAuthNotice('signup');
+    setAuthStatusNotice(null);
+    setAuthSubmitting(true);
+    try {
+      const result = await signUpCustomer({
+        fullName: signupName.trim(),
+        email: signupEmail.trim(),
+        phone: signupPhone.trim(),
+        password: signupPassword.trim(),
+        defaultCity: 'Jalchak',
+      });
+      if (result.requiresEmailConfirmation) {
+        const msg = isBn
+          ? 'অ্যাকাউন্ট তৈরি হয়েছে! লগইন করার আগে অনুগ্রহ করে আপনার ইমেইলের কনফার্মেশন লিংকে ক্লিক করুন।'
+          : result.message ||
+            'Account created! Please check your email inbox to confirm your address before logging in.';
+        setAuthStatusNotice(msg);
+        pushToast({
+          title: isBn ? 'ইমেইল ভেরিফিকেশন প্রয়োজন' : 'Verify Your Email',
+          description: msg,
+          variant: 'success',
+        });
+        setAuthMode('login');
+        setLoginEmail(signupEmail.trim());
+      } else {
+        pushToast({
+          title: isBn ? 'GiftKart-এ স্বাগতম!' : 'Welcome to GiftKart!',
+          description: isBn
+            ? 'আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে।'
+            : 'Your account has been created successfully.',
+          variant: 'success',
+        });
+        if (navState?.from && navState.from !== '/account') {
+          navigate(navState.from, { replace: true });
+        }
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : isBn
+            ? 'অ্যাকাউন্ট তৈরি করা যায়নি। আবার চেষ্টা করুন।'
+            : 'Unable to create your account. Please try again.';
+      setAuthStatusNotice(message);
+      pushToast({
+        title: isBn ? 'সাইন-আপ ব্যর্থ' : 'Sign Up Failed',
+        description: message,
+        variant: 'error',
+      });
+    } finally {
+      setAuthSubmitting(false);
+    }
   }
 
-  function handleGoogleContinue() {
-    showBackendAuthNotice('google');
+  async function handleGoogleContinue() {
+    const isBn = language === 'bn';
+    setAuthStatusNotice(null);
+    setAuthSubmitting(true);
+    try {
+      await signInCustomerWithGoogle();
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : isBn
+            ? 'গুগল সাইন-ইন চালু করা যায়নি।'
+            : 'Unable to start Google Sign-In.';
+      setAuthStatusNotice(message);
+      pushToast({
+        title: isBn ? 'গুগল সাইন-ইন ত্রুটি' : 'Google Sign-In Error',
+        description: message,
+        variant: 'error',
+      });
+      setAuthSubmitting(false);
+    }
   }
 
-  function handleForgotSubmit(e: React.FormEvent) {
+  async function handleForgotSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const isBn = language === 'bn';
     if (!forgotEmail.trim() || !EMAIL_PATTERN.test(forgotEmail.trim())) {
       setForgotError(
-        language === 'bn'
+        isBn
           ? 'অনুগ্রহ করে একটি সঠিক নিবন্ধিত ইমেইল ঠিকানা লিখুন।'
           : 'Please enter a valid registered email address.'
       );
       return;
     }
     setForgotError('');
-    showBackendAuthNotice('forgot');
+    setAuthStatusNotice(null);
+    setAuthSubmitting(true);
+    try {
+      await sendCustomerPasswordReset(forgotEmail.trim());
+      const msg = isBn
+        ? 'আপনার ইমেইলে পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে।'
+        : 'Password reset link has been sent to your email address.';
+      setAuthStatusNotice(msg);
+      pushToast({
+        title: isBn ? 'রিসেট লিংক পাঠানো হয়েছে' : 'Reset Link Sent',
+        description: msg,
+        variant: 'success',
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : isBn
+            ? 'রিসেট লিংক পাঠানো যায়নি। আবার চেষ্টা করুন।'
+            : 'Unable to send password reset email.';
+      setAuthStatusNotice(message);
+    } finally {
+      setAuthSubmitting(false);
+    }
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
-    if (!editName.trim() || !editEmail.trim()) return;
-    await signInCustomerDemo({
-      fullName: editName.trim(),
-      email: editEmail.trim().toLowerCase(),
-      phone: editPhone.replace(/\D/g, '').slice(-10),
-      defaultCity: customerAccount?.defaultCity || 'Jalchak',
-    });
-    setProfileSavedNotice(true);
-    window.setTimeout(() => setProfileSavedNotice(false), 3000);
+    if (!editName.trim()) return;
+    try {
+      await updateCustomerProfile({
+        fullName: editName.trim(),
+        phone: editPhone.replace(/\D/g, '').slice(-10),
+        defaultCity: customerAccount?.defaultCity || 'Jalchak',
+        avatarUrl: avatarPreviewUrl || customerAccount?.avatarUrl,
+      });
+      setProfileSavedNotice(true);
+      window.setTimeout(() => setProfileSavedNotice(false), 3000);
+    } catch (err) {
+      pushToast({
+        title: language === 'bn' ? 'প্রোফাইল আপডেট ব্যর্থ' : 'Profile Update Failed',
+        description: err instanceof Error ? err.message : 'Unable to save profile.',
+        variant: 'error',
+      });
+    }
   }
 
   function handleAvatarSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -479,9 +593,10 @@ export function CustomerAccountPage() {
 
                   <button
                     type="submit"
-                    className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] transition-opacity hover:opacity-95"
+                    disabled={authSubmitting}
+                    className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] transition-opacity hover:opacity-95 disabled:opacity-60"
                   >
-                    {t('signIn')}
+                    {authSubmitting ? t('loading') : t('signIn')}
                   </button>
 
                   <div className="relative my-4 flex items-center justify-center">
@@ -500,8 +615,9 @@ export function CustomerAccountPage() {
 
                   <button
                     type="button"
-                    onClick={handleGoogleContinue}
-                    className="flex h-11 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-[#DFD2F2] bg-white text-sm font-bold text-[#1E1035] transition-colors hover:bg-[#FAF6FF]"
+                    disabled={authSubmitting}
+                    onClick={() => void handleGoogleContinue()}
+                    className="flex h-11 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-[#DFD2F2] bg-white text-sm font-bold text-[#1E1035] transition-colors hover:bg-[#FAF6FF] disabled:opacity-60"
                   >
                     <GoogleOfficialLogo className="h-4 w-4" />
                     <span>{t('continueWithGoogle')}</span>
@@ -595,9 +711,10 @@ export function CustomerAccountPage() {
 
                   <button
                     type="submit"
-                    className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] transition-opacity hover:opacity-95"
+                    disabled={authSubmitting}
+                    className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(106,17,203,0.4)] transition-opacity hover:opacity-95 disabled:opacity-60"
                   >
-                    {t('createAccount')}
+                    {authSubmitting ? t('loading') : t('createAccount')}
                   </button>
 
                   {authStatusNotice && (
@@ -608,8 +725,9 @@ export function CustomerAccountPage() {
 
                   <button
                     type="button"
-                    onClick={handleGoogleContinue}
-                    className="flex h-11 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-[#DFD2F2] bg-white text-sm font-bold text-[#1E1035] transition-colors hover:bg-[#FAF6FF]"
+                    disabled={authSubmitting}
+                    onClick={() => void handleGoogleContinue()}
+                    className="flex h-11 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-[#DFD2F2] bg-white text-sm font-bold text-[#1E1035] transition-colors hover:bg-[#FAF6FF] disabled:opacity-60"
                   >
                     <GoogleOfficialLogo className="h-4 w-4" />
                     <span>{t('continueWithGoogle')}</span>
@@ -623,7 +741,7 @@ export function CustomerAccountPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setAuthStatusNotice('');
+                      setAuthStatusNotice(null);
                       setAuthMode('login');
                     }}
                     className="cursor-pointer text-xs font-bold text-[#6A11CB] hover:text-[#FF4D8D]"
@@ -633,7 +751,7 @@ export function CustomerAccountPage() {
                   <h1 className="font-display text-xl font-bold text-[#1E1035]">
                     {t('forgotPasswordQuestion')}
                   </h1>
-                  <form onSubmit={handleForgotSubmit} className="space-y-4">
+                  <form onSubmit={(e) => void handleForgotSubmit(e)} className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-[#2B0B4E]">
                         {t('emailAddress')}
@@ -651,9 +769,10 @@ export function CustomerAccountPage() {
                     </div>
                     <button
                       type="submit"
-                      className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-sm font-bold text-white"
+                      disabled={authSubmitting}
+                      className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-[#6A11CB] via-[#A21CAF] to-[#FF4D8D] text-sm font-bold text-white disabled:opacity-60"
                     >
-                      {t('sendResetLink')}
+                      {authSubmitting ? t('loading') : t('sendResetLink')}
                     </button>
                     {authStatusNotice && (
                       <div className="rounded-xl border border-[#DFC8FF] bg-[#F6EDFF] px-3.5 py-2.5 text-xs font-medium text-[#4B148C]">
@@ -1500,11 +1619,6 @@ export function MyOrdersPage() {
                                   {order.customer.pincode}
                                 </span>
                               </p>
-                              {order.giftWrap.enabled && (
-                                <p className="mt-1 text-xs font-semibold text-[#FF4D8D]">
-                                  {t('giftWrapCharge')} ({order.giftWrap.styleNameSnapshot})
-                                </p>
-                              )}
                             </div>
                           </div>
 

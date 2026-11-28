@@ -262,7 +262,7 @@ export function MobileHomePage() {
                         loading={idx < 8 ? 'eager' : 'lazy'}
                         decoding="async"
                         referrerPolicy="no-referrer"
-                        className="h-full w-full object-cover"
+                        className="h-full w-full max-h-full max-w-full object-contain object-center"
                       />
                     </div>
                   )}

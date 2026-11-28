@@ -1,5 +1,13 @@
-import { Suspense, lazy, type ComponentType } from 'react';
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
+import { Suspense, lazy, useEffect, type ComponentType } from 'react';
+import {
+  BrowserRouter,
+  Link,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigationType,
+} from 'react-router-dom';
 import { StorefrontLayout } from '../layouts/StorefrontLayout';
 import { AdminRouteGuard } from '../components/admin/AdminRouteGuard';
 import { HomePage } from '../pages/storefront/HomePage';
@@ -217,9 +225,24 @@ function NotFoundView() {
   );
 }
 
+function ScrollManager() {
+  const { pathname } = useLocation();
+  const navigationType = useNavigationType();
+
+  useEffect(() => {
+    // Only reset scroll on forward PUSH navigations; preserve position on browser Back/Forward (POP)
+    if (navigationType === 'PUSH') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    }
+  }, [pathname, navigationType]);
+
+  return null;
+}
+
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <ScrollManager />
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
           {/* Public Customer Storefront Shell */}

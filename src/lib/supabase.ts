@@ -33,6 +33,7 @@ export function getSupabaseClient(): SupabaseClient {
         autoRefreshToken: true,
         detectSessionInUrl: true,
         storageKey: 'giftkart-supabase-auth',
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       },
       realtime: {
         params: {

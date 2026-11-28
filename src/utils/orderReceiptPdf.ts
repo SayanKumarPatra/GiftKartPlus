@@ -220,9 +220,7 @@ export async function downloadOrderReceiptPdf(
 
   const brandName = storeSettings?.storeName || 'GiftKart';
   const brandTagline = storeSettings?.tagline || 'Har Gift Mein Ek Kahani.';
-  const storeAddress =
-    storeSettings?.serviceCitiesSummary ||
-    'Jalchak, Pingla, Paschim Medinipur, West Bengal - 721155';
+  const storeAddress = 'Jalchak, West Bengal, India';
   const resolvedContact = normalizeOfficialContactFields({
     supportEmail: storeSettings?.supportEmail,
     supportPhone: storeSettings?.supportPhone,
@@ -608,9 +606,7 @@ export function printOrderReceipt(
   const brandName = storeSettings?.storeName || 'GiftKart';
   const brandTagline = storeSettings?.tagline || 'Har Gift Mein Ek Kahani.';
   const logoSrc = storeSettings?.logoUrl || BRAND_ASSETS.logo;
-  const storeAddress =
-    storeSettings?.serviceCitiesSummary ||
-    'Jalchak, Pingla, Paschim Medinipur, West Bengal - 721155';
+  const storeAddress = 'Jalchak, West Bengal, India';
   const resolvedContact = normalizeOfficialContactFields({
     supportEmail: storeSettings?.supportEmail,
     supportPhone: storeSettings?.supportPhone,
