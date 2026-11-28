@@ -27,7 +27,7 @@ export interface TelegramNotifierEnv {
   TELEGRAM_CHAT_ID?: string;
   TELEGRAM_WEBHOOK_SECRET?: string;
   SUPABASE_URL?: string;
-  SUPABASE_SERVICE_ROLE_KEY?: string;
+  SUPABASE_SECRET_KEYS?: string;
 }
 
 export interface NotifierDependencies {
@@ -161,7 +161,9 @@ function constantTimeEqual(a: string, b: string): boolean {
 }
 
 export function redactSecrets(input: string, secrets: string[] = []): string {
-  let clean = input.replace(/bot\d{5,20}:[A-Za-z0-9_-]{10,}/gi, 'bot[REDACTED]');
+  let clean = input
+    .replace(/bot\d{5,20}:[A-Za-z0-9_-]{10,}/gi, 'bot[REDACTED]')
+    .replace(/sb_secret_[A-Za-z0-9_-]+/gi, 'sb_secret_[REDACTED]');
   for (const secret of secrets) {
     const trimmed = secret.trim();
     if (trimmed.length >= 6) {
@@ -169,6 +171,36 @@ export function redactSecrets(input: string, secrets: string[] = []): string {
     }
   }
   return clean;
+}
+
+export function resolveSupabaseSecretKey(
+  rawSecretKeys?: string
+): { key: string; errorReason?: undefined } | { key: null; errorReason: string } {
+  const trimmed = (rawSecretKeys || '').trim();
+  if (!trimmed) {
+    return { key: null, errorReason: 'SUPABASE_SECRET_KEYS is not configured.' };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    return { key: null, errorReason: 'SUPABASE_SECRET_KEYS contains invalid JSON.' };
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { key: null, errorReason: 'SUPABASE_SECRET_KEYS must be a JSON object.' };
+  }
+
+  const defaultKey = (parsed as Record<string, unknown>).default;
+  if (typeof defaultKey !== 'string' || !defaultKey.trim()) {
+    return {
+      key: null,
+      errorReason: 'SUPABASE_SECRET_KEYS does not contain a valid "default" key.',
+    };
+  }
+
+  return { key: defaultKey.trim() };
 }
 
 function sanitizeLine(value: unknown, fallback: string, maxLen = 200): string {
@@ -333,7 +365,7 @@ async function fetchWithTimeout(
 
 async function querySupabaseRest<T>(
   supabaseUrl: string,
-  serviceRoleKey: string,
+  secretKey: string,
   relativePath: string,
   fetchImpl: typeof fetch
 ): Promise<T[]> {
@@ -345,8 +377,7 @@ async function querySupabaseRest<T>(
     {
       method: 'GET',
       headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
+        apikey: secretKey,
         Accept: 'application/json',
       },
     },
@@ -486,7 +517,7 @@ export async function handleTelegramWebhookRequest(
   const botToken = (env.TELEGRAM_BOT_TOKEN || '').trim();
   const chatId = (env.TELEGRAM_CHAT_ID || '').trim();
   const supabaseUrl = (env.SUPABASE_URL || '').trim();
-  const serviceRoleKey = (env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  const resolvedSecretKey = resolveSupabaseSecretKey(env.SUPABASE_SECRET_KEYS);
 
   if (!webhookSecret) {
     logger.error('[GiftKart Telegram] TELEGRAM_WEBHOOK_SECRET is not configured.');
@@ -506,10 +537,16 @@ export async function handleTelegramWebhookRequest(
     return jsonResponse({ ok: false, error: 'telegram_not_configured' }, 500);
   }
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    logger.error('[GiftKart Telegram] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not configured.');
+  if (!supabaseUrl || !resolvedSecretKey.key) {
+    logger.error(
+      `[GiftKart Telegram] Supabase configuration error: ${
+        !supabaseUrl ? 'SUPABASE_URL is not configured.' : resolvedSecretKey.errorReason
+      }`
+    );
     return jsonResponse({ ok: false, error: 'supabase_env_not_configured' }, 500);
   }
+
+  const supabaseSecretKey = resolvedSecretKey.key;
 
   // 2. Parse & size-guard webhook JSON payload
   let rawBody: string;
@@ -600,7 +637,7 @@ export async function handleTelegramWebhookRequest(
         // Re-verify order directly from PostgreSQL (never trust unverified webhook fields)
         const orderRows = await querySupabaseRest<OrderDbRow>(
           supabaseUrl,
-          serviceRoleKey,
+          supabaseSecretKey,
           `orders?id=eq.${encodeURIComponent(recordId)}&select=id,order_number,customer_details,grand_total_inr,payment_status,payment_method,payment_details,fulfillment_status,created_at&limit=1`,
           fetchImpl
         );
@@ -616,7 +653,7 @@ export async function handleTelegramWebhookRequest(
 
         let itemRows = await querySupabaseRest<OrderItemDbRow>(
           supabaseUrl,
-          serviceRoleKey,
+          supabaseSecretKey,
           `order_items?order_id=eq.${encodeURIComponent(recordId)}&select=product_name_snapshot,quantity&order=created_at.asc`,
           fetchImpl
         );
@@ -625,7 +662,7 @@ export async function handleTelegramWebhookRequest(
           await sleep(250);
           itemRows = await querySupabaseRest<OrderItemDbRow>(
             supabaseUrl,
-            serviceRoleKey,
+            supabaseSecretKey,
             `order_items?order_id=eq.${encodeURIComponent(recordId)}&select=product_name_snapshot,quantity&order=created_at.asc`,
             fetchImpl
           );
@@ -636,7 +673,7 @@ export async function handleTelegramWebhookRequest(
         // Re-verify newly registered customer directly from PostgreSQL
         const customerRows = await querySupabaseRest<CustomerDbRow>(
           supabaseUrl,
-          serviceRoleKey,
+          supabaseSecretKey,
           `customers?id=eq.${encodeURIComponent(recordId)}&select=id,full_name,email,registered_at&limit=1`,
           fetchImpl
         );
@@ -695,7 +732,7 @@ export async function handleTelegramWebhookRequest(
     } catch (err) {
       const safeError = redactSecrets(err instanceof Error ? err.message : String(err), [
         botToken,
-        serviceRoleKey,
+        supabaseSecretKey,
         webhookSecret,
       ]);
       logger.error(`[GiftKart Telegram] Unexpected error (${eventKey}): ${safeError}`);
@@ -726,7 +763,7 @@ if (typeof Deno !== 'undefined' && typeof Deno.serve === 'function') {
       TELEGRAM_CHAT_ID: Deno.env.get('TELEGRAM_CHAT_ID'),
       TELEGRAM_WEBHOOK_SECRET: Deno.env.get('TELEGRAM_WEBHOOK_SECRET'),
       SUPABASE_URL: Deno.env.get('SUPABASE_URL'),
-      SUPABASE_SERVICE_ROLE_KEY: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+      SUPABASE_SECRET_KEYS: Deno.env.get('SUPABASE_SECRET_KEYS'),
     })
   );
 }
